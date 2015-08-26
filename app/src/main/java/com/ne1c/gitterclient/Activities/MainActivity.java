@@ -14,7 +14,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -40,6 +40,10 @@ import retrofit.client.Response;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
 
+    public final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
+    public final String ROOMS_BUNDLE = "rooms_bundle";
+    private final int LOAD_ROOM_ID = 1;
+
     private NavigationView mNavView;
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -50,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private RestAdapter mRestAdapter;
 
-    private final int LOAD_ROOM_ID = 001;
+    private int selectedNavItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +73,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         getFragmentManager().beginTransaction().replace(R.id.fragment_container, new ChatRoomFragment()).commit();
 
-        if (Utils.getInstance().isNetworkConnected()) {
-            getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+        if (savedInstanceState == null) {
+            if (Utils.getInstance().isNetworkConnected()) {
+                getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+            }
+        } else {
+            selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
+            mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
+
+            for (RoomModel room : mRoomsList) {
+                MenuItem item = mNavView.getMenu().add(R.id.rooms_group, 0, Menu.NONE, room.name);
+                item.setIcon(R.mipmap.ic_room);
+            }
+
+            if (mRoomsList.size() > 0) {
+                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+
+                setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
+            }
+
+            mNavView.getMenu().setGroupCheckable(R.id.rooms_group, true, true);
+            mNavView.getMenu().getItem(0).setCheckable(false);
         }
     }
 
@@ -84,21 +108,37 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mNavView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(MenuItem menuItem) {
+                if (menuItem.getItemId() == R.id.home_nav_item) {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
+                }
+
                 if (menuItem.getGroupId() == R.id.rooms_group && menuItem.getItemId() != R.id.home_nav_item) {
                     for (int i = 0; i < mRoomsList.size(); i++) {
                         if (menuItem.getTitle().equals(mRoomsList.get(i).name)) {
                             EventBus.getDefault().post(mRoomsList.get(i));
+
+                            selectedNavItem = i + 1; // Because item in navigation menu
+
+                            setTitle(menuItem.getTitle());
                         }
                     }
+
+                    menuItem.setChecked(true);
                 }
 
-                menuItem.setChecked(true);
                 mDrawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             }
         });
 
         mDrawerToggle.syncState();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(SELECT_NAV_ITEM_BUNDLE, selectedNavItem);
+        outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList);
     }
 
     @Override
@@ -129,6 +169,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
     public Loader<ArrayList<RoomModel>> onCreateLoader(int id, Bundle args) {
         Loader<ArrayList<RoomModel>> loader = null;
         switch (id) {
@@ -150,11 +196,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         if (data.size() > 0) {
-            EventBus.getDefault().post(data.get(0));
-            mNavView.getMenu().getItem(1).setChecked(true);
+            selectedNavItem = 1;
+
+            EventBus.getDefault().post(data.get(selectedNavItem - 1));
+            mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+
+            setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
         }
 
         mNavView.getMenu().setGroupCheckable(R.id.rooms_group, true, true);
+        mNavView.getMenu().getItem(0).setCheckable(false);
     }
 
     @Override
@@ -215,9 +266,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         @Override
         public ArrayList<RoomModel> loadInBackground() {
             IApiMethods methods = mAdapter.create(IApiMethods.class);
-            ArrayList<RoomModel> list = methods.getCuurentUserRooms(Utils.getInstance().getBearer());
-
-            return list;
+            Log.d("MYTAG", "runLoadRooms");
+            return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        getLoaderManager().destroyLoader(LOAD_ROOM_ID);
     }
 }
