@@ -111,10 +111,10 @@ public class ChatRoomFragment extends Fragment {
                 super.onScrollStateChanged(recyclerView, newState);
 
                 // При скролле вверх будет подругражть новые сообщения
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING && firstId == 0) {
-                    countLoadMessage += 10;
-                    loadMessageRoom(mRoom);
-                }
+//                if (newState == RecyclerView.SCROLL_STATE_DRAGGING && firstId == 0) {
+//                    countLoadMessage += 10;
+//                    loadMessageRoom(mRoom);
+//                }
             }
         });
 
@@ -135,7 +135,7 @@ public class ChatRoomFragment extends Fragment {
 
     private void loadMessageRoom(final RoomModel roomModel) {
         IApiMethods methods = mRestApiAdapter.create(IApiMethods.class);
-        methods.getMessagesRoom(roomModel.id, countLoadMessage, new Callback<ArrayList<MessageModel>>() {
+        methods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessage, new Callback<ArrayList<MessageModel>>() {
             @Override
             public void success(ArrayList<MessageModel> messageModels, Response response) {
                 mMessagesArr.clear();
@@ -157,7 +157,7 @@ public class ChatRoomFragment extends Fragment {
 
     private void connectMessagesStream() {
         IApiMethods methods = mRestStreamAdapter.create(IApiMethods.class);
-        methods.messageStream(mRoom.id, new Callback<Response>() {
+        methods.messageStream(Utils.getInstance().getBearer(), mRoom.id, new Callback<Response>() {
             @Override
             public void success(Response result, Response response) {
                 Log.d("STREAM", "new message succes");

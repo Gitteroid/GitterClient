@@ -6,21 +6,32 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
+import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.R;
+import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
+
+import retrofit.Callback;
+import retrofit.RestAdapter;
+import retrofit.RetrofitError;
+import retrofit.client.OkClient;
+import retrofit.client.Response;
 
 
 public class LoginActivity extends AppCompatActivity {
 
-    private final String CLIENT_ID = "4da42012698bf284a2eb9a47a351f52df0b666d4";
-    private final String REDIRECT_URL = "http://gitter.im";
+    private final String CLIENT_ID = "8d5b3156cc29dca4188051843a216ef8047bae06";
+    private final String CLIENT_SECRET = "2918afc782a45a8fa2e2a75ad1f9dfbcaec9e37c";
+    private final String REDIRECT_URL = "https://gitter.im";
     private final String RESPONSE_TYPE = "code";
 
     public final String AUTH_URL = "https://gitter.im/login/oauth/authorize?"
@@ -55,43 +66,42 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+
     private class MyWebViewClient extends WebViewClient {
 
-        private ProgressDialog mDialog = new ProgressDialog(LoginActivity.this);
+        private ProgressDialog dialog = new ProgressDialog(LoginActivity.this);
 
         public MyWebViewClient() {
-            mDialog.setIndeterminate(true);
-            mDialog.setMessage("Loading...");
+            dialog.setIndeterminate(true);
+            dialog.setMessage(getString(R.string.loading));
         }
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             if (url.equals(AUTH_URL)) {
-                mDialog.show();
+                dialog.show();
             }
 
-            // Если прошел авторизацию и url содержит параметр code,
-            // то запускаем MainActivity
+            // If the authorization is successful, then get access_token
+            // and run MainActivity
             if (url.contains("code=")) {
                 view.stopLoading();
-                view.destroy();
-                Utils.getInstance().writeStateAuthPref(getApplicationContext(), true);
 
-                startActivity(new Intent(getApplicationContext(), MainActivity.class)
-                        .putExtra("auth", true)
-                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
-                finish();
+                // Get access token and show MainActivity
+                loadAccessToken(url.substring(url.indexOf('=') + 1, url.length()));
+
             } else {
                 super.onPageStarted(view, url, favicon);
             }
+
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
 
-            if (mDialog.isShowing()) {
-                mDialog.dismiss();
+            if (dialog.isShowing()) {
+                dialog.dismiss();
             }
         }
 
@@ -110,5 +120,46 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    private void loadAccessToken(String code) {
+        final ProgressDialog dialog = new ProgressDialog(LoginActivity.this);
+        dialog.setIndeterminate(true);
+        dialog.setMessage(getString(R.string.loading));
+
+        RestAdapter adapter = new RestAdapter.Builder()
+                .setEndpoint(REDIRECT_URL)
+                .build();
+
+        IApiMethods methods = adapter.create(IApiMethods.class);
+
+        dialog.show();
+        methods.authorization(CLIENT_ID, CLIENT_SECRET, code,
+                "authorization_code", REDIRECT_URL, new Callback<AuthResponseModel>() {
+                    @Override
+                    public void success(AuthResponseModel authResponseModel, Response response) {
+                        // Write access token to preferences
+                        Utils.getInstance().writeAuthResponsePref(authResponseModel);
+                        dialog.dismiss();
+
+                        startActivity(new Intent(getApplicationContext(), MainActivity.class)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+                        finish();
+                    }
+
+                    @Override
+                    public void failure(RetrofitError error) {
+                        // If error, then set visible "Sign In" button
+                        dialog.dismiss();
+                        Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+
+                        if (mAuthWebView.getVisibility() == View.VISIBLE) {
+                            mAuthBut.setVisibility(View.VISIBLE);
+                            mLogoImg.setVisibility(View.VISIBLE);
+
+                            mAuthWebView.setVisibility(View.GONE);
+                        }
+                    }
+                });
     }
 }

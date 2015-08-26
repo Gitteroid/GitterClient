@@ -14,6 +14,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -64,9 +65,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
 
-        boolean auth = getIntent().getBooleanExtra("auth", true);
-
-        loadHeaderNavView(auth);
+        loadHeaderNavView();
 
         getFragmentManager().beginTransaction().replace(R.id.fragment_container, new ChatRoomFragment()).commit();
 
@@ -136,7 +135,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             case LOAD_ROOM_ID:
                 loader = new RoomAsyncLoader(getApplicationContext());
                 return loader;
-            default: return loader;
+            default:
+                return loader;
         }
     }
 
@@ -162,44 +162,42 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-    private void loadHeaderNavView(boolean auth) {
-        if (auth) {
-            final UserModel model = Utils.getInstance().getUserPref();
+    private void loadHeaderNavView() {
+        final UserModel model = Utils.getInstance().getUserPref();
 
-            if (model != null) {
-                ImageLoader.getInstance().displayImage(model.avatarUrlMedium, mNavAvatar);
-                mNavNickname.setText(model.displayName);
+        if (model != null) {
+            ImageLoader.getInstance().displayImage(model.avatarUrlMedium, mNavAvatar);
+            mNavNickname.setText(model.displayName);
+            mNavAvatar.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            Uri.parse(Utils.getInstance().GITHUB_URL + model.url)));
+                }
+            });
+        }
+
+        IApiMethods methods = mRestAdapter.create(IApiMethods.class);
+        methods.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
+            @Override
+            public void success(final ArrayList<UserModel> userModel, Response response) {
+                Utils.getInstance().writeUserToPref(userModel.get(0));
+                ImageLoader.getInstance().displayImage(userModel.get(0).avatarUrlMedium, mNavAvatar);
+                mNavNickname.setText(userModel.get(0).displayName);
                 mNavAvatar.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         startActivity(new Intent(Intent.ACTION_VIEW,
-                                Uri.parse(Utils.getInstance().GITHUB_URL + model.url)));
+                                Uri.parse(Utils.getInstance().GITHUB_URL + userModel.get(0).url)));
                     }
                 });
             }
 
-            IApiMethods methods = mRestAdapter.create(IApiMethods.class);
-            methods.getCurrentUser(new Callback<ArrayList<UserModel>>() {
-                @Override
-                public void success(final ArrayList<UserModel> userModel, Response response) {
-                    Utils.getInstance().writeUserToPref(userModel.get(0));
-                    ImageLoader.getInstance().displayImage(userModel.get(0).avatarUrlMedium, mNavAvatar);
-                    mNavNickname.setText(userModel.get(0).displayName);
-                    mNavAvatar.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            startActivity(new Intent(Intent.ACTION_VIEW,
-                                    Uri.parse(Utils.getInstance().GITHUB_URL + userModel.get(0).url)));
-                        }
-                    });
-                }
-
-                @Override
-                public void failure(RetrofitError error) {
-                    Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+            @Override
+            public void failure(RetrofitError error) {
+                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
@@ -217,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         @Override
         public ArrayList<RoomModel> loadInBackground() {
             IApiMethods methods = mAdapter.create(IApiMethods.class);
-            ArrayList<RoomModel> list = methods.getCuurentUserRooms();
+            ArrayList<RoomModel> list = methods.getCuurentUserRooms(Utils.getInstance().getBearer());
 
             return list;
         }

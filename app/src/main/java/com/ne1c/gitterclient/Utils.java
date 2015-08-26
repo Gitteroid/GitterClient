@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.Models.UserModel;
 
 import org.json.JSONObject;
@@ -26,6 +27,9 @@ public class Utils {
     public final String URL_NAME_PREF_KEY = "url";
     public final String AVATAR_SMALL_PREF_KEY = "avatarUrlSmall";
     public final String AVATAR_MEDIUM_PREF_KEY = "avatarUrlMedium";
+    public final String ACCESS_TOKEN_PREF_KEY = "access_token";
+    public final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
+    public final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
 
     private Context mContext;
 
@@ -99,5 +103,24 @@ public class Utils {
             return false;
         } else
             return true;
+    }
+
+    public String getBearer() {
+        return "Bearer " + mContext.getSharedPreferences(USERINFO_PREF, Context.MODE_PRIVATE)
+                .getString(ACCESS_TOKEN_PREF_KEY, "");
+    }
+
+    public void writeAuthResponsePref(AuthResponseModel model) {
+        mContext.getSharedPreferences(USERINFO_PREF, Context.MODE_PRIVATE)
+                .edit()
+                .putString(ACCESS_TOKEN_PREF_KEY, model.access_token)
+                .putString(EXPIRIES_IN_PREF_KEY, model.expires_in)
+                .putString(TOKEN_TYPE_PREF_KEY, model.token_type)
+                .apply();
+    }
+
+    public String getAccessToken() {
+        return mContext.getSharedPreferences(USERINFO_PREF, Context.MODE_PRIVATE)
+                .getString(ACCESS_TOKEN_PREF_KEY, "");
     }
 }

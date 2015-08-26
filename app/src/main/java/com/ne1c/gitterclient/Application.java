@@ -1,6 +1,7 @@
 package com.ne1c.gitterclient;
 
 import android.content.Intent;
+import android.text.TextUtils;
 
 import com.ne1c.gitterclient.Activities.MainActivity;
 import com.nostra13.universalimageloader.cache.disc.impl.LimitedAgeDiskCache;
@@ -31,7 +32,7 @@ public class Application extends android.app.Application {
 
         ImageLoader.getInstance().init(config);
 
-        if (Utils.getInstance().getStateAuthPref(getApplicationContext())) {
+        if (!TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
             startActivity(new Intent(getApplicationContext(), MainActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
