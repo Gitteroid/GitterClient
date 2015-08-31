@@ -10,15 +10,13 @@ import android.net.NetworkInfo;
 import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.Models.UserModel;
 
-import org.json.JSONObject;
 
 public class Utils {
 
+    public final String GITTER_FAYE_URL = "https://ws.gitter.im/faye";
+    public final String GITTER_URL = "https://gitter.im";
     public final String GITHUB_URL = "http://github.com";
-    public final String APP_DATA_PREF = "app_data";
-    public final String AUTH_KEY_PREF = "auth_state";
     public final String GITTER_API_URL = "https://api.gitter.im";
-    public final String GITTER_STREAM_URL = "https://stream.gitter.im";
     public final String USERINFO_PREF = "userinfo";
 
     public final String ID_PREF_KEY = "id";
@@ -45,24 +43,6 @@ public class Utils {
 
     public static Utils getInstance() {
         return instance;
-    }
-
-    public boolean checkAuth(JSONObject obj, Activity activity) {
-        boolean auth = true;
-
-        return auth;
-    }
-
-    public void writeStateAuthPref(Context context, boolean state) {
-        context.getSharedPreferences(APP_DATA_PREF, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(AUTH_KEY_PREF, state)
-                .apply();
-    }
-
-    public boolean getStateAuthPref(Context context) {
-        return context.getSharedPreferences(APP_DATA_PREF, Context.MODE_PRIVATE)
-                .getBoolean(AUTH_KEY_PREF, false);
     }
 
     public void writeUserToPref(UserModel model) {
