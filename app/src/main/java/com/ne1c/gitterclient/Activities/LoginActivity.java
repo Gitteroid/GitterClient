@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -23,15 +22,13 @@ import com.ne1c.gitterclient.Utils;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
-import retrofit.client.OkClient;
 import retrofit.client.Response;
-
 
 public class LoginActivity extends AppCompatActivity {
 
-    private final String CLIENT_ID = "8d5b3156cc29dca4188051843a216ef8047bae06";
-    private final String CLIENT_SECRET = "2918afc782a45a8fa2e2a75ad1f9dfbcaec9e37c";
-    private final String REDIRECT_URL = "https://gitter.im";
+    private final String CLIENT_ID = "3194d42d0dba207e2a76b47307d7c77d60f537d2";
+    private final String CLIENT_SECRET = "6099e41a1d14a612430a7bb1e1738b3259dacdde";
+    private final String REDIRECT_URL = "https://github.com/Ne1c/GitterClient";
     private final String RESPONSE_TYPE = "code";
 
     public final String AUTH_URL = "https://gitter.im/login/oauth/authorize?"
@@ -66,10 +63,10 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-
     private class MyWebViewClient extends WebViewClient {
 
         private ProgressDialog dialog = new ProgressDialog(LoginActivity.this);
+        private boolean startLoadToken = false;
 
         public MyWebViewClient() {
             dialog.setIndeterminate(true);
@@ -83,17 +80,16 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             // If the authorization is successful, then get access_token
-            // and run MainActivity
-            if (url.contains("code=")) {
+            // startLoadToken check that don't run second request
+            if (url.contains("code=") && !url.contains("state=") && !startLoadToken) {
                 view.stopLoading();
 
+                startLoadToken = true;
                 // Get access token and show MainActivity
                 loadAccessToken(url.substring(url.indexOf('=') + 1, url.length()));
-
             } else {
                 super.onPageStarted(view, url, favicon);
             }
-
         }
 
         @Override
@@ -128,7 +124,7 @@ public class LoginActivity extends AppCompatActivity {
         dialog.setMessage(getString(R.string.loading));
 
         RestAdapter adapter = new RestAdapter.Builder()
-                .setEndpoint(REDIRECT_URL)
+                .setEndpoint(Utils.getInstance().GITTER_URL)
                 .build();
 
         IApiMethods methods = adapter.create(IApiMethods.class);
