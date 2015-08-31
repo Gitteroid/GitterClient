@@ -5,7 +5,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class MessageModel implements Parcelable {
     public String id;
@@ -17,14 +16,44 @@ public class MessageModel implements Parcelable {
     public boolean unread;
     public int readBy;
     //public List<String> urls;
-    public List<Mentions> mentions;
+    public ArrayList<Mentions> mentions;
     //public String issues;
     public int v;
 
-    public static class Mentions {
+    public static class Mentions implements Parcelable {
         public String screenName;
         public String userId;
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(this.screenName);
+            dest.writeString(this.userId);
+        }
+
+        public Mentions() {
+        }
+
+        protected Mentions(Parcel in) {
+            this.screenName = in.readString();
+            this.userId = in.readString();
+        }
+
+        public static final Creator<Mentions> CREATOR = new Creator<Mentions>() {
+            public Mentions createFromParcel(Parcel source) {
+                return new Mentions(source);
+            }
+
+            public Mentions[] newArray(int size) {
+                return new Mentions[size];
+            }
+        };
     }
+
 
     @Override
     public int describeContents() {
@@ -38,10 +67,10 @@ public class MessageModel implements Parcelable {
         dest.writeString(this.html);
         dest.writeString(this.sent);
         dest.writeString(this.editedAt);
-        dest.writeParcelable(this.fromUser, flags);
+        dest.writeParcelable(this.fromUser, 0);
         dest.writeByte(unread ? (byte) 1 : (byte) 0);
         dest.writeInt(this.readBy);
-        dest.writeList(this.mentions);
+        dest.writeTypedList(mentions);
         dest.writeInt(this.v);
     }
 
@@ -57,8 +86,7 @@ public class MessageModel implements Parcelable {
         this.fromUser = in.readParcelable(UserModel.class.getClassLoader());
         this.unread = in.readByte() != 0;
         this.readBy = in.readInt();
-        this.mentions = new ArrayList<Mentions>();
-        in.readList(this.mentions, List.class.getClassLoader());
+        this.mentions = in.createTypedArrayList(Mentions.CREATOR);
         this.v = in.readInt();
     }
 
