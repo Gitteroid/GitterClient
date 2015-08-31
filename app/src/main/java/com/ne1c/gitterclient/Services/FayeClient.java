@@ -137,6 +137,7 @@ public class FayeClient {
     public Observable<Void> connect(String url, String token) {
         mAcessToken = token;
 
+        mSubscriberMap.clear();
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(url).build();
         WebSocketCall.create(client, request).enqueue(mWsListner);
@@ -147,6 +148,8 @@ public class FayeClient {
 
     public Observable<Void> disconnect() {
         pintThread.interrupt();
+        mWebSocket = null;
+        mSubscriberMap.clear();
         return null;
     }
 

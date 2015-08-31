@@ -56,6 +56,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             holder.newMessageIndicator.setImageResource(R.color.unreadMessage);
             holder.newMessageIndicator
                     .animate().alpha(0f).setDuration(1000).withLayer();
+            messsage.unread = true;
         }
 
         if (!TextUtils.isEmpty(messsage.fromUser.username)) {
@@ -97,7 +98,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             @Override
             public void onClick(View v) {
                 mContext.startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse(Utils.getInstance().GITHUB_URL + message.fromUser.url)));
+                        Uri.parse(Utils.getInstance().GITHUB_URL + message.fromUser.url))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         };
     }

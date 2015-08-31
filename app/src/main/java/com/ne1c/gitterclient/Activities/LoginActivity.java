@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
+import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.ne1c.gitterclient.Utils;
 
 import retrofit.Callback;
@@ -138,6 +139,7 @@ public class LoginActivity extends AppCompatActivity {
                         Utils.getInstance().writeAuthResponsePref(authResponseModel);
                         dialog.dismiss();
 
+                        startService(new Intent(getApplicationContext(), NewMessagesService.class));
                         startActivity(new Intent(getApplicationContext(), MainActivity.class)
                                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
                         finish();

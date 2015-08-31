@@ -16,7 +16,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,7 +45,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_CHANGE_USER = "com.ne1c.gitterclient.ChangeUserReceiver";
-    public final static String BROADCAST_CHANGE_ROOMS = "com.ne1c.gitterclient.ChangeRoomsReceiver";
 
     public final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     public final String ROOMS_BUNDLE = "rooms_bundle";
@@ -131,15 +129,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 if (menuItem.getGroupId() == R.id.rooms_group && menuItem.getItemId() != R.id.home_nav_item) {
                     for (int i = 0; i < mRoomsList.size(); i++) {
                         if (menuItem.getTitle().equals(mRoomsList.get(i).name)) {
-                            EventBus.getDefault().post(mRoomsList.get(i));
-
                             selectedNavItem = i + 1; // Because item in navigation menu
+                            mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
-                            setTitle(menuItem.getTitle());
+                            mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+                            setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
+
+                            EventBus.getDefault().post(mRoomsList.get(i));
                         }
                     }
-
-                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
                     menuItem.setChecked(true);
                 }
@@ -216,11 +214,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (data.size() > 0) {
             selectedNavItem = 1;
 
+            // If activity open from notification
+            if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) == null) {
+                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+            } else {
+                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                        selectedNavItem = i + 1;
+                    }
+                }
+            }
+
             EventBus.getDefault().post(data.get(selectedNavItem - 1));
             mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
-
-            mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-
             setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
         }
 
