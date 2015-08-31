@@ -3,8 +3,10 @@ package com.ne1c.gitterclient.Activities;
 
 import android.app.LoaderManager;
 import android.content.AsyncTaskLoader;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -23,10 +25,12 @@ import android.widget.Toast;
 
 import com.makeramen.roundedimageview.RoundedImageView;
 import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
+import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.Models.UserModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
+import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.ne1c.gitterclient.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
@@ -40,9 +44,15 @@ import retrofit.client.Response;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
 
+    public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
+    public final static String BROADCAST_CHANGE_USER = "com.ne1c.gitterclient.ChangeUserReceiver";
+    public final static String BROADCAST_CHANGE_ROOMS = "com.ne1c.gitterclient.ChangeRoomsReceiver";
+
     public final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     public final String ROOMS_BUNDLE = "rooms_bundle";
     private final int LOAD_ROOM_ID = 1;
+
+    private ChatRoomFragment mChatRoomFragment;
 
     private NavigationView mNavView;
     private DrawerLayout mDrawerLayout;
@@ -51,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private TextView mNavNickname;
 
     private ArrayList<RoomModel> mRoomsList;
+    private RoomModel mActiveRoom;
 
     private RestAdapter mRestAdapter;
 
@@ -60,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
@@ -71,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         loadHeaderNavView();
 
-        getFragmentManager().beginTransaction().replace(R.id.fragment_container, new ChatRoomFragment()).commit();
+        mChatRoomFragment = new ChatRoomFragment();
+        getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
 
         if (savedInstanceState == null) {
             if (Utils.getInstance().isNetworkConnected()) {
@@ -89,6 +103,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             if (mRoomsList.size() > 0) {
                 EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
                 mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+
+                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
                 setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
             }
@@ -122,6 +138,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             setTitle(menuItem.getTitle());
                         }
                     }
+
+                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
                     menuItem.setChecked(true);
                 }
@@ -191,8 +209,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mRoomsList = data;
 
         for (RoomModel room : data) {
-            MenuItem item = mNavView.getMenu().add(R.id.rooms_group, 0, Menu.NONE, room.name);
-            item.setIcon(R.mipmap.ic_room);
+                MenuItem item = mNavView.getMenu().add(R.id.rooms_group, 0, Menu.NONE, room.name);
+                item.setIcon(R.mipmap.ic_room);
         }
 
         if (data.size() > 0) {
@@ -200,6 +218,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             EventBus.getDefault().post(data.get(selectedNavItem - 1));
             mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+
+            mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
             setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
         }
@@ -266,14 +286,30 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         @Override
         public ArrayList<RoomModel> loadInBackground() {
             IApiMethods methods = mAdapter.create(IApiMethods.class);
-            Log.d("MYTAG", "runLoadRooms");
             return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
         }
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         getLoaderManager().destroyLoader(LOAD_ROOM_ID);
+        unregisterReceiver(newMessageReceiver);
+        super.onDestroy();
+    }
+
+    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MessageModel message = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
+            RoomModel room = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
+            if (room.id.equals(mActiveRoom.id)) {
+                mChatRoomFragment.newMessage(message);
+            }
+        }
+    };
+
+    public interface NewMessageFragmentCallback {
+        void newMessage(MessageModel model);
     }
 }

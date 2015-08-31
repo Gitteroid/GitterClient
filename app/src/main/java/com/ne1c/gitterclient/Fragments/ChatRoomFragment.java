@@ -14,33 +14,39 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.ne1c.gitterclient.Activities.MainActivity;
 import com.ne1c.gitterclient.Adapters.MessagesAdapter;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.ws.WebSocketCall;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import de.greenrobot.event.EventBus;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
+import retrofit.client.OkClient;
 import retrofit.client.Response;
 
-public class ChatRoomFragment extends Fragment {
+public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback {
 
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
+    private LinearLayoutManager mListLayoutManager;
     private MessagesAdapter mMessagesAdapter;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
 
     private RestAdapter mRestApiAdapter;
-    private RestAdapter mRestStreamAdapter;
 
     private int countLoadMessage = 10;
 
@@ -48,7 +54,6 @@ public class ChatRoomFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EventBus.getDefault().register(this);
-
         setRetainInstance(true);
     }
 
@@ -61,7 +66,8 @@ public class ChatRoomFragment extends Fragment {
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
 
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
-        mMessagesList.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mListLayoutManager = new LinearLayoutManager(getActivity());
+        mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemAnimator(new DefaultItemAnimator());
         mMessagesList.setItemViewCacheSize(120);
 
@@ -78,46 +84,6 @@ public class ChatRoomFragment extends Fragment {
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
 
-        mRestStreamAdapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.getInstance().GITTER_STREAM_URL)
-                .build();
-
-        final LinearLayoutManager layoutManager = (LinearLayoutManager) mMessagesList.getLayoutManager();
-        mMessagesList.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-            int firstId;
-
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-
-                // Помичает сообщение как прочитанное при скроле
-                firstId = layoutManager.findFirstVisibleItemPosition();
-                int lastId = layoutManager.findLastCompletelyVisibleItemPosition();
-
-                // Диапазон видимых сообщений на экране
-                int range = lastId - firstId;
-
-                for (int i = firstId; i < range; i++) {
-                    if (mMessagesArr.get(i).unread) {
-                        mMessagesArr.get(i).unread = false;
-                        mMessagesAdapter.notifyDataSetChanged();
-                    }
-                }
-            }
-
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                // При скролле вверх будет подругражть новые сообщения
-//                if (newState == RecyclerView.SCROLL_STATE_DRAGGING && firstId == 0) {
-//                    countLoadMessage += 10;
-//                    loadMessageRoom(mRoom);
-//                }
-            }
-        });
-
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -129,7 +95,6 @@ public class ChatRoomFragment extends Fragment {
     @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
-
         super.onDestroy();
     }
 
@@ -155,28 +120,23 @@ public class ChatRoomFragment extends Fragment {
         });
     }
 
-    private void connectMessagesStream() {
-        IApiMethods methods = mRestStreamAdapter.create(IApiMethods.class);
-        methods.messageStream(Utils.getInstance().getBearer(), mRoom.id, new Callback<Response>() {
-            @Override
-            public void success(Response result, Response response) {
-                Log.d("STREAM", "new message succes");
-            }
 
-            @Override
-            public void failure(RetrofitError error) {
-                Log.d("STREAM", "new message failure");
-            }
-        });
-
-    }
-
-    // Event from MainActivity
+    // Event from MainActivity or notification
     public void onEvent(RoomModel model) {
         mRoom = model;
         countLoadMessage = 10;
-        connectMessagesStream();
 
         loadMessageRoom(mRoom);
+    }
+
+    @Override
+    public void newMessage(MessageModel model) {
+        if (mMessagesAdapter != null) {
+            if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 1) {
+                mMessagesArr.add(model);
+                mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
+                mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
+            }
+        }
     }
 }
