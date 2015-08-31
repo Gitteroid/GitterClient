@@ -4,10 +4,7 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import com.ne1c.gitterclient.Activities.MainActivity;
-import com.nostra13.universalimageloader.cache.disc.impl.LimitedAgeDiskCache;
-import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache;
-import com.nostra13.universalimageloader.cache.memory.impl.FuzzyKeyMemoryCache;
-import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
+import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -36,6 +33,8 @@ public class Application extends android.app.Application {
             startActivity(new Intent(getApplicationContext(), MainActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
+
+            startService(new Intent(getApplicationContext(), NewMessagesService.class));
         }
     }
 }
