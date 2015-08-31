@@ -15,6 +15,7 @@ import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.Headers;
+import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
@@ -29,7 +30,7 @@ public interface IApiMethods {
             "Accept: application/json"
     })
     @GET("/v1/rooms")
-    ArrayList<RoomModel> getCuurentUserRooms(@Header("Authorization") String access_token);
+    ArrayList<RoomModel> getCurrentUserRooms(@Header("Authorization") String access_token);
 
     @Headers({
             "Content-Type: application/json",
@@ -65,14 +66,6 @@ public interface IApiMethods {
     })
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
     void getUnreadItems(@Header("Authorization") String access_token, @Path("userId") String userId, @Path("roomId") String roomId);
-
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
-    @GET("/v1/rooms/{roomId}/chatMessages")
-    @Streaming
-    void messageStream(@Header("Authorization") String access_token, @Path("roomId") String roomId, Callback<Response> callback);
 
     @FormUrlEncoded
     @POST("/login/oauth/token")
