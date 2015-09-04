@@ -12,16 +12,17 @@ import android.net.ConnectivityManager;
 import android.os.IBinder;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.net.ConnectivityManagerCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.gitterclient.Activities.MainActivity;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
@@ -29,10 +30,13 @@ import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
+import retrofit.Callback;
 import retrofit.RestAdapter;
-import rx.Observable;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 import rx.functions.Action1;
 
 
@@ -41,10 +45,12 @@ public class NewMessagesService extends Service {
     public static final int NOTIF_REQUEST_CODE = 1000;
     public static final int NOTIF_CODE = 101;
 
-    public static final String BROADCAST_SEND_MESSAGE = "sendMessage";
+    public static final String BROADCAST_SEND_MESSAGE = "sendMessageBroadcast";
     public static final String FROM_ROOM_EXTRA_KEY = "fromRoom";
     public static final String NEW_MESSAGE_EXTRA_KEY = "newMessage";
     public static final String CHANGED_ROOMS_EXTRA_KEY = "newRoomsList";
+    public static final String TO_ROOM_MESSAGE_EXTRA_KEY = "toRoom";
+    public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
     private FayeClient mFayeClient;
     private ArrayList<RoomModel> mRoomsList;
@@ -58,15 +64,17 @@ public class NewMessagesService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-        registerReceiver(networkChangeReceiver, filter);
+        IntentFilter filterNetwork = new IntentFilter();
+        filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(networkChangeReceiver, filterNetwork);
 
+        IntentFilter filterSendMessage = new IntentFilter();
+        filterSendMessage.addAction(BROADCAST_SEND_MESSAGE);
+        registerReceiver(sendMessageReceiver, filterSendMessage);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         // Update rooms list, and update subscribers
         if (flags == START_FLAG_RETRY) {
             RestAdapter adapter = new RestAdapter.Builder()
@@ -84,7 +92,7 @@ public class NewMessagesService extends Service {
             thread.start();
         }
 
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     private void createSubribers() {
@@ -103,12 +111,18 @@ public class NewMessagesService extends Service {
                             intent.putExtra(FROM_ROOM_EXTRA_KEY, room);
 
                             Gson gson = new GsonBuilder().create();
-                            MessageModel message = gson.fromJson(response.getAsJsonObject("data").getAsJsonObject("model"), MessageModel.class);
+                            MessageModel message = null;
+                            if (response.getAsJsonObject("data") != null) {
+                                message = gson.fromJson(response.getAsJsonObject("data").getAsJsonObject("model"), MessageModel.class);
+                            }
 
                             intent.putExtra(NEW_MESSAGE_EXTRA_KEY, message);
                             if (message.text != null) {
                                 sendBroadcast(intent);
-                                sendNotificationMessage(room, message);
+
+                                if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username)) {
+                                    sendNotificationMessage(room, message);
+                                }
                             }
                         }
                     });
@@ -119,13 +133,39 @@ public class NewMessagesService extends Service {
     public void onDestroy() {
         mFayeClient.disconnect();
         unregisterReceiver(networkChangeReceiver);
+        unregisterReceiver(sendMessageReceiver);
         super.onDestroy();
     }
 
-    private BroadcastReceiver sendMessage = new BroadcastReceiver() {
+    private BroadcastReceiver sendMessageReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, final Intent intent) {
+            // 403 error
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        mFayeClient.sendMessageInRoom(intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY),
+//                                intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY));
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+//                    }
+//                }
+//            }).start();
 
+            RestAdapter adapter = new RestAdapter.Builder()
+                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                    .build();
+            final IApiMethods methods = adapter.create(IApiMethods.class);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    methods.sendMessage(Utils.getInstance().getBearer(),
+                            intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
+                            intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
+                }
+            }).start();
         }
     };
 
@@ -133,7 +173,7 @@ public class NewMessagesService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (mFayeClient == null) {
-                mFayeClient = new FayeClient(getApplicationContext());
+                mFayeClient = new FayeClient();
             }
 
             if (Utils.getInstance().isNetworkConnected()) {

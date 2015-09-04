@@ -17,6 +17,7 @@ import com.squareup.okhttp.ws.WebSocketListener;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,40 +56,23 @@ public class FayeClient {
 
     private String mAcessToken;
     private String mClientId;
-    private String mUserId;
 
     private WebSocket mWebSocket;
     private BehaviorSubject<Void> mConnectObservable;
-    private Context mContext;
 
     private Map<String, Subscriber<? super JsonObject>> mSubscriberMap = new HashMap<>();
 
     private Subscriber<Boolean> mAccessClientIdSub; // Access to client id
 
-    public FayeClient(Context context) {
-        mContext = context;
-    }
-
-    private Thread pintThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            try {
-                while (mWebSocket != null) {
-                    mWebSocket.sendPing(new Buffer());
-                    Thread.sleep(3000);
-                }
-            } catch (IOException | InterruptedException e) {
-                mWebSocket = null;
-                Log.d("MYTAG", "WEB SOCKET NULL");
-            }
-        }
-    });
+    private Thread pintThread;
 
     private WebSocketListener mWsListner = new WebSocketListener() {
         @Override
         public void onOpen(WebSocket webSocket, Response response) {
             mWebSocket = webSocket;
+            pintThread = createPintThread();
             pintThread.start();
+
             initMetaChannels();
 
             try {
@@ -148,7 +132,6 @@ public class FayeClient {
 
     public Observable<Void> disconnect() {
         pintThread.interrupt();
-        mWebSocket = null;
         mSubscriberMap.clear();
         return null;
     }
@@ -158,7 +141,6 @@ public class FayeClient {
             @Override
             public void call(JsonObject message) {
                 mClientId = message.get(KEY_CLIENT_ID).getAsString();
-                mUserId = message.getAsJsonObject("ext").get("userId").getAsString();
 
                 mAccessClientIdSub.onNext(true);
                 mAccessClientIdSub.onCompleted();
@@ -235,6 +217,23 @@ public class FayeClient {
         });
     }
 
+    private Thread createPintThread() {
+        return new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (mWebSocket != null) {
+                        mWebSocket.sendPing(new Buffer());
+                        Log.d("Faye", "ping");
+                        Thread.sleep(5000);
+                    }
+                } catch (IOException | InterruptedException e) {
+                    mWebSocket = null;
+                }
+            }
+        });
+    }
+
     public Observable<Boolean> accessClientIdSubscriber() {
             return Observable.create(new Observable.OnSubscribe<Boolean>() {
                 @Override
@@ -253,6 +252,18 @@ public class FayeClient {
 
     private void sendMessage(String message) throws IOException {
         mWebSocket.sendMessage(WebSocket.PayloadType.TEXT, new Buffer().writeString(message, Charset.defaultCharset()));
+    }
+
+    public void sendMessageInRoom(String text, String channel) throws IOException {
+        JsonObject message = new JsonObject();
+
+        JsonObject messageObj = new JsonObject();
+        messageObj.addProperty("text", text);
+
+        message.addProperty(KEY_CHANNEL, String.format("/api/v1/rooms/%s/chatMessages", channel));
+        message.add(KEY_DATA, messageObj);
+
+        sendMessage(message);
     }
 
     private void doHandshake() throws IOException {
