@@ -2,6 +2,7 @@ package com.ne1c.gitterclient.Adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -18,8 +19,10 @@ import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import java.text.DateFormat;
+import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -72,7 +75,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
-
         try {
             calendar.setTime(formatter.parse(messsage.sent));
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -103,6 +105,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             }
         };
     }
+
     @Override
     public int getItemCount() {
         return mMessages.size();

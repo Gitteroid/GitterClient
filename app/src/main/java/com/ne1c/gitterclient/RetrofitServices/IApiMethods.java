@@ -4,7 +4,6 @@ import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.Models.UserModel;
-import com.ne1c.gitterclient.Utils;
 
 import java.util.ArrayList;
 
@@ -15,12 +14,10 @@ import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.Headers;
-import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
 import retrofit.http.Query;
-import retrofit.http.Streaming;
 
 
 public interface IApiMethods {
@@ -39,12 +36,9 @@ public interface IApiMethods {
     @GET("/v1/rooms/{roomId}/chatMessages")
     void getMessagesRoom(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Query("limit") int limit, Callback<ArrayList<MessageModel>> callback);
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
+    @FormUrlEncoded
     @POST("/v1/rooms/{roomId}/chatMessages")
-    void sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Query("text") String messageText);
+    Response sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Field("text") String text);
 
     @Headers({
             "Content-Type: application/json",
