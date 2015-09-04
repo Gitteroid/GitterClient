@@ -9,9 +9,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.net.Uri;
-import android.support.design.widget.NavigationView;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -19,10 +18,18 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.makeramen.roundedimageview.RoundedImageView;
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
+import com.mikepenz.materialdrawer.Drawer;
+import com.mikepenz.materialdrawer.DrawerBuilder;
+import com.mikepenz.materialdrawer.holder.BadgeStyle;
+import com.mikepenz.materialdrawer.model.DividerDrawerItem;
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
@@ -32,6 +39,7 @@ import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.ne1c.gitterclient.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import java.util.ArrayList;
 
@@ -52,11 +60,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private ChatRoomFragment mChatRoomFragment;
 
-    private NavigationView mNavView;
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
-    private RoundedImageView mNavAvatar;
-    private TextView mNavNickname;
+
+    private Drawer mDrawer;
+    private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
+    private AccountHeader mAccountHeader;
+    private IProfile mMainProfile;
 
     private ArrayList<RoomModel> mRoomsList;
     private RoomModel mActiveRoom;
@@ -72,8 +82,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
+        }
+
         setNavigationView();
 
         mRestAdapter = new RestAdapter.Builder()
@@ -83,9 +96,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         loadHeaderNavView();
 
         mChatRoomFragment = new ChatRoomFragment();
-        getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
+
 
         if (savedInstanceState == null) {
+            getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
             if (Utils.getInstance().isNetworkConnected()) {
                 getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
             }
@@ -93,61 +107,149 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
 
+            BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
+                    getResources().getColor(R.color.md_green_700));
+            badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
+
             for (RoomModel room : mRoomsList) {
-                MenuItem item = mNavView.getMenu().add(R.id.rooms_group, 0, Menu.NONE, room.name);
-                item.setIcon(R.mipmap.ic_room);
+                if (room.unreadItems > 0) {
+                    String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
+                    mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
+                            .withBadge(badgeText)
+                            .withBadgeStyle(badgeStyle)
+                            .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                } else {
+                    mDrawer.addItemAtPosition(
+                            new PrimaryDrawerItem()
+                                    .withIcon(R.mipmap.ic_room)
+                                    .withName(room.name)
+                                    .withBadgeStyle(badgeStyle)
+                                    .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                }
             }
 
             if (mRoomsList.size() > 0) {
+                // If activity open from notification
+                if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) == null) {
+                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                } else {
+                    mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
+                    for (int i = 0; i < mRoomsList.size(); i++) {
+                        if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                            selectedNavItem = i + 1;
+                        }
+                    }
+                }
+
+                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+
                 EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
-                mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
+                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+            }
+        }
+    }
 
-                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
 
-                setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
+        if (mRoomsList != null) {
+            mActiveRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
+            for (int i = 0; i < mRoomsList.size(); i++) {
+                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                    selectedNavItem = i + 1;
+                }
             }
 
-            mNavView.getMenu().setGroupCheckable(R.id.rooms_group, true, true);
-            mNavView.getMenu().getItem(0).setCheckable(false);
+            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+            EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+
+            mDrawer.closeDrawer();
         }
     }
 
     private void setNavigationView() {
         mDrawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.app_name, R.string.app_name);
-        mNavView = (NavigationView) findViewById(R.id.navigation_view);
-        mNavAvatar = (RoundedImageView) mNavView.findViewById(R.id.avatar_header_image);
-        mNavNickname = (TextView) mNavView.findViewById(R.id.nickname_header_text);
 
-        mNavView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(MenuItem menuItem) {
-                if (menuItem.getItemId() == R.id.home_nav_item) {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
-                }
+        UserModel model = Utils.getInstance().getUserPref();
+        if (model != null) {
+            mMainProfile = new ProfileDrawerItem().withName(model.username).withIcon(ImageLoader.getInstance().loadImageSync(model.avatarUrlMedium));
+        } else {
+            mMainProfile = new ProfileDrawerItem().withName("Anonymous");
+        }
 
-                if (menuItem.getGroupId() == R.id.rooms_group && menuItem.getItemId() != R.id.home_nav_item) {
-                    for (int i = 0; i < mRoomsList.size(); i++) {
-                        if (menuItem.getTitle().equals(mRoomsList.get(i).name)) {
-                            selectedNavItem = i + 1; // Because item in navigation menu
-                            mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-
-                            mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
-                            setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
-
-                            EventBus.getDefault().post(mRoomsList.get(i));
-                        }
+        mAccountHeader = new AccountHeaderBuilder()
+                .withActivity(this)
+                .withHeaderBackground(R.color.bgHeader)
+                .withProfileImagesClickable(true)
+                .addProfiles(mMainProfile)
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
+                        startActivity(new Intent(Intent.ACTION_VIEW,
+                                Uri.parse(Utils.getInstance().GITHUB_URL + Utils.getInstance().getUserPref().url)));
+                        return false;
                     }
+                })
+                .build();
 
-                    menuItem.setChecked(true);
-                }
+        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_home).withName(getString(R.string.home))
+                .withSelectable(false)
+                .withSetSelected(false));
+        mDrawerItems.add(new DividerDrawerItem());
+        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings));
+        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
+        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_exit_to_app).withName(getString(R.string.exit)));
 
-                mDrawerLayout.closeDrawer(GravityCompat.START);
-                return true;
-            }
-        });
+        mDrawer = new DrawerBuilder().withActivity(this)
+                .withTranslucentStatusBar(false)
+                .withAccountHeader(mAccountHeader)
+                .withActionBarDrawerToggle(mDrawerToggle)
+                .withActionBarDrawerToggle(true)
+                .withActionBarDrawerToggleAnimated(true)
+                .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
+                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                    @Override
+                    public boolean onItemClick(View view, int position, IDrawerItem iDrawerItem) {
+                        if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
+                            return false;
+                        }
 
-        mDrawerToggle.syncState();
+                        PrimaryDrawerItem item = (PrimaryDrawerItem) iDrawerItem;
+
+                        if (item.getName().toString().equals(getString(R.string.home))) {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
+                        } else if (item.getName().toString().equals(getString(R.string.action_settings))) {
+                            startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
+                        } else if (item.getName().toString().equals(getString(R.string.signout))) {
+                            getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE).edit().clear().apply();
+                            startActivity(new Intent(getApplicationContext(), LoginActivity.class)
+                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+                        } else if (item.getName().toString().equals(getString(R.string.exit))) {
+                            finish();
+                        } else if (mRoomsList != null && mRoomsList.size() > 0) {
+                            for (int i = 0; i < mRoomsList.size(); i++) {
+                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
+                                    selectedNavItem = i + 1; // Because item in navigation menu
+                                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+
+                                    setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+
+                                    EventBus.getDefault().post(mRoomsList.get(i));
+                                }
+                            }
+                        }
+
+                        mDrawer.closeDrawer();
+                        return true;
+                    }
+                })
+                .build();
     }
 
     @Override
@@ -166,7 +268,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mDrawerToggle.syncState();
+        mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
     @Override
@@ -175,12 +277,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         switch (id) {
             case android.R.id.home:
-                if (!mNavView.isShown()) {
-                    mDrawerLayout.openDrawer(GravityCompat.START);
+                if (!mDrawer.isDrawerOpen()) {
+                    mDrawer.openDrawer();
                 } else {
-                    mDrawerLayout.closeDrawer(GravityCompat.START);
+                    mDrawer.closeDrawer();
                 }
+                break;
+            case R.id.action_refresh:
+                if (mActiveRoom != null) {
+                    EventBus.getDefault().post(mActiveRoom);
+                }
+                break;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -206,9 +315,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
         mRoomsList = data;
 
+        BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
+                getResources().getColor(R.color.md_green_700));
+        badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
+
         for (RoomModel room : data) {
-                MenuItem item = mNavView.getMenu().add(R.id.rooms_group, 0, Menu.NONE, room.name);
-                item.setIcon(R.mipmap.ic_room);
+            if (room.unreadItems > 0) {
+                String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
+                mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
+                        .withBadge(badgeText)
+                        .withBadgeStyle(badgeStyle)
+                        .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+            } else {
+                mDrawer.addItemAtPosition(
+                        new PrimaryDrawerItem()
+                                .withIcon(R.mipmap.ic_room)
+                                .withName(room.name)
+                                .withBadgeStyle(badgeStyle)
+                                .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+            }
         }
 
         if (data.size() > 0) {
@@ -227,13 +352,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 }
             }
 
-            EventBus.getDefault().post(data.get(selectedNavItem - 1));
-            mNavView.getMenu().getItem(selectedNavItem).setChecked(true);
-            setTitle(mNavView.getMenu().getItem(selectedNavItem).getTitle());
-        }
+            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
 
-        mNavView.getMenu().setGroupCheckable(R.id.rooms_group, true, true);
-        mNavView.getMenu().getItem(0).setCheckable(false);
+            EventBus.getDefault().post(data.get(selectedNavItem - 1));
+            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+        }
     }
 
     @Override
@@ -243,40 +366,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void loadHeaderNavView() {
         final UserModel model = Utils.getInstance().getUserPref();
-
         if (model != null) {
-            ImageLoader.getInstance().displayImage(model.avatarUrlMedium, mNavAvatar);
-            mNavNickname.setText(model.displayName);
-            mNavAvatar.setOnClickListener(new View.OnClickListener() {
+            mMainProfile.withName(model.username);
+            mAccountHeader.updateProfileByIdentifier(mMainProfile);
+
+            ImageLoader.getInstance().loadImage(model.avatarUrlMedium, new SimpleImageLoadingListener() {
                 @Override
-                public void onClick(View v) {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            Uri.parse(Utils.getInstance().GITHUB_URL + model.url)));
+                public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
+                    super.onLoadingComplete(imageUri, view, loadedImage);
+
+                    mMainProfile.withIcon(loadedImage);
+                    mAccountHeader.updateProfileByIdentifier(mMainProfile);
+                    updateUserFromServer();
                 }
             });
+        } else {
+            updateUserFromServer();
         }
-
-        IApiMethods methods = mRestAdapter.create(IApiMethods.class);
-        methods.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
-            @Override
-            public void success(final ArrayList<UserModel> userModel, Response response) {
-                Utils.getInstance().writeUserToPref(userModel.get(0));
-                ImageLoader.getInstance().displayImage(userModel.get(0).avatarUrlMedium, mNavAvatar);
-                mNavNickname.setText(userModel.get(0).displayName);
-                mNavAvatar.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        startActivity(new Intent(Intent.ACTION_VIEW,
-                                Uri.parse(Utils.getInstance().GITHUB_URL + userModel.get(0).url)));
-                    }
-                });
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
@@ -305,6 +411,32 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onDestroy();
     }
 
+    private void updateUserFromServer() {
+        IApiMethods methods = mRestAdapter.create(IApiMethods.class);
+        methods.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
+            @Override
+            public void success(final ArrayList<UserModel> userModel, Response response) {
+                Utils.getInstance().writeUserToPref(userModel.get(0));
+
+                ImageLoader.getInstance().loadImage(userModel.get(0).avatarUrlMedium, new SimpleImageLoadingListener() {
+                    @Override
+                    public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
+                        super.onLoadingComplete(imageUri, view, loadedImage);
+
+                        mMainProfile.withName(userModel.get(0).username);
+                        mMainProfile.withIcon(loadedImage);
+                        mAccountHeader.updateProfileByIdentifier(mMainProfile);
+                    }
+                });
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -313,6 +445,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             if (room.id.equals(mActiveRoom.id)) {
                 mChatRoomFragment.newMessage(message);
+            } else {
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(room.id)) {
+                        mRoomsList.get(i).unreadItems += 1;
+                        final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
+                        mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+                        mDrawer.getAdapter().notifyDataSetChanged();
+                    }
+                }
             }
         }
     };
