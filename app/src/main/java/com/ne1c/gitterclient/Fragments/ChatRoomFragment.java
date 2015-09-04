@@ -9,6 +9,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,12 +30,17 @@ import com.ne1c.gitterclient.Utils;
 import java.util.ArrayList;
 
 import de.greenrobot.event.EventBus;
+import in.srain.cube.views.ptr.PtrClassicFrameLayout;
+import in.srain.cube.views.ptr.PtrDefaultHandler;
+import in.srain.cube.views.ptr.PtrFrameLayout;
+import in.srain.cube.views.ptr.PtrHandler;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback {
+public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback,
+        MainActivity.RefreshRoomCallback {
 
     private EditText mMessageEditText;
     private ImageButton mSendButton;
@@ -42,6 +48,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private LinearLayoutManager mListLayoutManager;
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
+
+    private PtrClassicFrameLayout mPtrFrameLayout;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
@@ -62,6 +70,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_chat_room, container, false);
 
+        mPtrFrameLayout = (PtrClassicFrameLayout) v.findViewById(R.id.ptr_framelayout);
+
         mMessageEditText = (EditText) v.findViewById(R.id.message_edit_text);
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
 
@@ -73,14 +83,24 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemAnimator(new DefaultItemAnimator());
 
-        setDataToView();
+        setDataToView(savedInstanceState);
 
         return v;
     }
 
-    private void setDataToView() {
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable("scrollPosition", mMessagesList.getLayoutManager().onSaveInstanceState());
+    }
+
+    private void setDataToView(Bundle savedInstanceState) {
         mMessagesAdapter = new MessagesAdapter(getActivity().getApplicationContext(), mMessagesArr, mMessageEditText);
         mMessagesList.setAdapter(mMessagesAdapter);
+
+        if (savedInstanceState != null) {
+            mMessagesList.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable("scrollPosition"));
+        }
 
         mRestApiAdapter = new RestAdapter.Builder()
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
@@ -100,6 +120,19 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 }
             }
         });
+
+        mPtrFrameLayout.setPtrHandler(new PtrHandler() {
+            @Override
+            public boolean checkCanDoRefresh(PtrFrameLayout ptrFrameLayout, View view, View view1) {
+                return PtrDefaultHandler.checkContentCanBePulledDown(ptrFrameLayout, view, view1);
+            }
+
+            @Override
+            public void onRefreshBegin(PtrFrameLayout ptrFrameLayout) {
+                countLoadMessages += 10;
+                loadMessageRoom(mRoom, false, true);
+            }
+        });
     }
 
     @Override
@@ -108,9 +141,11 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         super.onDestroy();
     }
 
-    private void loadMessageRoom(final RoomModel roomModel) {
-        mMessagesList.setVisibility(View.GONE);
-        mProgressBar.setVisibility(View.VISIBLE);
+    private void loadMessageRoom(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
+        if (showProgressBar) {
+            mPtrFrameLayout.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
 
         IApiMethods methods = mRestApiAdapter.create(IApiMethods.class);
         methods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessages, new Callback<ArrayList<MessageModel>>() {
@@ -119,23 +154,30 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 mMessagesArr.clear();
                 mMessagesArr.addAll(messageModels);
 
-                if (countLoadMessages > 10) {
-                    mMessagesAdapter.notifyItemRangeInserted(0, countLoadMessages - 10);
+                if (refresh) {
+                    mMessagesAdapter.notifyDataSetChanged();
+                    mPtrFrameLayout.refreshComplete();
                 } else {
                     mMessagesAdapter.notifyDataSetChanged();
+
+                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+                        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+                    }
                 }
 
-                if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
-                    mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+                if (showProgressBar) {
+                    mPtrFrameLayout.setVisibility(View.VISIBLE);
+                    mProgressBar.setVisibility(View.GONE);
                 }
-
-                mMessagesList.setVisibility(View.VISIBLE);
-                mProgressBar.setVisibility(View.GONE);
             }
 
             @Override
             public void failure(RetrofitError error) {
-                mProgressBar.setVisibility(View.INVISIBLE);
+                if (showProgressBar) {
+                    mProgressBar.setVisibility(View.INVISIBLE);
+                } else if (mPtrFrameLayout.isRefreshing()){
+                    mPtrFrameLayout.refreshComplete();
+                }
 
                 Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -147,7 +189,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mRoom = model;
         countLoadMessages = 10;
 
-        loadMessageRoom(mRoom);
+        if (mPtrFrameLayout.isRefreshing()) {
+            mPtrFrameLayout.refreshComplete();
+        }
+        loadMessageRoom(mRoom, true, false);
     }
 
     @Override
@@ -165,5 +210,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 mMessageEditText.setText("");
             }
         }
+    }
+
+    @Override
+    public void onRefreshRoom() {
+        loadMessageRoom(mRoom, true, true);
     }
 }

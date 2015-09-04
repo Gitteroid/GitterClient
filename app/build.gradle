@@ -36,4 +36,5 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp-ws:2.5.0'
     compile 'io.reactivex:rxjava:1.0.14'
     compile 'com.android.support:support-v4:23.0.0'
+    compile 'in.srain.cube:ultra-ptr:1.0.10'
 }
