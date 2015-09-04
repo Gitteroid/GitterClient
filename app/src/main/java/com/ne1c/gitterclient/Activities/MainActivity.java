@@ -54,8 +54,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_CHANGE_USER = "com.ne1c.gitterclient.ChangeUserReceiver";
 
-    public final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
-    public final String ROOMS_BUNDLE = "rooms_bundle";
+    private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
+    private final String ROOMS_BUNDLE = "rooms_bundle";
+    private final String SAVED_INSTANCE_BUNDLE = "savedInstanceState";
     private final int LOAD_ROOM_ID = 1;
 
     private ChatRoomFragment mChatRoomFragment;
@@ -74,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RestAdapter mRestAdapter;
 
     private int selectedNavItem;
+    private boolean existSavedState = false; // Device was changed configuration
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,15 +97,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         loadHeaderNavView();
 
-        mChatRoomFragment = new ChatRoomFragment();
+        mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
+
+        if (mChatRoomFragment == null) {
+            mChatRoomFragment = new ChatRoomFragment();
+            getFragmentManager().beginTransaction().add(mChatRoomFragment, "chatRoom").commit();
+        }
 
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
+
             if (Utils.getInstance().isNetworkConnected()) {
                 getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
             }
         } else {
+            existSavedState = savedInstanceState.getBoolean(SAVED_INSTANCE_BUNDLE);
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
 
@@ -144,7 +153,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
                 mDrawer.setSelectionAtPosition(selectedNavItem + 1);
 
-                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
                 setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
             }
         }
@@ -240,7 +248,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
                                     setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
 
-                                    EventBus.getDefault().post(mRoomsList.get(i));
+                                    if (!existSavedState) {
+                                        EventBus.getDefault().post(mRoomsList.get(i));
+                                    }
                                 }
                             }
                         }
@@ -255,8 +265,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        existSavedState = true;
+
         outState.putInt(SELECT_NAV_ITEM_BUNDLE, selectedNavItem);
         outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList);
+        outState.putBoolean(SAVED_INSTANCE_BUNDLE, existSavedState);
     }
 
     @Override
@@ -285,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 break;
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
-                    EventBus.getDefault().post(mActiveRoom);
+                    mChatRoomFragment.onRefreshRoom();
                 }
                 break;
         }
@@ -460,5 +473,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public interface NewMessageFragmentCallback {
         void newMessage(MessageModel model);
+    }
+
+    public interface RefreshRoomCallback {
+        void onRefreshRoom();
     }
 }
