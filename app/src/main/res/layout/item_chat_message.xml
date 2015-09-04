@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:layout_marginBottom="4dp"
     android:layout_marginTop="2dp"
-    android:background="@drawable/button_click"
     android:orientation="horizontal"
     android:clickable="true"
     android:padding="4dp">
