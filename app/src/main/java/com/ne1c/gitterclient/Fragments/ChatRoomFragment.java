@@ -1,17 +1,20 @@
 package com.ne1c.gitterclient.Fragments;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.ne1c.gitterclient.Activities.MainActivity;
@@ -20,19 +23,15 @@ import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
+import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.ne1c.gitterclient.Utils;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.ws.WebSocketCall;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import de.greenrobot.event.EventBus;
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
-import retrofit.client.OkClient;
 import retrofit.client.Response;
 
 public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback {
@@ -42,13 +41,14 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private RecyclerView mMessagesList;
     private LinearLayoutManager mListLayoutManager;
     private MessagesAdapter mMessagesAdapter;
+    private ProgressBar mProgressBar;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
 
     private RestAdapter mRestApiAdapter;
 
-    private int countLoadMessage = 10;
+    private int countLoadMessages = 10;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,11 +65,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessageEditText = (EditText) v.findViewById(R.id.message_edit_text);
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
 
+        mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
+        mProgressBar.setIndeterminate(true);
+
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemAnimator(new DefaultItemAnimator());
-        mMessagesList.setItemViewCacheSize(120);
 
         setDataToView();
 
@@ -87,7 +89,15 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                if (!TextUtils.isEmpty(mMessageEditText.getText().toString())) {
+                    getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
+                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                } else {
+                    if (getView() != null) {
+                        Snackbar.make(getView(), R.string.message_empty, Snackbar.LENGTH_SHORT).show();
+                    }
+                }
             }
         });
     }
@@ -99,32 +109,43 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     private void loadMessageRoom(final RoomModel roomModel) {
+        mMessagesList.setVisibility(View.GONE);
+        mProgressBar.setVisibility(View.VISIBLE);
+
         IApiMethods methods = mRestApiAdapter.create(IApiMethods.class);
-        methods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessage, new Callback<ArrayList<MessageModel>>() {
+        methods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessages, new Callback<ArrayList<MessageModel>>() {
             @Override
             public void success(ArrayList<MessageModel> messageModels, Response response) {
                 mMessagesArr.clear();
                 mMessagesArr.addAll(messageModels);
 
-                if (countLoadMessage > 10) {
-                    mMessagesAdapter.notifyItemRangeInserted(0, countLoadMessage - 10);
+                if (countLoadMessages > 10) {
+                    mMessagesAdapter.notifyItemRangeInserted(0, countLoadMessages - 10);
                 } else {
                     mMessagesAdapter.notifyDataSetChanged();
                 }
+
+                if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+                    mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+                }
+
+                mMessagesList.setVisibility(View.VISIBLE);
+                mProgressBar.setVisibility(View.GONE);
             }
 
             @Override
             public void failure(RetrofitError error) {
+                mProgressBar.setVisibility(View.INVISIBLE);
+
                 Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-
     // Event from MainActivity or notification
     public void onEvent(RoomModel model) {
         mRoom = model;
-        countLoadMessage = 10;
+        countLoadMessages = 10;
 
         loadMessageRoom(mRoom);
     }
@@ -132,10 +153,16 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     @Override
     public void newMessage(MessageModel model) {
         if (mMessagesAdapter != null) {
+            mMessagesArr.add(model);
+            mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
+
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 1) {
-                mMessagesArr.add(model);
-                mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
+            }
+
+            if (model.text.equals(mMessageEditText.getText().toString()) &&
+                    model.fromUser.username.equals(Utils.getInstance().getUserPref().username)) {
+                mMessageEditText.setText("");
             }
         }
     }
