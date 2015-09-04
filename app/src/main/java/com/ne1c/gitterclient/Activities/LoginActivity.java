@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -42,6 +43,17 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (!TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
+            startActivity(new Intent(getApplicationContext(), MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            startService(new Intent(getApplicationContext(), NewMessagesService.class));
+
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_login);
 
         mAuthBut = (Button) findViewById(R.id.auth_but);
@@ -57,6 +69,7 @@ public class LoginActivity extends AppCompatActivity {
                 mAuthWebView.setVisibility(View.VISIBLE);
 
                 mAuthWebView.getSettings().setJavaScriptEnabled(true);
+                mAuthWebView.getSettings().setSaveFormData(false);
                 mAuthWebView.setWebViewClient(new MyWebViewClient());
                 mAuthWebView.setWebChromeClient(new WebChromeClient());
                 mAuthWebView.loadUrl(AUTH_URL);

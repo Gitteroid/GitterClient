@@ -1,10 +1,5 @@
 package com.ne1c.gitterclient;
 
-import android.content.Intent;
-import android.text.TextUtils;
-
-import com.ne1c.gitterclient.Activities.MainActivity;
-import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -28,13 +23,5 @@ public class Application extends android.app.Application {
                 .build();
 
         ImageLoader.getInstance().init(config);
-
-        if (!TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
-            startActivity(new Intent(getApplicationContext(), MainActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
-
-            startService(new Intent(getApplicationContext(), NewMessagesService.class));
-        }
     }
 }
