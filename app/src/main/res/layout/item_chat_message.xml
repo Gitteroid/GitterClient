@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout
     android:id="@+id/parent_layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginBottom="4dp"
     android:layout_marginTop="2dp"
-    android:orientation="horizontal"
+    android:background="?android:attr/selectableItemBackground"
     android:clickable="true"
+    android:orientation="horizontal"
     android:padding="4dp">
 
     <ImageView
@@ -17,7 +19,7 @@
         android:layout_marginLeft="4dp"
         android:layout_weight="0"
         android:adjustViewBounds="true"
-        tools:src="@mipmap/ic_launcher" />
+        tools:src="@mipmap/ic_launcher"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -35,7 +37,7 @@
             android:textColor="@color/material_blue_grey_800"
             android:textSize="16sp"
             android:textStyle="bold"
-            tools:text="Nickname" />
+            tools:text="Nickname"/>
 
         <TextView
             android:id="@+id/message_text"
@@ -43,7 +45,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textColor="@color/primary_text_default_material_light"
-            tools:text="adaa" />
+            tools:text="adaa"/>
 
     </LinearLayout>
 
@@ -53,8 +55,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_weight="0"
-        android:text="20:16"
-        android:textColor="@android:color/black" />
+        android:textColor="@android:color/black"
+        tools:text="20:16"/>
 
     <ImageView
         android:id="@+id/new_message_image"
@@ -62,5 +64,5 @@
         android:layout_height="24dp"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="4dp"
-        android:layout_weight="0" />
+        android:layout_weight="0"/>
 </LinearLayout>
