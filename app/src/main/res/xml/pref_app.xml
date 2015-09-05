@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
         android:title="@string/pref_header_notifications">
-        <CheckBoxPreference
+        <SwitchPreference
             android:defaultValue="true"
             android:key="enable_notif"
             android:title="@string/enable_notif"/>
