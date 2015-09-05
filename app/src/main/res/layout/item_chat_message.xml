@@ -54,15 +54,24 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:layout_marginRight="4dp"
         android:layout_weight="0"
         android:textColor="@android:color/black"
         tools:text="20:16"/>
 
+    <ImageButton
+        android:id="@+id/overflow_message_menu"
+        android:layout_width="24dp"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        android:background="?android:attr/selectableItemBackground"
+        android:src="@mipmap/ic_menu"/>
+
     <ImageView
         android:id="@+id/new_message_image"
-        android:layout_width="4dp"
-        android:layout_height="24dp"
-        android:layout_marginLeft="8dp"
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="1dp"
         android:layout_marginTop="4dp"
         android:layout_weight="0"/>
 </LinearLayout>

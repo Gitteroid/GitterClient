@@ -1,56 +1,77 @@
 package com.ne1c.gitterclient.Adapters;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.ne1c.gitterclient.Fragments.EditMessageFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
+import com.ne1c.gitterclient.Models.RoomModel;
+import com.ne1c.gitterclient.Models.UserModel;
 import com.ne1c.gitterclient.R;
+import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
-import java.text.DateFormat;
-import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
+
+import retrofit.Callback;
+import retrofit.RestAdapter;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHolder> {
 
+    private RoomModel mRoom;
     private ArrayList<MessageModel> mMessages;
-    private Context mContext;
+    private Activity mActivity;
     private EditText mMessageEditText;
+    private UserModel mUserModel;
+    private IApiMethods mApiMethods;
 
-    public MessagesAdapter(Context context, ArrayList<MessageModel> messages, EditText editText) {
-        mContext = context;
+    public MessagesAdapter(Activity activity, ArrayList<MessageModel> messages, EditText editText) {
+        mActivity = activity;
         mMessages = messages;
         mMessageEditText = editText;
+        mUserModel = Utils.getInstance().getUserPref();
+        mApiMethods = new RestAdapter
+                .Builder()
+                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .build()
+                .create(IApiMethods.class);
     }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_chat_message, parent, false));
+        return new ViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_message, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(ViewHolder holder, final int position) {
         MessageModel messsage = mMessages.get(position);
 
         holder.parentLayout.setOnClickListener(setParentLayoutClick(messsage));
@@ -68,7 +89,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             holder.nicknameText.setText(messsage.fromUser.displayName);
         }
 
-        holder.messageText.setText(mMessages.get(position).text);
+        if (TextUtils.isEmpty(messsage.text)) {
+            Spannable span = new SpannableString("This message was deleted");
+            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            holder.messageText.setText(span);
+        } else {
+            holder.messageText.setText(messsage.text);
+        }
 
         holder.avatarImage.setOnClickListener(setAvatarImageClick(messsage));
         ImageLoader.getInstance().displayImage(messsage.fromUser.avatarUrlSmall, holder.avatarImage);
@@ -84,6 +111,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         } catch (ParseException e) {
             e.printStackTrace();
         }
+
+        if (mMessages.get(position).fromUser.username.equals(mUserModel.username)) {
+            holder.messageMenu.setVisibility(View.VISIBLE);
+        } else {
+            holder.messageMenu.setVisibility(View.INVISIBLE);
+        }
+
+        holder.messageMenu.setOnClickListener(setMenuClick(messsage));
     }
 
     private View.OnClickListener setParentLayoutClick(final MessageModel message) {
@@ -99,9 +134,52 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mContext.startActivity(new Intent(Intent.ACTION_VIEW,
+                mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
                         Uri.parse(Utils.getInstance().GITHUB_URL + message.fromUser.url))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        };
+    }
+
+    private View.OnClickListener setMenuClick(final MessageModel message) {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final PopupMenu menu = new PopupMenu(mActivity, v);
+                menu.inflate(R.menu.menu_message);
+                menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+
+                        switch (item.getItemId()) {
+                            case R.id.edit_message_menu:
+                                EditMessageFragment fragment = new EditMessageFragment();
+                                Bundle args = new Bundle();
+                                args.putParcelable("message", message);
+                                fragment.setArguments(args);
+                                fragment.show(mActivity.getFragmentManager(), "dialogEdit");
+                                return true;
+                            case R.id.delete_message_menu:
+                                mApiMethods.updateMessage(Utils.getInstance().getBearer(), mRoom.id, message.id, "",
+                                        new Callback<MessageModel>() {
+                                            @Override
+                                            public void success(MessageModel model, Response response) {
+                                                Toast.makeText(mActivity, "Deleted", Toast.LENGTH_SHORT).show();
+                                            }
+
+                                            @Override
+                                            public void failure(RetrofitError error) {
+                                                Toast.makeText(mActivity, "Deleted error", Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                });
+
+                menu.show();
             }
         };
     }
@@ -111,11 +189,15 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         return mMessages.size();
     }
 
+    public void setRoom(RoomModel model) {
+        mRoom = model;
+    }
     public class ViewHolder extends RecyclerView.ViewHolder {
 
         public LinearLayout parentLayout;
         public ImageView avatarImage;
         public ImageView newMessageIndicator;
+        public ImageView messageMenu;
         public TextView nicknameText;
         public TextView messageText;
         public TextView timeText;
@@ -129,6 +211,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             nicknameText = (TextView) itemView.findViewById(R.id.nickname_text);
             messageText = (TextView) itemView.findViewById(R.id.message_text);
             timeText = (TextView) itemView.findViewById(R.id.time_text);
+            messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
         }
     }
 }

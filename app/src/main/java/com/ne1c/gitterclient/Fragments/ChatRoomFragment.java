@@ -9,6 +9,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Services.NewMessagesService;
+import com.ne1c.gitterclient.UpdateMessageEventBus;
 import com.ne1c.gitterclient.Utils;
 
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private RoomModel mRoom;
 
     private RestAdapter mRestApiAdapter;
+    private IApiMethods mApiMethods;
 
     private int countLoadMessages = 10;
 
@@ -96,7 +99,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     private void setDataToView(Bundle savedInstanceState) {
-        mMessagesAdapter = new MessagesAdapter(getActivity().getApplicationContext(), mMessagesArr, mMessageEditText);
+        mMessagesAdapter = new MessagesAdapter(getActivity(), mMessagesArr, mMessageEditText);
         mMessagesList.setAdapter(mMessagesAdapter);
 
         if (savedInstanceState != null) {
@@ -143,13 +146,15 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     private void loadMessageRoom(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
+        mMessagesAdapter.setRoom(roomModel);
+
         if (showProgressBar) {
             mPtrFrameLayout.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.VISIBLE);
         }
 
-        IApiMethods methods = mRestApiAdapter.create(IApiMethods.class);
-        methods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessages, new Callback<ArrayList<MessageModel>>() {
+        mApiMethods = mRestApiAdapter.create(IApiMethods.class);
+        mApiMethods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessages, new Callback<ArrayList<MessageModel>>() {
             @Override
             public void success(ArrayList<MessageModel> messageModels, Response response) {
                 mMessagesArr.clear();
@@ -176,7 +181,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             public void failure(RetrofitError error) {
                 if (showProgressBar) {
                     mProgressBar.setVisibility(View.INVISIBLE);
-                } else if (mPtrFrameLayout.isRefreshing()){
+                } else if (mPtrFrameLayout.isRefreshing()) {
                     mPtrFrameLayout.refreshComplete();
                 }
 
@@ -199,6 +204,14 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     @Override
     public void newMessage(MessageModel model) {
         if (mMessagesAdapter != null) {
+            for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message
+                if (mMessagesArr.get(i).id.equals(model.id)) {
+                    mMessagesArr.set(i, model);
+                    mMessagesAdapter.notifyItemChanged(i);
+                    return;
+                }
+            }
+
             mMessagesArr.add(model);
             mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
@@ -207,7 +220,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             }
 
             if (model.text.equals(mMessageEditText.getText().toString()) &&
-                    model.fromUser.username.equals(Utils.getInstance().getUserPref().username)) {
+                    model.fromUser.username.equals(Utils.getInstance().getUserPref().username)) { // If user send message
                 mMessageEditText.setText("");
             }
         }
@@ -216,5 +229,25 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     @Override
     public void onRefreshRoom() {
         loadMessageRoom(mRoom, true, true);
+    }
+
+    public void onEvent(UpdateMessageEventBus message) {
+        MessageModel newMessage = message.getMessageModel();
+
+        if (newMessage != null) {
+            mApiMethods.updateMessage(Utils.getInstance().getBearer(),
+                    mRoom.id, newMessage.id, newMessage.text,
+                    new Callback<MessageModel>() {
+                        @Override
+                        public void success(MessageModel model, Response response) {
+                            Toast.makeText(getActivity(), "Updated", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void failure(RetrofitError error) {
+                            Toast.makeText(getActivity(), "Updated error", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
     }
 }

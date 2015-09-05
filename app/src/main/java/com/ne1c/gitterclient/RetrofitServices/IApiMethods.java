@@ -9,13 +9,16 @@ import java.util.ArrayList;
 
 import retrofit.Callback;
 import retrofit.client.Response;
+import retrofit.http.Body;
 import retrofit.http.Field;
 import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.Headers;
+import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.PUT;
+import retrofit.http.Part;
 import retrofit.http.Path;
 import retrofit.http.Query;
 
@@ -40,12 +43,11 @@ public interface IApiMethods {
     @POST("/v1/rooms/{roomId}/chatMessages")
     Response sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Field("text") String text);
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
+    @FormUrlEncoded
     @PUT("/v1/rooms/{roomId}/chatMessages/{chatMessageId}")
-    void updateMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Path("chatMessageId") String chatMessageId, @Query("text") String messageText);
+    void updateMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId,
+                       @Path("chatMessageId") String chatMessageId,
+                       @Field("text") String messageText, Callback<MessageModel> callback);
 
     @Headers({
             "Content-Type: application/json",
