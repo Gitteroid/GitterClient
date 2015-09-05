@@ -95,8 +95,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
 
-        loadHeaderNavView();
-
         mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
 
         if (mChatRoomFragment == null) {
@@ -162,6 +160,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
+        // If get intent from notification
         if (mRoomsList != null) {
             mActiveRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
@@ -249,6 +248,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                                     setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
 
                                     if (!existSavedState) {
+                                        existSavedState = false;
                                         EventBus.getDefault().post(mRoomsList.get(i));
                                     }
                                 }
@@ -260,6 +260,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 })
                 .build();
+
+        updateUserFromServer();
     }
 
     @Override
@@ -375,27 +377,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoaderReset(Loader<ArrayList<RoomModel>> loader) {
 
-    }
-
-    private void loadHeaderNavView() {
-        final UserModel model = Utils.getInstance().getUserPref();
-        if (model != null) {
-            mMainProfile.withName(model.username);
-            mAccountHeader.updateProfileByIdentifier(mMainProfile);
-
-            ImageLoader.getInstance().loadImage(model.avatarUrlMedium, new SimpleImageLoadingListener() {
-                @Override
-                public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
-                    super.onLoadingComplete(imageUri, view, loadedImage);
-
-                    mMainProfile.withIcon(loadedImage);
-                    mAccountHeader.updateProfileByIdentifier(mMainProfile);
-                    updateUserFromServer();
-                }
-            });
-        } else {
-            updateUserFromServer();
-        }
     }
 
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
