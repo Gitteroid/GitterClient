@@ -13,7 +13,7 @@ import java.util.Random;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private final int FRAGMENT_CONTAINER_ID = new Random().nextInt();
+    private final int FRAGMENT_CONTAINER_ID = Integer.valueOf(666);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
