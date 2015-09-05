@@ -9,7 +9,6 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,7 +80,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
-        mMessagesList.setItemAnimator(new DefaultItemAnimator());
+        DefaultItemAnimator anim = new DefaultItemAnimator();
+        anim.setAddDuration(1000);
+        mMessagesList.setItemAnimator(anim);
 
         setDataToView(savedInstanceState);
 
@@ -201,7 +202,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             mMessagesArr.add(model);
             mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
-            if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 1) {
+            if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
             }
 
