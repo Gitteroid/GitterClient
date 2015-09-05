@@ -16,4 +16,7 @@
     <string name="new_message">New message</string>
     <string name="exit">Exit</string>
     <string name="message_empty">Text of message is empty</string>
+    <string name="enable_notif">Enable notification</string>
+    <string name="enable_notif_sound">Notification sound</string>
+    <string name="enable_notif_vibro">Notification vibration</string>
 </resources>

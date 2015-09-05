@@ -7,9 +7,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.NotificationCompat;
 import android.text.Spannable;
@@ -120,7 +122,8 @@ public class NewMessagesService extends Service {
                             if (message.text != null) {
                                 sendBroadcast(intent);
 
-                                if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username)) {
+                                if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username) &&
+                                        PreferenceManager.getDefaultSharedPreferences(NewMessagesService.this).getBoolean("enable_notif", true)) {
                                     sendNotificationMessage(room, message);
                                 }
                             }
@@ -197,6 +200,11 @@ public class NewMessagesService extends Service {
     };
 
     private void sendNotificationMessage(RoomModel room, MessageModel message) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean sound = prefs.getBoolean("notif_sound", true);
+        boolean vibro = prefs.getBoolean("notif_vibro", true);
+
+
         Intent notifIntent = new Intent(getApplicationContext(), MainActivity.class);
         notifIntent.putExtra(FROM_ROOM_EXTRA_KEY, room);
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -224,8 +232,17 @@ public class NewMessagesService extends Service {
 
         NotificationManagerCompat notifMgr = NotificationManagerCompat.from(getApplicationContext());
         Notification notification = builder.build();
-        notification.defaults = Notification.DEFAULT_LIGHTS |
-                Notification.DEFAULT_VIBRATE;
+
+        notification.defaults = Notification.DEFAULT_LIGHTS;
+
+        if (vibro) {
+            notification.defaults |= Notification.DEFAULT_VIBRATE;
+        }
+
+        if (sound) {
+            notification.defaults |= Notification.DEFAULT_SOUND;
+        }
+
         notification.flags |= NotificationCompat.FLAG_AUTO_CANCEL;
 
         notifMgr.notify(NOTIF_CODE, notification);
