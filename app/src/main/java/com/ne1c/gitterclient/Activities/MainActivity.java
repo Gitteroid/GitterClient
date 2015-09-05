@@ -89,8 +89,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             getSupportActionBar().setHomeButtonEnabled(true);
         }
 
-        setNavigationView();
-
         mRestAdapter = new RestAdapter.Builder()
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
@@ -102,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             getFragmentManager().beginTransaction().add(mChatRoomFragment, "chatRoom").commit();
         }
 
+        setNavigationView();
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
@@ -208,7 +207,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new DividerDrawerItem());
-        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings));
+        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings)
+                .withSelectable(false)
+                .withSetSelected(false));
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_exit_to_app).withName(getString(R.string.exit)));
 
@@ -248,8 +249,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                                     setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
 
                                     if (!existSavedState) {
-                                        existSavedState = false;
                                         EventBus.getDefault().post(mRoomsList.get(i));
+                                    } else {
+                                        existSavedState = false;
                                     }
                                 }
                             }
