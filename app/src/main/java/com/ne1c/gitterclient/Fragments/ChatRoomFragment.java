@@ -9,7 +9,6 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -114,9 +113,15 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             @Override
             public void onClick(View v) {
                 if (!TextUtils.isEmpty(mMessageEditText.getText().toString())) {
-                    getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
-                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                    if (Utils.getInstance().isNetworkConnected()) {
+                        getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                                .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
+                                .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                    } else {
+                        if (getView() != null) {
+                            Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
+                        }
+                    }
                 } else {
                     if (getView() != null) {
                         Snackbar.make(getView(), R.string.message_empty, Snackbar.LENGTH_SHORT).show();
