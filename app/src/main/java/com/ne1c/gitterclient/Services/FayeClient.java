@@ -1,6 +1,5 @@
 package com.ne1c.gitterclient.Services;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -17,9 +16,9 @@ import com.squareup.okhttp.ws.WebSocketListener;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okio.Buffer;
 import okio.BufferedSource;
@@ -66,6 +65,12 @@ public class FayeClient {
 
     private Thread pintThread;
 
+    private UnexpectedSituationCallback mCallback;
+
+    public FayeClient(UnexpectedSituationCallback callback) {
+        mCallback = callback;
+    }
+
     private WebSocketListener mWsListner = new WebSocketListener() {
         @Override
         public void onOpen(WebSocket webSocket, Response response) {
@@ -101,7 +106,9 @@ public class FayeClient {
 
         @Override
         public void onClose(int code, String reason) {
+            Log.d("MYTAG", "NULL ONCLOSE");
             mWebSocket = null;
+            mCallback.disconnect();
         }
     };
 
@@ -121,7 +128,6 @@ public class FayeClient {
     public Observable<Void> connect(String url, String token) {
         mAcessToken = token;
 
-        mSubscriberMap.clear();
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(url).build();
         WebSocketCall.create(client, request).enqueue(mWsListner);
@@ -131,7 +137,9 @@ public class FayeClient {
     }
 
     public Observable<Void> disconnect() {
-        pintThread.interrupt();
+        if (pintThread != null) {
+            pintThread.interrupt();
+        }
         mSubscriberMap.clear();
         return null;
     }
@@ -228,6 +236,7 @@ public class FayeClient {
                         Thread.sleep(5000);
                     }
                 } catch (IOException | InterruptedException e) {
+                    Log.d("MYTAG", "NULL PINT");
                     mWebSocket = null;
                 }
             }
@@ -285,5 +294,9 @@ public class FayeClient {
         json.addProperty(KEY_CONN_TYPE, VALUE_CONN_TYPE);
 
         sendMessage(json);
+    }
+
+    public interface UnexpectedSituationCallback {
+        void disconnect();
     }
 }

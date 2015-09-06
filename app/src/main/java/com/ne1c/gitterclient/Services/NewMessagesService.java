@@ -19,12 +19,10 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.gitterclient.Activities.MainActivity;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
@@ -32,17 +30,14 @@ import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
-import retrofit.Callback;
 import retrofit.RestAdapter;
-import retrofit.RetrofitError;
 import retrofit.client.Response;
 import rx.functions.Action1;
 
 
-public class NewMessagesService extends Service {
+public class NewMessagesService extends Service implements FayeClient.UnexpectedSituationCallback {
 
     public static final int NOTIF_REQUEST_CODE = 1000;
     public static final int NOTIF_CODE = 101;
@@ -79,15 +74,22 @@ public class NewMessagesService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Update rooms list, and update subscribers
         if (flags == START_FLAG_RETRY) {
-            RestAdapter adapter = new RestAdapter.Builder()
-                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                    .build();
-            final IApiMethods methods = adapter.create(IApiMethods.class);
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                    createSubribers();
+                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
+                    mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
+                        @Override
+                        public void call(Boolean aBoolean) {
+                            RestAdapter adapter = new RestAdapter.Builder()
+                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                                    .build();
+                            final IApiMethods methods = adapter.create(IApiMethods.class);
+
+                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+                            createSubribers();
+                        }
+                    });
                 }
             });
 
@@ -99,9 +101,6 @@ public class NewMessagesService extends Service {
 
     private void createSubribers() {
         String channelEndpoint = "/api/v1/rooms/%s/chatMessages";
-        String roomsUserEndpoint = "/api/v1/user/%s/rooms";
-        String roomEventEndpoint = "/api/v1/rooms/%s/events";
-        String userEventsEndpoint = "/api/v1/user/%s";
 
         for (final RoomModel room : mRoomsList) {
             mFayeClient.subscribeChannel(String.format(channelEndpoint, room.id))
@@ -167,6 +166,7 @@ public class NewMessagesService extends Service {
                     methods.sendMessage(Utils.getInstance().getBearer(),
                             intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
                             intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
+
                 }
             }).start();
         }
@@ -176,7 +176,7 @@ public class NewMessagesService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (mFayeClient == null) {
-                mFayeClient = new FayeClient();
+                mFayeClient = new FayeClient(NewMessagesService.this);
             }
 
             if (Utils.getInstance().isNetworkConnected()) {
@@ -246,5 +246,24 @@ public class NewMessagesService extends Service {
         notification.flags |= NotificationCompat.FLAG_AUTO_CANCEL;
 
         notifMgr.notify(NOTIF_CODE, notification);
+    }
+
+    @Override
+    public void disconnect() {
+        Log.d("MYTAG", "reconnect");
+        mFayeClient = new FayeClient(this);
+        mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
+        mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
+            @Override
+            public void call(Boolean aBoolean) {
+                RestAdapter adapter = new RestAdapter.Builder()
+                        .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                        .build();
+                final IApiMethods methods = adapter.create(IApiMethods.class);
+
+                mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+                createSubribers();
+            }
+        });
     }
 }
