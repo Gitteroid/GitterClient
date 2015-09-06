@@ -233,7 +233,11 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
     @Override
     public void onRefreshRoom() {
-        loadMessageRoom(mRoom, true, true);
+        if (Utils.getInstance().isNetworkConnected()) {
+            loadMessageRoom(mRoom, true, true);
+        } else if (getView() != null) {
+            Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
+        }
     }
 
     public void onEvent(UpdateMessageEventBus message) {
