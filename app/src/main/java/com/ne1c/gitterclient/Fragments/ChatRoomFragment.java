@@ -58,6 +58,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private IApiMethods mApiMethods;
 
     private int countLoadMessages = 10;
+    private boolean isRefreshing = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -104,6 +105,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         if (savedInstanceState != null) {
             mMessagesList.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable("scrollPosition"));
         }
+
+        if (isRefreshing) {
+            mPtrFrameLayout.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+
+        mPtrFrameLayout.setSaveEnabled(true);
 
         mRestApiAdapter = new RestAdapter.Builder()
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
@@ -153,6 +161,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private void loadMessageRoom(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
         mMessagesAdapter.setRoom(roomModel);
 
+        isRefreshing = showProgressBar;
         if (showProgressBar) {
             mPtrFrameLayout.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.VISIBLE);
