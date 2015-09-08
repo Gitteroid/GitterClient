@@ -4,6 +4,7 @@ package com.ne1c.gitterclient.Activities;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -63,16 +64,20 @@ public class LoginActivity extends AppCompatActivity {
         mAuthBut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mAuthBut.setVisibility(View.GONE);
-                mLogoImg.setVisibility(View.GONE);
+                if (Utils.getInstance().isNetworkConnected()) {
+                    mAuthBut.setVisibility(View.GONE);
+                    mLogoImg.setVisibility(View.GONE);
 
-                mAuthWebView.setVisibility(View.VISIBLE);
+                    mAuthWebView.setVisibility(View.VISIBLE);
 
-                mAuthWebView.getSettings().setJavaScriptEnabled(true);
-                mAuthWebView.getSettings().setSaveFormData(false);
-                mAuthWebView.setWebViewClient(new MyWebViewClient());
-                mAuthWebView.setWebChromeClient(new WebChromeClient());
-                mAuthWebView.loadUrl(AUTH_URL);
+                    mAuthWebView.getSettings().setJavaScriptEnabled(true);
+                    mAuthWebView.getSettings().setSaveFormData(false);
+                    mAuthWebView.setWebViewClient(new MyWebViewClient());
+                    mAuthWebView.setWebChromeClient(new WebChromeClient());
+                    mAuthWebView.loadUrl(AUTH_URL);
+                } else {
+                    Snackbar.make(getWindow().getDecorView().findViewById(android.R.id.content), R.string.no_network, Snackbar.LENGTH_SHORT).show();
+                }
             }
         });
     }
