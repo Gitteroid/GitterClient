@@ -30,6 +30,8 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.ne1c.gitterclient.Database.ClientDatabase;
+import com.ne1c.gitterclient.Database.DatabaseLoader;
 import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private final String ROOMS_BUNDLE = "rooms_bundle";
     private final String SAVED_INSTANCE_BUNDLE = "savedInstanceState";
     private final int LOAD_ROOM_ID = 1;
+    private final int LOAD_ROOM_DATABASE_ID = 2;
 
     private ChatRoomFragment mChatRoomFragment;
 
@@ -73,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RoomModel mActiveRoom;
 
     private RestAdapter mRestAdapter;
+    private ClientDatabase mClientDatabase;
 
     private int selectedNavItem;
     private boolean existSavedState = false; // Device was changed configuration
@@ -93,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
 
+        mClientDatabase = new ClientDatabase(getApplicationContext());
+
         mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
 
         if (mChatRoomFragment == null) {
@@ -104,10 +110,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
+            getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
 
             if (Utils.getInstance().isNetworkConnected()) {
                 getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
             }
+
+            updateUserFromServer();
         } else {
             existSavedState = savedInstanceState.getBoolean(SAVED_INSTANCE_BUNDLE);
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
@@ -186,6 +195,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mMainProfile = new ProfileDrawerItem().withName(model.username).withIcon(ImageLoader.getInstance().loadImageSync(model.avatarUrlMedium));
         } else {
             mMainProfile = new ProfileDrawerItem().withName("Anonymous");
+            mAccountHeader.setActiveProfile(mMainProfile);
         }
 
         mAccountHeader = new AccountHeaderBuilder()
@@ -235,23 +245,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
                         } else if (item.getName().toString().equals(getString(R.string.signout))) {
                             getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE).edit().clear().apply();
+
                             startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                     .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
                         } else if (item.getName().toString().equals(getString(R.string.exit))) {
                             finish();
                         } else if (mRoomsList != null && mRoomsList.size() > 0) {
-                            for (int i = 0; i < mRoomsList.size(); i++) {
-                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
-                                    selectedNavItem = i + 1; // Because item in navigation menu
-                                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                            if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
+                                for (int i = 0; i < mRoomsList.size(); i++) {
+                                    if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
+                                        selectedNavItem = i + 1; // Because item "Home" in navigation menu
+                                        mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
-                                    setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                                        setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
 
-                                    if (!existSavedState) {
-                                        EventBus.getDefault().post(mRoomsList.get(i));
-                                    } else {
-                                        existSavedState = false;
+                                        if (!existSavedState) {
+                                            EventBus.getDefault().post(mRoomsList.get(i));
+                                        } else {
+                                            existSavedState = false;
+                                        }
                                     }
                                 }
                             }
@@ -262,8 +275,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 })
                 .build();
-
-        updateUserFromServer();
     }
 
     @Override
@@ -321,7 +332,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         Loader<ArrayList<RoomModel>> loader = null;
         switch (id) {
             case LOAD_ROOM_ID:
-                loader = new RoomAsyncLoader(getApplicationContext());
+                loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_SERVER);
+                return loader;
+            case LOAD_ROOM_DATABASE_ID:
+                loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_DATABASE);
                 return loader;
             default:
                 return loader;
@@ -330,7 +344,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
+        if (loader.getId() == LOAD_ROOM_DATABASE_ID && Utils.getInstance().isNetworkConnected()) {
+            getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+        } else if (loader.getId() == LOAD_ROOM_ID) {
+            mClientDatabase.insertRooms(data);
+        }
+
+        setItemsDrawer(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<ArrayList<RoomModel>> loader) {
+
+    }
+
+    private void setItemsDrawer(ArrayList<RoomModel> data) {
         mRoomsList = data;
+
+        // Remove old items
+        // 5 but items: "Home", "Divider", "Settings", etc.
+        while (mDrawer.getDrawerItems().size() != 5) {
+            mDrawer.removeItemByPosition(2); // 2? Wtf?
+        }
 
         BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
                 getResources().getColor(R.color.md_green_700));
@@ -358,7 +393,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             // If activity open from notification
             if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) == null) {
-                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                //mActiveRoom = mRoomsList.get(selectedNavItem - 1);
             } else {
                 mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
@@ -370,40 +405,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
 
             mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-
-            EventBus.getDefault().post(data.get(selectedNavItem - 1));
-            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-        }
-    }
-
-    @Override
-    public void onLoaderReset(Loader<ArrayList<RoomModel>> loader) {
-
-    }
-
-    static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
-
-        private RestAdapter mAdapter;
-
-        public RoomAsyncLoader(Context context) {
-            super(context);
-
-            mAdapter = new RestAdapter.Builder()
-                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                    .build();
-        }
-
-        @Override
-        public ArrayList<RoomModel> loadInBackground() {
-            IApiMethods methods = mAdapter.create(IApiMethods.class);
-            return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
         }
     }
 
     @Override
     protected void onDestroy() {
         getLoaderManager().destroyLoader(LOAD_ROOM_ID);
+        getLoaderManager().destroyLoader(LOAD_ROOM_DATABASE_ID);
+        mClientDatabase.close();
         unregisterReceiver(newMessageReceiver);
+
         super.onDestroy();
     }
 
@@ -422,6 +433,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         mMainProfile.withName(userModel.get(0).username);
                         mMainProfile.withIcon(loadedImage);
                         mAccountHeader.updateProfileByIdentifier(mMainProfile);
+                        mAccountHeader.setActiveProfile(mMainProfile.getIdentifier());
                     }
                 });
             }
@@ -453,6 +465,42 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
         }
     };
+
+    static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
+        public static final int FROM_SERVER = 0;
+        public static final int FROM_DATABASE = 1;
+
+        private RestAdapter mAdapter;
+        private final int mFlag;
+
+        private MainActivity mActivity;
+
+        public RoomAsyncLoader(MainActivity activity, int flag) {
+            super(activity);
+
+            mActivity = activity;
+
+            mFlag = flag;
+
+            if (mFlag == FROM_SERVER) {
+                mAdapter = new RestAdapter.Builder()
+                        .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                        .build();
+            }
+        }
+
+        @Override
+        public ArrayList<RoomModel> loadInBackground() {
+            if (mFlag == FROM_SERVER) {
+                IApiMethods methods = mAdapter.create(IApiMethods.class);
+                return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+            } else if (mFlag == FROM_DATABASE) {
+                return mActivity.mClientDatabase.getRooms();
+            } else {
+                return null;
+            }
+        }
+    }
 
     public interface NewMessageFragmentCallback {
         void newMessage(MessageModel model);
