@@ -5,6 +5,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class MessageModel implements Parcelable {
     public String id;
@@ -15,7 +17,7 @@ public class MessageModel implements Parcelable {
     public UserModel fromUser;
     public boolean unread;
     public int readBy;
-    //public List<String> urls;
+    public List<Urls> urls;
     public ArrayList<Mentions> mentions;
     //public String issues;
     public int v;
@@ -54,6 +56,36 @@ public class MessageModel implements Parcelable {
         };
     }
 
+    public static class Urls implements Parcelable {
+        public String url;
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(this.url);
+        }
+
+        public Urls() {
+        }
+
+        protected Urls(Parcel in) {
+            this.url = in.readString();
+        }
+
+        public static final Creator<Urls> CREATOR = new Creator<Urls>() {
+            public Urls createFromParcel(Parcel source) {
+                return new Urls(source);
+            }
+
+            public Urls[] newArray(int size) {
+                return new Urls[size];
+            }
+        };
+    }
 
     @Override
     public int describeContents() {
@@ -70,6 +102,7 @@ public class MessageModel implements Parcelable {
         dest.writeParcelable(this.fromUser, 0);
         dest.writeByte(unread ? (byte) 1 : (byte) 0);
         dest.writeInt(this.readBy);
+        dest.writeTypedList(urls);
         dest.writeTypedList(mentions);
         dest.writeInt(this.v);
     }
@@ -86,6 +119,7 @@ public class MessageModel implements Parcelable {
         this.fromUser = in.readParcelable(UserModel.class.getClassLoader());
         this.unread = in.readByte() != 0;
         this.readBy = in.readInt();
+        this.urls = in.createTypedArrayList(Urls.CREATOR);
         this.mentions = in.createTypedArrayList(Mentions.CREATOR);
         this.v = in.readInt();
     }
