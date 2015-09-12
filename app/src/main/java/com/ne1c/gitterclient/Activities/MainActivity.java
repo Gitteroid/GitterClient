@@ -32,7 +32,6 @@ import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.gitterclient.Database.ClientDatabase;
-import com.ne1c.gitterclient.Database.DatabaseLoader;
 import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
@@ -55,11 +54,9 @@ import retrofit.client.Response;
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
 
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
-    public final static String BROADCAST_CHANGE_USER = "com.ne1c.gitterclient.ChangeUserReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
-    private final String SAVED_INSTANCE_BUNDLE = "savedInstanceState";
     private final int LOAD_ROOM_ID = 1;
     private final int LOAD_ROOM_DATABASE_ID = 2;
 
@@ -80,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ClientDatabase mClientDatabase;
 
     private int selectedNavItem;
-    private boolean existSavedState = false; // Device was changed configuration
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,7 +125,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             updateUserFromServer();
         } else {
-            existSavedState = savedInstanceState.getBoolean(SAVED_INSTANCE_BUNDLE);
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
 
@@ -270,12 +265,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                                         mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
                                         setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-
-                                        if (!existSavedState) {
-                                            EventBus.getDefault().post(mRoomsList.get(i));
-                                        } else {
-                                            existSavedState = false;
-                                        }
+                                        EventBus.getDefault().post(mRoomsList.get(i));
                                     }
                                 }
                             }
@@ -291,11 +281,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        existSavedState = true;
 
         outState.putInt(SELECT_NAV_ITEM_BUNDLE, selectedNavItem);
         outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList);
-        outState.putBoolean(SAVED_INSTANCE_BUNDLE, existSavedState);
     }
 
     @Override
