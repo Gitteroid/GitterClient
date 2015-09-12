@@ -15,6 +15,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -84,6 +85,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
+            startActivity(new Intent(getApplicationContext(), LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            finish();
+            return;
+        }
+        startService(new Intent(getApplicationContext(), NewMessagesService.class));
+
         setContentView(R.layout.activity_main);
 
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));

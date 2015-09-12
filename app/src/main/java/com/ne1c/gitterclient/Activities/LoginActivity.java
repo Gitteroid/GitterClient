@@ -45,16 +45,6 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (!TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
-            startActivity(new Intent(getApplicationContext(), MainActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            startService(new Intent(getApplicationContext(), NewMessagesService.class));
-
-            finish();
-            return;
-        }
-
         setContentView(R.layout.activity_login);
 
         mAuthBut = (Button) findViewById(R.id.auth_but);
