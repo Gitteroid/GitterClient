@@ -1,22 +1,23 @@
 package com.ne1c.gitterclient.Adapters;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.StyleSpan;
+import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -72,38 +73,42 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
-        MessageModel messsage = mMessages.get(position);
+        MessageModel message = mMessages.get(position);
 
-        holder.parentLayout.setOnClickListener(setParentLayoutClick(messsage));
+        if (message.urls != null) {
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message));
+        }
 
-        if (messsage.unread) {
+        holder.parentLayout.setOnClickListener(setParentLayoutClick(message));
+
+        if (message.unread) {
             holder.newMessageIndicator.setImageResource(R.color.unreadMessage);
             holder.newMessageIndicator
                     .animate().alpha(0f).setDuration(1000).withLayer();
-            messsage.unread = true;
+            message.unread = true;
         }
 
-        if (!TextUtils.isEmpty(messsage.fromUser.username)) {
-            holder.nicknameText.setText(messsage.fromUser.username);
+        if (!TextUtils.isEmpty(message.fromUser.username)) {
+            holder.nicknameText.setText(message.fromUser.username);
         } else {
-            holder.nicknameText.setText(messsage.fromUser.displayName);
+            holder.nicknameText.setText(message.fromUser.displayName);
         }
 
-        if (TextUtils.isEmpty(messsage.text)) {
+        if (TextUtils.isEmpty(message.text)) {
             Spannable span = new SpannableString("This message was deleted");
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             holder.messageText.setText(span);
         } else {
-            holder.messageText.setText(messsage.text);
+            holder.messageText.setText(message.text);
         }
 
-        holder.avatarImage.setOnClickListener(setAvatarImageClick(messsage));
-        ImageLoader.getInstance().displayImage(messsage.fromUser.avatarUrlSmall, holder.avatarImage);
+        holder.avatarImage.setOnClickListener(setAvatarImageClick(message));
+        ImageLoader.getInstance().displayImage(message.fromUser.avatarUrlSmall, holder.avatarImage);
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
         try {
-            calendar.setTime(formatter.parse(messsage.sent));
+            calendar.setTime(formatter.parse(message.sent));
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
             int minutes = calendar.get(Calendar.MINUTE);
             String time = String.format("%02d:%02d", hour, minutes);
@@ -118,7 +123,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             holder.messageMenu.setVisibility(View.INVISIBLE);
         }
 
-        holder.messageMenu.setOnClickListener(setMenuClick(messsage));
+        holder.messageMenu.setOnClickListener(setMenuClick(message));
     }
 
     private View.OnClickListener setParentLayoutClick(final MessageModel message) {
@@ -137,6 +142,32 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                 mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
                         Uri.parse(Utils.getInstance().GITHUB_URL + message.fromUser.url))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        };
+    }
+
+    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message) {
+        return new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                v.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+                    @Override
+                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                        for (int i = 0; i < message.urls.size(); i++) {
+                            menu.add(message.urls.get(i).url);
+                            menu.getItem(i).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                                @Override
+                                public boolean onMenuItemClick(MenuItem item) {
+                                    mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
+                                    return true;
+                                }
+                            });
+                        }
+                    }
+                });
+                v.showContextMenu();
+                return true;
             }
         };
     }
