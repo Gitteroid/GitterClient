@@ -11,6 +11,7 @@ import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.Models.UserModel;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ClientDatabase {
 
@@ -41,6 +42,7 @@ public class ClientDatabase {
     public static final String COLUMN_FROM_USER_ID = "from_user_id";
     public static final String COLUMN_UNREAD = "unread";
     public static final String COLUMN_READ_BY = "read_by";
+    public static final String COLUMN_URLS = "urls";
 
     public static final String COLUMN_USER_ID = "user_id";
     public static final String COLUMN_USERNAME = "username";
@@ -166,6 +168,7 @@ public class ClientDatabase {
             int columnUnread = cursor.getColumnIndex(COLUMN_UNREAD);
             int columnReadBy = cursor.getColumnIndex(COLUMN_READ_BY);
             int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+            int columnUrls = cursor.getColumnIndex(COLUMN_URLS);
 
             do {
                 MessageModel model = new MessageModel();
@@ -178,6 +181,8 @@ public class ClientDatabase {
                 model.unread = cursor.getInt(columnUnread) == 1;
                 model.readBy = cursor.getInt(columnReadBy);
                 model.v = cursor.getInt(columnVersion);
+                String url = cursor.getString(columnUrls);
+                model.urls = getUrls(url);
 
                 list.add(model);
             } while (cursor.moveToNext());
@@ -192,13 +197,30 @@ public class ClientDatabase {
 
         int startIndex = 0;
         for (int i = 0; i < ids.length(); i++) {
-            if (ids.equals(';')) {
+            if (ids.toCharArray()[i] == ';') {
                 list.add(ids.substring(startIndex, i));
                 startIndex = i + 1;
             }
         }
 
         return list.toArray(new String[list.size()]);
+    }
+
+    // Get urls in message, from string
+    private List<MessageModel.Urls> getUrls (String urls) {
+        ArrayList<MessageModel.Urls> list = new ArrayList<>();
+
+        int startIndex = 0;
+        for (int i = 0; i < urls.length(); i++) {
+            if (urls.toCharArray()[i] == ';') {
+                MessageModel.Urls url = new MessageModel.Urls();
+                url.url = urls.substring(startIndex, i);
+                list.add(url);
+                startIndex = i + 1;
+            }
+        }
+
+        return list;
     }
 
     public void insertUsers(ArrayList<UserModel> list) {
@@ -265,6 +287,14 @@ public class ClientDatabase {
             cv.put(COLUMN_READ_BY, model.readBy);
             cv.put(COLUMN_VERSION, model.v);
 
+            String urls = "";
+            if (model.urls != null) {
+                for (MessageModel.Urls url : model.urls) {
+                    urls += url.url + ";";
+                }
+            }
+            cv.put(COLUMN_URLS, urls);
+
             users.add(model.fromUser);
 
             mDatabase.insertWithOnConflict(MESSAGES_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
@@ -309,6 +339,7 @@ public class ClientDatabase {
                     + COLUMN_SENT + " text,"
                     + COLUMN_EDITED_AT + " text,"
                     + COLUMN_FROM_USER_ID + " text,"
+                    + COLUMN_URLS + " text,"
                     + COLUMN_UNREAD + " integer,"
                     + COLUMN_READ_BY + " integer,"
                     + COLUMN_VERSION + " integer);");
