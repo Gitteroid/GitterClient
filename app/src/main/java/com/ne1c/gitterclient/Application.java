@@ -1,8 +1,10 @@
 package com.ne1c.gitterclient;
 
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 
 public class Application extends android.app.Application {
     @Override
@@ -19,6 +21,9 @@ public class Application extends android.app.Application {
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this)
                 .defaultDisplayImageOptions(options)
                 .memoryCacheSize(TRIM_MEMORY_BACKGROUND)
+                .diskCacheFileNameGenerator(new Md5FileNameGenerator())
+                .diskCacheSize(50 * 1024 * 1024)
+                .tasksProcessingOrder(QueueProcessingType.LIFO)
                 .diskCacheFileCount(150)
                 .build();
 

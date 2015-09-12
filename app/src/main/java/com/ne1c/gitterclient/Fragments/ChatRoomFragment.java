@@ -2,6 +2,7 @@ package com.ne1c.gitterclient.Fragments;
 
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.support.design.widget.Snackbar;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 
 import com.ne1c.gitterclient.Activities.MainActivity;
 import com.ne1c.gitterclient.Adapters.MessagesAdapter;
+import com.ne1c.gitterclient.Database.ClientDatabase;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.R;
@@ -60,11 +62,15 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private int countLoadMessages = 10;
     private boolean isRefreshing = false;
 
+    private ClientDatabase mClientDatabase;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EventBus.getDefault().register(this);
         setRetainInstance(true);
+        EventBus.getDefault().register(this);
+
+        mClientDatabase = new ClientDatabase(getActivity());
     }
 
     @Override
@@ -101,12 +107,14 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private void setDataToView(Bundle savedInstanceState) {
         mMessagesAdapter = new MessagesAdapter(getActivity(), mMessagesArr, mMessageEditText);
         mMessagesList.setAdapter(mMessagesAdapter);
+        mMessagesList.setItemViewCacheSize(10);
 
         if (savedInstanceState != null) {
             mMessagesList.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable("scrollPosition"));
         }
 
         if (isRefreshing) {
+            isRefreshing = false;
             mPtrFrameLayout.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.VISIBLE);
         }
@@ -147,18 +155,25 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             @Override
             public void onRefreshBegin(PtrFrameLayout ptrFrameLayout) {
                 countLoadMessages += 10;
-                loadMessageRoom(mRoom, false, true);
+                loadMessageRoomServer(mRoom, false, true);
             }
         });
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
+
+        mClientDatabase.close();
         super.onDestroy();
     }
 
-    private void loadMessageRoom(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
+    private void loadMessageRoomServer(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
         mMessagesAdapter.setRoom(roomModel);
 
         isRefreshing = showProgressBar;
@@ -189,6 +204,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     mPtrFrameLayout.setVisibility(View.VISIBLE);
                     mProgressBar.setVisibility(View.GONE);
                 }
+
+                isRefreshing = false;
             }
 
             @Override
@@ -198,25 +215,40 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 } else if (mPtrFrameLayout.isRefreshing()) {
                     mPtrFrameLayout.refreshComplete();
                 }
-
+                isRefreshing = false;
+                mPtrFrameLayout.setVisibility(View.VISIBLE);
                 Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     // Event from MainActivity or notification
+    // Load messages of room
     public void onEvent(RoomModel model) {
+        if (mMessagesArr.size() > 0 && mRoom != null) {
+            mClientDatabase.insertMessages(mMessagesArr, mRoom.id);
+        }
+
         mRoom = model;
         countLoadMessages = 10;
 
         if (mPtrFrameLayout.isRefreshing()) {
             mPtrFrameLayout.refreshComplete();
         }
-        loadMessageRoom(mRoom, true, false);
+
+        mMessagesAdapter.setRoom(model);
+        new LoadMessageDatabaseAsync(model, new LoadCallback() {
+            @Override
+            public void finish() {
+                loadMessageRoomServer(mRoom, true, false);
+            }
+        }).execute();
     }
 
     @Override
     public void newMessage(MessageModel model) {
+        mClientDatabase.insertMessage(model, mRoom.id);
+
         if (mMessagesAdapter != null) {
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message
                 if (mMessagesArr.get(i).id.equals(model.id)) {
@@ -243,12 +275,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     @Override
     public void onRefreshRoom() {
         if (Utils.getInstance().isNetworkConnected()) {
-            loadMessageRoom(mRoom, true, true);
-        } else if (getView() != null) {
+            loadMessageRoomServer(mRoom, true, true);
+        } else if (getView() != null && mMessagesArr.size() > 0) {
             Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
         }
     }
 
+    // Event from MainActivity
     public void onEvent(UpdateMessageEventBus message) {
         MessageModel newMessage = message.getMessageModel();
 
@@ -259,6 +292,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         @Override
                         public void success(MessageModel model, Response response) {
                             Toast.makeText(getActivity(), "Updated", Toast.LENGTH_SHORT).show();
+                            mClientDatabase.insertMessage(model, mRoom.id);
                         }
 
                         @Override
@@ -267,5 +301,58 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         }
                     });
         }
+    }
+
+    private class LoadMessageDatabaseAsync extends AsyncTask<String, Void, ArrayList<MessageModel>> {
+        private RoomModel mRoom;
+        private ClientDatabase mClientDatabase;
+        private LoadCallback mCallback;
+
+        private LoadMessageDatabaseAsync(RoomModel room, LoadCallback callback) {
+            mRoom = room;
+            mClientDatabase = new ClientDatabase(getActivity());
+            mCallback = callback;
+        }
+
+        private LoadMessageDatabaseAsync(RoomModel room) {
+            mRoom = room;
+            mClientDatabase = new ClientDatabase(getActivity());
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            mPtrFrameLayout.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected ArrayList<MessageModel> doInBackground(String... params) {
+            return mClientDatabase.getMessages(mRoom.id);
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<MessageModel> messageModels) {
+            super.onPostExecute(messageModels);
+
+            mMessagesArr.clear();
+            mMessagesArr.addAll(messageModels);
+
+            mMessagesAdapter.setRoom(mRoom);
+            mMessagesAdapter.notifyDataSetChanged();
+
+            mPtrFrameLayout.setVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.GONE);
+
+            if (mCallback != null) {
+                mCallback.finish();
+            }
+        }
+    }
+
+    // For load callback messages from database
+    private interface LoadCallback {
+        void finish();
     }
 }

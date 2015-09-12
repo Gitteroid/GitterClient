@@ -192,8 +192,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     public void setRoom(RoomModel model) {
         mRoom = model;
     }
-    public class ViewHolder extends RecyclerView.ViewHolder {
 
+    public class ViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout parentLayout;
         public ImageView avatarImage;
         public ImageView newMessageIndicator;
