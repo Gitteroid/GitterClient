@@ -77,6 +77,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    mFayeClient.disconnect();
                     mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
                     mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
                         @Override
