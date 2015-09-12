@@ -411,8 +411,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onDestroy() {
         getLoaderManager().destroyLoader(LOAD_ROOM_ID);
         getLoaderManager().destroyLoader(LOAD_ROOM_DATABASE_ID);
-        mClientDatabase.close();
-        unregisterReceiver(newMessageReceiver);
+
+        try {
+            unregisterReceiver(newMessageReceiver);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        if (mClientDatabase != null) {
+            mClientDatabase.close();
+        }
 
         super.onDestroy();
     }
