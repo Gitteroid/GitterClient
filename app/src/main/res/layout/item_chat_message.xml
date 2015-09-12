@@ -19,7 +19,7 @@
         android:layout_marginLeft="4dp"
         android:layout_weight="0"
         android:adjustViewBounds="true"
-        tools:src="@mipmap/ic_launcher"/>
+        android:src="@mipmap/ic_avatar"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -54,15 +54,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:layout_marginRight="4dp"
+        android:layout_marginRight="2dp"
         android:layout_weight="0"
         android:textColor="@android:color/black"
         tools:text="20:16"/>
 
     <ImageButton
         android:id="@+id/overflow_message_menu"
-        android:layout_width="24dp"
-        android:layout_height="wrap_content"
+        android:layout_width="18dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="2dp"
         android:scaleType="fitCenter"
         android:background="?android:attr/selectableItemBackground"
         android:src="@mipmap/ic_menu"/>
