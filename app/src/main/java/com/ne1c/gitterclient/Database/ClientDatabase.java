@@ -26,11 +26,11 @@ public class ClientDatabase {
     public static final String COLUMN_NAME = "name";
     public static final String COLUMN_TOPIC = "topic";
     public static final String COLUMN_URI = "uri";
-    public static final String COLUMN_ONE_TO_ONE = "oneToOne";
+    public static final String COLUMN_ONE_TO_ONE = "one_to_one";
     public static final String COLUMN_USERS_COUNT = "user_count";
     public static final String COLUMN_UNREAD_ITEMS = "unread_items";
     public static final String COLUMN_URL = "url";
-    public static final String COLUMN_VERSION = "VERSION";
+    public static final String COLUMN_VERSION = "version";
     public static final String COLUMN_USERS_IDS = "users_ids";
 
     public static final String COLUMN_MESSAGE_ID = "message_id";
@@ -56,9 +56,9 @@ public class ClientDatabase {
         mDatabase = mDBWorker.getWritableDatabase();
     }
 
-     public ArrayList<RoomModel> getRooms() {
+    public ArrayList<RoomModel> getRooms() {
         ArrayList<RoomModel> list = new ArrayList<>();
-        Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, "10");
+        Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
 
         if (cursor.moveToFirst()) {
             int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
@@ -83,7 +83,7 @@ public class ClientDatabase {
                 model.v = cursor.getInt(columnVersion);
 
                 String idsStr = cursor.getString(columnUsersIds);
-                String[] idsArr = (String[]) getUsersIds(idsStr).toArray();
+                String[] idsArr = getUsersIds(idsStr);
                 model.users = getUsers(idsArr);
 
                 list.add(model);
@@ -93,9 +93,37 @@ public class ClientDatabase {
         return list;
     }
 
+    public UserModel getUser(String userId) {
+        Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_USER_ID + " = ?",
+                new String[]{userId}, null, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
+            int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
+            int columnDisplayname = cursor.getColumnIndex(COLUMN_DISPLAY_NAME);
+            int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
+            int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
+
+            do {
+                UserModel model = new UserModel();
+                model.id = cursor.getString(columnUserId);
+                model.username = cursor.getString(columnUsername);
+                model.displayName = cursor.getString(columnDisplayname);
+                model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
+                model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
+
+                return model;
+            } while (cursor.moveToNext());
+        }
+
+        return null;
+    }
+
     public ArrayList<UserModel> getUsers(String[] ids) {
-        ArrayList<UserModel> list = new ArrayList();
-        Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_ROOM_ID + " = ?", ids, null, null, null, "10");
+        ArrayList<UserModel> list = new ArrayList<>();
+        Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_USER_ID + " = ?",
+               ids, null, null, null, null);
+
         if (cursor.moveToFirst()) {
             int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
             int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
@@ -118,9 +146,15 @@ public class ClientDatabase {
         return list;
     }
 
+    public void insertMessage(MessageModel model, String roomId) {
+        ArrayList<MessageModel> list = new ArrayList<>();
+        list.add(model);
+        insertMessages(list, roomId);
+    }
+
     public ArrayList<MessageModel> getMessages(String roomId) {
         ArrayList<MessageModel> list = new ArrayList<>();
-        Cursor cursor = mDatabase.query(MESSAGES_TABLE, null, COLUMN_ROOM_ID + " = ?", new String[]{roomId}, null, null, null);
+        Cursor cursor = mDatabase.query(MESSAGES_TABLE, null, COLUMN_ROOM_ID + " = ?", new String[]{roomId}, null, null, null,"10");
 
         if (cursor.moveToFirst()) {
             int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
@@ -140,11 +174,12 @@ public class ClientDatabase {
                 model.html = cursor.getString(columnHtml);
                 model.sent = cursor.getString(columnSent);
                 model.editedAt = cursor.getString(columnEditedAt);
-                model.fromUser = getUsers(new String[]{cursor.getString(columnFromUserId)}).get(0);
+                model.fromUser = getUser(cursor.getString(columnFromUserId));
                 model.unread = cursor.getInt(columnUnread) == 1;
                 model.readBy = cursor.getInt(columnReadBy);
                 model.v = cursor.getInt(columnVersion);
 
+                list.add(model);
             } while (cursor.moveToNext());
         }
 
@@ -152,7 +187,7 @@ public class ClientDatabase {
     }
 
     // Get users ids, from string
-    private ArrayList<String> getUsersIds(String ids) {
+    private String[] getUsersIds(String ids) {
         ArrayList<String> list = new ArrayList<>();
 
         int startIndex = 0;
@@ -163,7 +198,7 @@ public class ClientDatabase {
             }
         }
 
-        return list;
+        return list.toArray(new String[list.size()]);
     }
 
     public void insertUsers(ArrayList<UserModel> list) {
@@ -174,10 +209,10 @@ public class ClientDatabase {
             cv.put(COLUMN_USER_ID, model.id);
             cv.put(COLUMN_USERNAME, model.username);
             cv.put(COLUMN_DISPLAY_NAME, model.displayName);
-            cv.put(COLUMN_AVATAR_SMALL_URL, model.avatarUrlMedium);
-            cv.put(COLUMN_AVATAR_MEDIUM_URL, model.avatarUrlSmall);
+            cv.put(COLUMN_AVATAR_SMALL_URL, model.avatarUrlSmall);
+            cv.put(COLUMN_AVATAR_MEDIUM_URL, model.avatarUrlMedium);
 
-            mDatabase.insert(USERS_TABLE, null, cv);
+            mDatabase.insertWithOnConflict(USERS_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         mDatabase.setTransactionSuccessful();
@@ -200,23 +235,27 @@ public class ClientDatabase {
 
             String userIds = "";
             for (UserModel user : model.users) {
-                userIds += user.id = ";";
+                userIds += user.id + ";";
             }
             cv.put(COLUMN_USERS_IDS, userIds);
 
-            mDatabase.insert(USERS_TABLE, null, cv);
+            mDatabase.insertWithOnConflict(ROOM_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         mDatabase.setTransactionSuccessful();
         mDatabase.endTransaction();
     }
 
-    public void insertMessage(ArrayList<MessageModel> list) {
+    public void insertMessages(ArrayList<MessageModel> list, String roomId) {
+        // Write users once, that will not write, after every iteration of loop
+        ArrayList<UserModel> users = new ArrayList<>();
+
         mDatabase.beginTransaction();
 
         for (MessageModel model : list) {
             ContentValues cv = new ContentValues();
             cv.put(COLUMN_MESSAGE_ID, model.id);
+            cv.put(COLUMN_ROOM_ID, roomId);
             cv.put(COLUMN_TEXT, model.text);
             cv.put(COLUMN_HTML, model.html);
             cv.put(COLUMN_SENT, model.sent);
@@ -226,11 +265,15 @@ public class ClientDatabase {
             cv.put(COLUMN_READ_BY, model.readBy);
             cv.put(COLUMN_VERSION, model.v);
 
-            mDatabase.insert(MESSAGES_TABLE, null, cv);
+            users.add(model.fromUser);
+
+            mDatabase.insertWithOnConflict(MESSAGES_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
         }
 
         mDatabase.setTransactionSuccessful();
         mDatabase.endTransaction();
+
+        insertUsers(users);
     }
 
     public void close() {
@@ -244,9 +287,9 @@ public class ClientDatabase {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            db.execSQL("CREATE TABLE " + ROOM_TABLE + "("
+            db.execSQL("CREATE TABLE " + ROOM_TABLE + " ("
                     + COLUMN_ID + " integer primary key autoincrement,"
-                    + COLUMN_ROOM_ID + " text,"
+                    + COLUMN_ROOM_ID + " text unique,"
                     + COLUMN_NAME + " text,"
                     + COLUMN_TOPIC + " text,"
                     + COLUMN_USERS_IDS + " text,"
@@ -257,9 +300,10 @@ public class ClientDatabase {
                     + COLUMN_URL + " text,"
                     + COLUMN_VERSION + " integer);");
 
-            db.execSQL("CREATE TABLE " + MESSAGES_TABLE + "("
+            db.execSQL("CREATE TABLE " + MESSAGES_TABLE + " ("
                     + COLUMN_ID + " integer primary key autoincrement,"
-                    + COLUMN_MESSAGE_ID + " text,"
+                    + COLUMN_MESSAGE_ID + " text unique,"
+                    + COLUMN_ROOM_ID + " text,"
                     + COLUMN_TEXT + " text,"
                     + COLUMN_HTML + " text,"
                     + COLUMN_SENT + " text,"
@@ -269,9 +313,9 @@ public class ClientDatabase {
                     + COLUMN_READ_BY + " integer,"
                     + COLUMN_VERSION + " integer);");
 
-            db.execSQL("CREATE TABLE " + USERS_TABLE + "("
+            db.execSQL("CREATE TABLE " + USERS_TABLE + " ("
                     + COLUMN_ID + " integer primary key autoincrement,"
-                    + COLUMN_USER_ID + " text,"
+                    + COLUMN_USER_ID + " text unique,"
                     + COLUMN_USERNAME + " text,"
                     + COLUMN_DISPLAY_NAME + " text,"
                     + COLUMN_AVATAR_SMALL_URL + " text,"
