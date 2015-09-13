@@ -72,30 +72,30 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Update rooms list, and update subscribers
-        if (flags == START_FLAG_RETRY) {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    mFayeClient.disconnect();
-                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
-                    mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
-                        @Override
-                        public void call(Boolean aBoolean) {
-                            RestAdapter adapter = new RestAdapter.Builder()
-                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                                    .build();
-                            final IApiMethods methods = adapter.create(IApiMethods.class);
-
-                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                            createSubribers();
-                        }
-                    });
-                }
-            });
-
-            thread.start();
-        }
+//        // Update rooms list, and update subscribers
+//        if (flags == START_FLAG_RETRY) {
+//            Thread thread = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    mFayeClient.disconnect();
+//                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
+//                    mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
+//                        @Override
+//                        public void call(Boolean aBoolean) {
+//                            RestAdapter adapter = new RestAdapter.Builder()
+//                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
+//                                    .build();
+//                            final IApiMethods methods = adapter.create(IApiMethods.class);
+//
+//                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+//                            createSubribers();
+//                        }
+//                    });
+//                }
+//            });
+//
+//            thread.start();
+//        }
 
         return START_STICKY;
     }
