@@ -33,7 +33,9 @@ import com.ne1c.gitterclient.Utils;
 import java.util.ArrayList;
 
 import retrofit.RestAdapter;
+import retrofit.RetrofitError;
 import retrofit.client.Response;
+import rx.exceptions.OnErrorNotImplementedException;
 import rx.functions.Action1;
 
 
@@ -72,31 +74,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-//        // Update rooms list, and update subscribers
-//        if (flags == START_FLAG_RETRY) {
-//            Thread thread = new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    mFayeClient.disconnect();
-//                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
-//                    mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
-//                        @Override
-//                        public void call(Boolean aBoolean) {
-//                            RestAdapter adapter = new RestAdapter.Builder()
-//                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-//                                    .build();
-//                            final IApiMethods methods = adapter.create(IApiMethods.class);
-//
-//                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-//                            createSubribers();
-//                        }
-//                    });
-//                }
-//            });
-//
-//            thread.start();
-//        }
-
         return START_STICKY;
     }
 
@@ -119,12 +96,14 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                             }
 
                             intent.putExtra(NEW_MESSAGE_EXTRA_KEY, message);
-                            if (message.text != null) {
-                                sendBroadcast(intent);
+                            if (message != null) {
+                                if (message.text != null) {
+                                    sendBroadcast(intent);
 
-                                if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username) &&
-                                        PreferenceManager.getDefaultSharedPreferences(NewMessagesService.this).getBoolean("enable_notif", true)) {
-                                    sendNotificationMessage(room, message);
+                                    if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username) &&
+                                            PreferenceManager.getDefaultSharedPreferences(NewMessagesService.this).getBoolean("enable_notif", true)) {
+                                        sendNotificationMessage(room, message);
+                                    }
                                 }
                             }
                         }
@@ -143,20 +122,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     private BroadcastReceiver sendMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
-            // 403 error
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        mFayeClient.sendMessageInRoom(intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY),
-//                                intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY));
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-//                    }
-//                }
-//            }).start();
-
             RestAdapter adapter = new RestAdapter.Builder()
                     .setEndpoint(Utils.getInstance().GITTER_API_URL)
                     .build();
@@ -176,24 +141,25 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     private BroadcastReceiver networkChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (mFayeClient == null) {
-                mFayeClient = new FayeClient(NewMessagesService.this);
-            }
-
             if (Utils.getInstance().isNetworkConnected()) {
-                mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
-                mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean aBoolean) {
-                        RestAdapter adapter = new RestAdapter.Builder()
-                                .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                                .build();
-                        final IApiMethods methods = adapter.create(IApiMethods.class);
+                mFayeClient = new FayeClient(NewMessagesService.this);
+                try {
+                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
+                    mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
+                        @Override
+                        public void call(Boolean aBoolean) {
+                            RestAdapter adapter = new RestAdapter.Builder()
+                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                                    .build();
+                            final IApiMethods methods = adapter.create(IApiMethods.class);
 
-                        mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                        createSubribers();
-                    }
-                });
+                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+                            createSubribers();
+                        }
+                    });
+                } catch (OnErrorNotImplementedException | RetrofitError e) {
+                    e.printStackTrace();
+                }
             } else {
                 mFayeClient.disconnect();
             }
