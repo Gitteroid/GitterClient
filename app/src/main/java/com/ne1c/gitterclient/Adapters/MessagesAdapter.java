@@ -130,7 +130,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mMessageEditText.setText(mMessageEditText.getText() + "@" + message.fromUser.username + " ");
+                mMessageEditText.append("@" + message.fromUser.username + " ");
             }
         };
     }
