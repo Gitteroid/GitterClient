@@ -124,7 +124,7 @@ public class ClientDatabase {
     public ArrayList<UserModel> getUsers(String[] ids) {
         ArrayList<UserModel> list = new ArrayList<>();
         Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_USER_ID + " = ?",
-               ids, null, null, null, null);
+                ids, null, null, null, null);
 
         if (cursor.moveToFirst()) {
             int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
@@ -156,9 +156,11 @@ public class ClientDatabase {
 
     public ArrayList<MessageModel> getMessages(String roomId) {
         ArrayList<MessageModel> list = new ArrayList<>();
-        Cursor cursor = mDatabase.query(MESSAGES_TABLE, null, COLUMN_ROOM_ID + " = ?", new String[]{roomId}, null, null, null,"10");
+        Cursor cursor = mDatabase.rawQuery(String.format("SELECT * FROM %s WHERE %s = \'%s\' ORDER BY %s DESC LIMIT 10;",
+                MESSAGES_TABLE, COLUMN_ROOM_ID, roomId, COLUMN_ID), null);//mDatabase.query(MESSAGES_TABLE, null, COLUMN_ROOM_ID + " = ?", new String[]{roomId}, null, null, COLUMN_ID + " DESC", "10");
 
-        if (cursor.moveToFirst()) {
+        int difference = 1;
+        if (cursor.moveToPosition(cursor.getCount() - difference)) {
             int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
             int columnText = cursor.getColumnIndex(COLUMN_TEXT);
             int columnHtml = cursor.getColumnIndex(COLUMN_HTML);
@@ -185,7 +187,8 @@ public class ClientDatabase {
                 model.urls = getUrls(url);
 
                 list.add(model);
-            } while (cursor.moveToNext());
+                difference += 1;
+            } while (cursor.moveToPosition(cursor.getCount() - difference));
         }
 
         return list;
@@ -207,7 +210,7 @@ public class ClientDatabase {
     }
 
     // Get urls in message, from string
-    private List<MessageModel.Urls> getUrls (String urls) {
+    private List<MessageModel.Urls> getUrls(String urls) {
         ArrayList<MessageModel.Urls> list = new ArrayList<>();
 
         int startIndex = 0;
@@ -288,11 +291,10 @@ public class ClientDatabase {
             cv.put(COLUMN_VERSION, model.v);
 
             String urls = "";
-            if (model.urls != null) {
-                for (MessageModel.Urls url : model.urls) {
-                    urls += url.url + ";";
-                }
+            for (MessageModel.Urls url : model.urls) {
+                urls += url.url + ";";
             }
+
             cv.put(COLUMN_URLS, urls);
 
             users.add(model.fromUser);
