@@ -14,6 +14,8 @@ import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -66,6 +68,7 @@ public class FayeClient {
     private Thread pintThread;
 
     private UnexpectedSituationCallback mCallback;
+    private String mUrl;
 
     public FayeClient(UnexpectedSituationCallback callback) {
         mCallback = callback;
@@ -126,6 +129,7 @@ public class FayeClient {
     }
 
     public Observable<Void> connect(String url, String token) {
+        mUrl = url;
         mAcessToken = token;
 
         OkHttpClient client = new OkHttpClient();
@@ -140,7 +144,12 @@ public class FayeClient {
         if (pintThread != null) {
             pintThread.interrupt();
         }
+
+        while (mSubscriberMap.values().iterator().hasNext()) {
+            mSubscriberMap.values().iterator().next().unsubscribe();
+        }
         mSubscriberMap.clear();
+
         return null;
     }
 
@@ -197,6 +206,12 @@ public class FayeClient {
 
             }
         });
+    }
+
+    public void reconnect(Action1<Boolean> action) {
+        disconnect();
+        connect(mUrl, mAcessToken);
+        accessClientIdSubscriber().subscribe(action);
     }
 
     public Observable<JsonObject> subscribeChannel(String channel) {

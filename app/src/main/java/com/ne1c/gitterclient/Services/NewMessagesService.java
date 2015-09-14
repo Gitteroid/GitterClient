@@ -54,6 +54,8 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     private FayeClient mFayeClient;
     private ArrayList<RoomModel> mRoomsList;
 
+    private IApiMethods mApiMethods;
+
     @Override
     public IBinder onBind(Intent intent) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -70,6 +72,11 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         IntentFilter filterSendMessage = new IntentFilter();
         filterSendMessage.addAction(BROADCAST_SEND_MESSAGE);
         registerReceiver(sendMessageReceiver, filterSendMessage);
+
+        RestAdapter adapter = new RestAdapter.Builder()
+                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .build();
+        mApiMethods = adapter.create(IApiMethods.class);
     }
 
     @Override
@@ -122,14 +129,10 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     private BroadcastReceiver sendMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
-            RestAdapter adapter = new RestAdapter.Builder()
-                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                    .build();
-            final IApiMethods methods = adapter.create(IApiMethods.class);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    methods.sendMessage(Utils.getInstance().getBearer(),
+                    mApiMethods.sendMessage(Utils.getInstance().getBearer(),
                             intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
                             intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
 
@@ -148,17 +151,12 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                     mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
                         @Override
                         public void call(Boolean aBoolean) {
-                            RestAdapter adapter = new RestAdapter.Builder()
-                                    .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                                    .build();
-                            final IApiMethods methods = adapter.create(IApiMethods.class);
-
-                            mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+                            mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
                             createSubribers();
                         }
                     });
                 } catch (OnErrorNotImplementedException | RetrofitError e) {
-                    e.printStackTrace();
+                    disconnect();
                 }
             } else {
                 mFayeClient.disconnect();
@@ -217,18 +215,9 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     @Override
     public void disconnect() {
-        Log.d("MYTAG", "reconnect");
-        mFayeClient = new FayeClient(this);
-        mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
-        mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
+        mFayeClient.reconnect(new Action1<Boolean>() {
             @Override
             public void call(Boolean aBoolean) {
-                RestAdapter adapter = new RestAdapter.Builder()
-                        .setEndpoint(Utils.getInstance().GITTER_API_URL)
-                        .build();
-                final IApiMethods methods = adapter.create(IApiMethods.class);
-
-                mRoomsList = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
                 createSubribers();
             }
         });
