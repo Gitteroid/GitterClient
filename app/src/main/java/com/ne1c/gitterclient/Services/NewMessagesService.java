@@ -159,7 +159,9 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                     disconnect();
                 }
             } else {
-                mFayeClient.disconnect();
+                if (mFayeClient != null) {
+                    mFayeClient.disconnect();
+                }
             }
         }
     };
