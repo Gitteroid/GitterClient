@@ -189,6 +189,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 mMessagesArr.clear();
                 mMessagesArr.addAll(messageModels);
 
+                mClientDatabase.insertMessages(messageModels, mRoom.id);
+
                 if (refresh) {
                     mMessagesAdapter.notifyDataSetChanged();
                     mPtrFrameLayout.refreshComplete();
@@ -225,10 +227,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     // Event from MainActivity or notification
     // Load messages of room
     public void onEvent(RoomModel model) {
-        if (mMessagesArr.size() > 0 && mRoom != null) {
-            mClientDatabase.insertMessages(mMessagesArr, mRoom.id);
-        }
-
         mRoom = model;
         countLoadMessages = 10;
 
@@ -341,6 +339,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
             mMessagesAdapter.setRoom(mRoom);
             mMessagesAdapter.notifyDataSetChanged();
+
+            mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
 
             mPtrFrameLayout.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.GONE);
