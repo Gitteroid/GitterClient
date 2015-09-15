@@ -140,7 +140,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             @Override
             public void onClick(View v) {
                 mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse(Utils.getInstance().GITHUB_URL + message.fromUser.url))
+                        Uri.parse(Utils.getInstance().GITHUB_URL + "/" + message.fromUser.username))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         };
