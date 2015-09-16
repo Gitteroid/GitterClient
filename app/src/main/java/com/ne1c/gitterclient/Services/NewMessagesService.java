@@ -29,12 +29,13 @@ import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Utils;
+import com.squareup.okhttp.OkHttpClient;
 
 import java.util.ArrayList;
 
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit.client.OkClient;
 import rx.exceptions.OnErrorNotImplementedException;
 import rx.functions.Action1;
 
@@ -47,7 +48,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     public static final String BROADCAST_SEND_MESSAGE = "sendMessageBroadcast";
     public static final String FROM_ROOM_EXTRA_KEY = "fromRoom";
     public static final String NEW_MESSAGE_EXTRA_KEY = "newMessage";
-    public static final String CHANGED_ROOMS_EXTRA_KEY = "newRoomsList";
     public static final String TO_ROOM_MESSAGE_EXTRA_KEY = "toRoom";
     public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
@@ -73,7 +73,11 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         filterSendMessage.addAction(BROADCAST_SEND_MESSAGE);
         registerReceiver(sendMessageReceiver, filterSendMessage);
 
+        OkHttpClient okHttpClient = new OkHttpClient();
+        okHttpClient.setRetryOnConnectionFailure(true);
+
         RestAdapter adapter = new RestAdapter.Builder()
+                .setClient(new OkClient(okHttpClient))
                 .setEndpoint(Utils.getInstance().GITTER_API_URL)
                 .build();
         mApiMethods = adapter.create(IApiMethods.class);
@@ -132,7 +136,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    mApiMethods.sendMessage(Utils.getInstance().getBearer(),
+                    retrofit.client.Response response = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
                             intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
                             intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
 

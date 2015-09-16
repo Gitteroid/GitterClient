@@ -37,6 +37,10 @@ public class FayeClient {
     private static final String SUBSCRIBE_CHANNEL = "/meta/subscribe";
     private static final String UNSUBSCRIBE_CHANNEL = "/meta/unsubscribe";
 
+    private static final int NORMAL_CLOSE = 1000;
+    private static final int GOING_AWAY_CODE = 1001;
+    private static final int LOST_CONNECTION_CODE = 1002;
+    private static final int ERROR_MESSAGE_CODE = 1003;
 
     private static final String KEY_CHANNEL = "channel";
     private static final String KEY_SUCCESS = "successful";
@@ -109,8 +113,7 @@ public class FayeClient {
 
         @Override
         public void onClose(int code, String reason) {
-            Log.d("MYTAG", "NULL ONCLOSE");
-            mWebSocket = null;
+            Log.d("Faye", "CODE: " + code + "; reason: " + reason);
             mCallback.disconnect();
         }
     };
@@ -145,11 +148,12 @@ public class FayeClient {
             pintThread.interrupt();
         }
 
-        while (mSubscriberMap.values().iterator().hasNext()) {
-            mSubscriberMap.values().iterator().next().unsubscribe();
+        mAccessClientIdSub.unsubscribe();
+
+        for (Subscriber<? super JsonObject> sub : mSubscriberMap.values()) {
+            sub.unsubscribe();
         }
         mSubscriberMap.clear();
-
         return null;
     }
 
