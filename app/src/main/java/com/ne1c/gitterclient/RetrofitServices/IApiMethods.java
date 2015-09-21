@@ -8,20 +8,15 @@ import com.ne1c.gitterclient.Models.UserModel;
 import java.util.ArrayList;
 
 import retrofit.Callback;
-import retrofit.client.Response;
-import retrofit.http.Body;
 import retrofit.http.Field;
 import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.Headers;
-import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.PUT;
-import retrofit.http.Part;
 import retrofit.http.Path;
 import retrofit.http.Query;
-
 
 public interface IApiMethods {
 
@@ -41,7 +36,7 @@ public interface IApiMethods {
 
     @FormUrlEncoded
     @POST("/v1/rooms/{roomId}/chatMessages")
-    Response sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Field("text") String text);
+    MessageModel sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Field("text") String text);
 
     @FormUrlEncoded
     @PUT("/v1/rooms/{roomId}/chatMessages/{chatMessageId}")
@@ -60,8 +55,10 @@ public interface IApiMethods {
             "Content-Type: application/json",
             "Accept: application/json"
     })
-    @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
-    void getUnreadItems(@Header("Authorization") String access_token, @Path("userId") String userId, @Path("roomId") String roomId);
+    @GET("/v1/rooms/{roomId}/chatMessages")
+    void getMessagesBeforeId(@Header("Authorization") String access_token, @Path("roomId") String roomId,
+                             @Query("limit") int limit,
+                             @Query("beforeId") String beforeId, Callback<ArrayList<MessageModel>> callback);
 
     @FormUrlEncoded
     @POST("/login/oauth/token")

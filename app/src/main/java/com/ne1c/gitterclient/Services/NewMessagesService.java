@@ -136,9 +136,12 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    retrofit.client.Response response = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
+                    MessageModel message = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
                             intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
                             intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
+                    Intent sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
+                            .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
+                    sendBroadcast(sendIntent);
 
                 }
             }).start();
@@ -191,7 +194,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         Spannable text = new SpannableString(username + ": " + message.text);
         text.setSpan(new StyleSpan(Typeface.BOLD), 0, username.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         text.setSpan(new StyleSpan(Typeface.ITALIC), username.length() + 1, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
 
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)

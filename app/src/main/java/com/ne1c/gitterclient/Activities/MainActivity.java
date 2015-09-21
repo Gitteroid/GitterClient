@@ -52,8 +52,8 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
-
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
+    public final static String BROADCAST_MESSAGE_DELIVERED = "com.ne1c.gitterclient.MessageDeliveredReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private ChatRoomFragment mChatRoomFragment;
 
-    private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mDrawerToggle;
 
     private Drawer mDrawer;
@@ -93,7 +92,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setContentView(R.layout.activity_main);
 
+        init();
+        initSavedInstaneState(savedInstanceState);
+    }
+
+    private void init() {
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
+        registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -114,7 +119,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         setNavigationView();
+    }
 
+    private void initSavedInstaneState(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
             getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
@@ -193,8 +200,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void setNavigationView() {
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.app_name, R.string.app_name);
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
+        mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
 
         UserModel model = Utils.getInstance().getUserPref();
         if (model != null) {
@@ -414,6 +421,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         try {
             unregisterReceiver(newMessageReceiver);
+            unregisterReceiver(messageDeliveredReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -473,6 +481,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     };
 
+    private BroadcastReceiver messageDeliveredReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MessageModel model = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
+            mChatRoomFragment.messageDelivered(model);
+        }
+    };
+
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
         public static final int FROM_SERVER = 0;
         public static final int FROM_DATABASE = 1;
@@ -511,6 +527,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public interface NewMessageFragmentCallback {
         void newMessage(MessageModel model);
+        void messageDelivered(MessageModel model);
     }
 
     public interface RefreshRoomCallback {

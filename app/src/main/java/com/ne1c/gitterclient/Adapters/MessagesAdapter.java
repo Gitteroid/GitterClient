@@ -11,13 +11,11 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.StyleSpan;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -25,12 +23,15 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
 import com.ne1c.gitterclient.Fragments.EditMessageFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
+import com.ne1c.gitterclient.Models.StatusMessage;
 import com.ne1c.gitterclient.Models.UserModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
+import com.ne1c.gitterclient.Services.NewMessagesService;
 import com.ne1c.gitterclient.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
@@ -39,14 +40,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import retrofit.Callback;
 import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHolder> {
-
+public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHolder> implements
+        ChatRoomFragment.ReadMessageCallback {
     private RoomModel mRoom;
     private ArrayList<MessageModel> mMessages;
     private Activity mActivity;
@@ -75,58 +78,104 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     public void onBindViewHolder(ViewHolder holder, final int position) {
         MessageModel message = mMessages.get(position);
 
-        if (message.urls != null) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message));
+        if (message.urls.size() > 0) {
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, false));
+        } else if (message.sent.equals(StatusMessage.NO_SEND.name())) {
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, true));
         }
 
-        holder.parentLayout.setOnClickListener(setParentLayoutClick(message));
+        holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
+        holder.avatarImage.setOnClickListener(getAvatarImageClick(message));
+        holder.messageMenu.setOnClickListener(getMenuClick(message));
 
-        if (message.unread) {
-            holder.newMessageIndicator.setImageResource(R.color.unreadMessage);
-            holder.newMessageIndicator
-                    .animate().alpha(0f).setDuration(1000).withLayer();
-            message.unread = true;
-        }
+        processingIndicator(holder.newMessageIndicator, message);
+        makeDeletedMessageText(holder.messageText, message);
 
-        if (!TextUtils.isEmpty(message.fromUser.username)) {
-            holder.nicknameText.setText(message.fromUser.username);
-        } else {
-            holder.nicknameText.setText(message.fromUser.displayName);
-        }
+        holder.timeText.setText(getTimeMessage(message));
+        holder.nicknameText.setText(getUsername(message));
+        //noinspection ResourceType
+        holder.messageMenu.setVisibility(getVisibilityMenu(message));
+        setIconMessage(holder.statusMessage, message);
 
+        ImageLoader.getInstance().displayImage(message.fromUser.avatarUrlSmall, holder.avatarImage);
+    }
+
+    private void makeDeletedMessageText(TextView text, MessageModel message) {
         if (TextUtils.isEmpty(message.text)) {
             Spannable span = new SpannableString("This message was deleted");
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            holder.messageText.setText(span);
+            text.setText(span);
         } else {
-            holder.messageText.setText(message.text);
+            text.setText(message.text);
         }
+    }
 
-        holder.avatarImage.setOnClickListener(setAvatarImageClick(message));
-        ImageLoader.getInstance().displayImage(message.fromUser.avatarUrlSmall, holder.avatarImage);
+    private int getVisibilityMenu(MessageModel message) {
+        if (message.fromUser.id.equals(mUserModel.id)) {
+            return View.VISIBLE;
+        } else {
+            return View.GONE;
+        }
+    }
 
+    private String getUsername(MessageModel message) {
+        if (!TextUtils.isEmpty(message.fromUser.username)) {
+            return message.fromUser.username;
+        } else {
+            return message.fromUser.displayName;
+        }
+    }
+
+    private void processingIndicator(ImageView indicator, MessageModel message) {
+//        if (message.unread) {
+//            indicator.setImageResource(R.color.unreadMessage);
+//        }
+    }
+
+    private String getTimeMessage(MessageModel message) {
+        String time = null;
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
         try {
+            long hourOffset =  TimeUnit.HOURS.convert(TimeZone.getDefault().getRawOffset(), TimeUnit.MILLISECONDS);
+
             calendar.setTime(formatter.parse(message.sent));
-            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            long hour = calendar.get(Calendar.HOUR_OF_DAY) + hourOffset;
             int minutes = calendar.get(Calendar.MINUTE);
-            String time = String.format("%02d:%02d", hour, minutes);
-            holder.timeText.setText(time);
+
+            if (hour < 0) {
+                hour = 24 + hour;
+            }
+
+            time = String.format("%02d:%02d", hour, minutes);
+
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
-        if (mMessages.get(position).fromUser.username.equals(mUserModel.username)) {
-            holder.messageMenu.setVisibility(View.VISIBLE);
-        } else {
-            holder.messageMenu.setVisibility(View.INVISIBLE);
-        }
-
-        holder.messageMenu.setOnClickListener(setMenuClick(message));
+        return time;
     }
 
-    private View.OnClickListener setParentLayoutClick(final MessageModel message) {
+    private void setIconMessage(ImageView statusMessage, MessageModel message) {
+        if (message.fromUser.id.equals(mUserModel.id)) {
+            if (statusMessage.getVisibility() == View.INVISIBLE) {
+                statusMessage.setVisibility(View.VISIBLE);
+            }
+
+            if (!message.sent.equals(StatusMessage.NO_SEND.name())
+                    && !message.sent.equals(StatusMessage.SENDING.name())) {
+                statusMessage.setImageResource(R.mipmap.ic_deliver_mess);
+            } else if (message.sent.equals(StatusMessage.NO_SEND.name())) {
+                statusMessage.setImageResource(R.mipmap.ic_error_mess);
+            } else if (message.sent.equals(StatusMessage.SENDING.name())) {
+                statusMessage.setImageResource(R.mipmap.ic_sending_mess);
+            }
+        } else {
+            statusMessage.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private View.OnClickListener getParentLayoutClick(final MessageModel message) {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -135,7 +184,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnClickListener setAvatarImageClick(final MessageModel message) {
+    private View.OnClickListener getAvatarImageClick(final MessageModel message) {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -146,23 +195,35 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message) {
+    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message, final boolean repeatSend) {
         return new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-
                 v.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
                     @Override
                     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                        for (int i = 0; i < message.urls.size(); i++) {
-                            menu.add(message.urls.get(i).url);
-                            menu.getItem(i).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        if (repeatSend) {
+                            menu.add(R.string.retry_send);
+                            menu.getItem(0).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                                 @Override
                                 public boolean onMenuItemClick(MenuItem item) {
-                                    mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
+                                    mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
+                                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
                                     return true;
                                 }
                             });
+                        } else {
+                            for (int i = 0; i < message.urls.size(); i++) {
+                                menu.add(message.urls.get(i).url);
+                                menu.getItem(i).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                                    @Override
+                                    public boolean onMenuItemClick(MenuItem item) {
+                                        mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
+                                        return true;
+                                    }
+                                });
+                            }
                         }
                     }
                 });
@@ -172,7 +233,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnClickListener setMenuClick(final MessageModel message) {
+    private View.OnClickListener getMenuClick(final MessageModel message) {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -224,11 +285,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         mRoom = model;
     }
 
+    @Override
+    public void read(ImageView indicator, int position) {
+        indicator.animate().alpha(0f).setDuration(2000).withLayer();
+        mMessages.get(position).unread = false;
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout parentLayout;
         public ImageView avatarImage;
         public ImageView newMessageIndicator;
         public ImageView messageMenu;
+        public ImageView statusMessage;
         public TextView nicknameText;
         public TextView messageText;
         public TextView timeText;
@@ -243,6 +311,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             messageText = (TextView) itemView.findViewById(R.id.message_text);
             timeText = (TextView) itemView.findViewById(R.id.time_text);
             messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
+            statusMessage = (ImageView) itemView.findViewById(R.id.status_mess_image);
         }
     }
 }
