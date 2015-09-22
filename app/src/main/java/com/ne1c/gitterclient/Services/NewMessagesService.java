@@ -18,7 +18,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -198,7 +197,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setContentIntent(pendingIntent)
-                        .setSmallIcon(R.mipmap.ic_message_white_24dp)
+                        .setSmallIcon(R.mipmap.ic_notif_message)
                         .setTicker(text)
                         .setContentText(text)
                         .setContentTitle(room.name);
