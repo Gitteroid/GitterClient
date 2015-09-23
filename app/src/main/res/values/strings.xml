@@ -10,7 +10,7 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="search">Search</string>
     <string name="home">Home</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="action_refresh">Refresh</string>
     <string name="action_leave">Leave</string>
     <string name="new_message">New message</string>
@@ -21,7 +21,7 @@
     <string name="enable_notif_vibro">Notification vibration</string>
     <string name="edit_message">Edit message</string>
     <string name="delete_message">Delete message</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="no_network">No network connection</string>
     <string name="retry_send">Retry send</string>
