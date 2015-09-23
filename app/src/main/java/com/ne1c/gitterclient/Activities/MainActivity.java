@@ -15,7 +15,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -81,14 +80,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (TextUtils.isEmpty(Utils.getInstance().getAccessToken())) {
+        if (Utils.getInstance().getAccessToken().isEmpty()) {
             startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
             finish();
             return;
         }
-        startService(new Intent(getApplicationContext(), NewMessagesService.class));
+
+        // User data already exist
+        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
+            startService(new Intent(getApplicationContext(), NewMessagesService.class));
+        }
 
         setContentView(R.layout.activity_main);
 
@@ -204,17 +207,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
 
         UserModel model = Utils.getInstance().getUserPref();
-        if (model != null) {
+        if (!model.id.isEmpty()) {
             mMainProfile = new ProfileDrawerItem().withName(model.username).withIcon(ImageLoader.getInstance().loadImageSync(model.avatarUrlMedium));
         } else {
             mMainProfile = new ProfileDrawerItem().withName("Anonymous");
-            mAccountHeader.setActiveProfile(mMainProfile);
         }
 
         mAccountHeader = new AccountHeaderBuilder()
                 .withActivity(this)
-                .withHeaderBackground(R.color.bgHeader)
+                .withHeaderBackground(R.mipmap.header)
                 .withProfileImagesClickable(true)
+                .withSelectionListEnabledForSingleProfile(false)
                 .addProfiles(mMainProfile)
                 .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
                     @Override
@@ -225,6 +228,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 })
                 .build();
+
+        mAccountHeader.setActiveProfile(mMainProfile);
 
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_home).withName(getString(R.string.home))
                 .withSelectable(false)
@@ -262,6 +267,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                     .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+                            stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+                            finish();
                         } else if (item.getName().toString().equals(getString(R.string.exit))) {
                             finish();
                         } else if (mRoomsList != null && mRoomsList.size() > 0) {
@@ -283,6 +290,31 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 })
                 .build();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mRoomsList != null) {
+            if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) != null) {
+                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                        selectedNavItem = i + 1;
+                    }
+                }
+
+                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+
+                mDrawer.closeDrawer();
+            }
+        } else {
+            getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
+        }
     }
 
     @Override
@@ -396,20 +428,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if (data.size() > 0) {
             selectedNavItem = 1;
-
-            // If activity open from notification
-            if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) == null) {
-                //mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-            } else {
-                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                        selectedNavItem = i + 1;
-                    }
-                }
-            }
-
             mDrawer.setSelectionAtPosition(selectedNavItem + 1);
         }
     }
@@ -438,17 +456,29 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         methods.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
             @Override
             public void success(final ArrayList<UserModel> userModel, Response response) {
-                Utils.getInstance().writeUserToPref(userModel.get(0));
+                // If this is the first launch of the application
+                if (Utils.getInstance().getUserPref().id.isEmpty()) {
+                    Utils.getInstance().writeUserToPref(userModel.get(0));
+                    startService(new Intent(getApplicationContext(), NewMessagesService.class));
+                } else {
+                    Utils.getInstance().writeUserToPref(userModel.get(0));
+                }
+
+                // Update profile
+                // updateProfileByIdentifier() not working
+                mAccountHeader.removeProfile(mMainProfile);
+                mMainProfile.withName(userModel.get(0).username);
+                mAccountHeader.addProfiles(mMainProfile);
 
                 ImageLoader.getInstance().loadImage(userModel.get(0).avatarUrlMedium, new SimpleImageLoadingListener() {
                     @Override
                     public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
                         super.onLoadingComplete(imageUri, view, loadedImage);
 
-                        mMainProfile.withName(userModel.get(0).username);
+                        // Update profile
+                        mAccountHeader.removeProfile(mMainProfile);
                         mMainProfile.withIcon(loadedImage);
-                        mAccountHeader.updateProfileByIdentifier(mMainProfile);
-                        mAccountHeader.setActiveProfile(mMainProfile.getIdentifier());
+                        mAccountHeader.addProfiles(mMainProfile);
                     }
                 });
             }
@@ -485,7 +515,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         @Override
         public void onReceive(Context context, Intent intent) {
             MessageModel model = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
-            mChatRoomFragment.messageDelivered(model);
+
+            if (!model.id.isEmpty()) {
+                mChatRoomFragment.messageDelivered(model);
+            } else {
+                mChatRoomFragment.messageErrorDelivered(model);
+            }
         }
     };
 
@@ -527,7 +562,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     public interface NewMessageFragmentCallback {
         void newMessage(MessageModel model);
+
         void messageDelivered(MessageModel model);
+
+        void messageErrorDelivered(MessageModel model);
     }
 
     public interface RefreshRoomCallback {
