@@ -19,16 +19,23 @@
 
         <Button
             android:id="@+id/ok_button"
+            style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="?android:attr/borderlessButtonStyle"
+            android:layout_marginRight="4dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="12dp"
             android:text="@string/ok"/>
 
         <Button
             android:id="@+id/cancel_button"
+            style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="?android:attr/borderlessButtonStyle"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="12dp"
             android:text="@string/cancel"/>
     </LinearLayout>
 
