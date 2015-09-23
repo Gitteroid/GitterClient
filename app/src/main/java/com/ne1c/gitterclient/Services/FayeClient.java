@@ -257,7 +257,6 @@ public class FayeClient {
                 } catch (IOException | InterruptedException e) {
                     Log.d("MYTAG", "NULL PINT");
                     mWebSocket = null;
-                    mCallback.disconnect();
                 }
             }
         });
