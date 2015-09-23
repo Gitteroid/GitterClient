@@ -143,8 +143,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             long hour = calendar.get(Calendar.HOUR_OF_DAY) + hourOffset;
             int minutes = calendar.get(Calendar.MINUTE);
 
-            if (hour < 0) {
-                hour = 24 + hour;
+            if (hour >= 24) {
+                hour -= 24;
             }
 
             time = String.format("%02d:%02d", hour, minutes);
