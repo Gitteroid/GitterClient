@@ -191,11 +191,11 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 // Message not sent or sending, it hasn't id
                 if (!mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
                     mApiMethods.getMessagesBeforeId(Utils.getInstance().getBearer(),
-                            mRoom.id, countLoadMessages, mMessagesArr.get(mMessagesArr.size() - 1).id,
+                            mRoom.id, countLoadMessages, mMessagesArr.get(0).id,
                             new Callback<ArrayList<MessageModel>>() {
                                 @Override
                                 public void success(ArrayList<MessageModel> messageModels, Response response) {
-                                    mMessagesArr.addAll(mMessagesArr.size() - 1, messageModels);
+                                    mMessagesArr.addAll(0, messageModels);
                                     mMessagesAdapter.notifyDataSetChanged();
                                     mPtrFrameLayout.refreshComplete();
                                 }
@@ -303,7 +303,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
                 MessageModel item = mMessagesArr.get(i);
 
-                if (model.equals(item)) {
+                if (model.text.equals(item.text) &&
+                        item.sent.equals(StatusMessage.SENDING.name())) {
                     return;
                 }
 
@@ -322,11 +323,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
             }
-
-            if (model.text.equals(mMessageEditText.getText().toString()) &&
-                    model.fromUser.username.equals(Utils.getInstance().getUserPref().username)) { // If user send message
-                mMessageEditText.setText("");
-            }
         }
     }
 
@@ -338,9 +334,20 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 mMessagesArr.set(i, model);
                 mMessageEditText.setText("");
                 mMessagesAdapter.notifyItemChanged(i);
+
                 if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                     mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
                 }
+            }
+        }
+    }
+
+    @Override
+    public void messageErrorDelivered(MessageModel model) {
+        for (int i = 0; i < mMessagesArr.size(); i++) {
+            if (mMessagesArr.get(i).sent.equals(StatusMessage.SENDING.name())) {
+                mMessagesArr.get(i).sent = StatusMessage.NO_SEND.name();
+                mMessagesAdapter.notifyItemChanged(i);
             }
         }
     }
