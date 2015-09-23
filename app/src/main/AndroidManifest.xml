@@ -26,7 +26,8 @@
         </activity>
         <activity
             android:name=".Activities.MainActivity"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -53,5 +54,4 @@
             android:process=":NewMessagesService">
         </service>
     </application>
-
 </manifest>
