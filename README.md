@@ -1,4 +1,4 @@
-# GitterClient
+# Developers Talk
 Unofficial Gitter.im Android Client
 
 <h2>
