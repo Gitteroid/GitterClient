@@ -1,7 +1,5 @@
 package com.ne1c.gitterclient;
 
-
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
@@ -10,39 +8,39 @@ import android.net.NetworkInfo;
 import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.Models.UserModel;
 
-
+/**
+ * Helper class
+ */
 public class Utils {
-
-    public final String GITTER_FAYE_URL = "https://ws.gitter.im/faye";
-    public final String GITTER_URL = "https://gitter.im";
-    public final String GITHUB_URL = "http://github.com";
-    public final String GITTER_API_URL = "https://api.gitter.im";
+    public static final String GITTER_FAYE_URL = "https://ws.gitter.im/faye";
+    public static final String GITTER_URL = "https://gitter.im";
+    public static final String GITHUB_URL = "http://github.com";
+    public static final String GITTER_API_URL = "https://api.gitter.im";
     public final String USERINFO_PREF = "userinfo";
 
-    public final String ID_PREF_KEY = "id";
-    public final String USERNAME_PREF_KEY = "username";
-    public final String DISPLAY_NAME_PREF_KEY = "displayName";
-    public final String URL_NAME_PREF_KEY = "url";
-    public final String AVATAR_SMALL_PREF_KEY = "avatarUrlSmall";
-    public final String AVATAR_MEDIUM_PREF_KEY = "avatarUrlMedium";
-    public final String ACCESS_TOKEN_PREF_KEY = "access_token";
-    public final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
-    public final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
+    public static final String ID_PREF_KEY = "id";
+    public static final String USERNAME_PREF_KEY = "username";
+    public static final String DISPLAY_NAME_PREF_KEY = "displayName";
+    public static final String URL_NAME_PREF_KEY = "url";
+    public static final String AVATAR_SMALL_PREF_KEY = "avatarUrlSmall";
+    public static final String AVATAR_MEDIUM_PREF_KEY = "avatarUrlMedium";
+    public static final String ACCESS_TOKEN_PREF_KEY = "access_token";
+    public static final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
+    public static final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
 
     private Context mContext;
-
-    private static Utils instance;
+    private static Utils mInstance;
 
     private Utils(Context context) {
         mContext = context;
     }
 
     public static void init(Context context) {
-        instance = new Utils(context);
+        mInstance = new Utils(context);
     }
 
     public static Utils getInstance() {
-        return instance;
+        return mInstance;
     }
 
     public void writeUserToPref(UserModel model) {
