@@ -1,9 +1,12 @@
 package com.ne1c.gitterclient;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.widget.Toast;
 
 import com.ne1c.gitterclient.Models.AuthResponseModel;
 import com.ne1c.gitterclient.Models.UserModel;
@@ -100,5 +103,13 @@ public class Utils {
     public String getAccessToken() {
         return mContext.getSharedPreferences(USERINFO_PREF, Context.MODE_PRIVATE)
                 .getString(ACCESS_TOKEN_PREF_KEY, "");
+    }
+
+    public void copyToClipboard(String text) {
+        ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("", text);
+        clipboard.setPrimaryClip(clip);
+
+        Toast.makeText(mContext, "Copied", Toast.LENGTH_SHORT).show();
     }
 }
