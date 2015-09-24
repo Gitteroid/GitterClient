@@ -9,7 +9,6 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
-import android.text.TextUtils;
 import android.text.style.StyleSpan;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -28,7 +27,6 @@ import com.ne1c.gitterclient.Fragments.EditMessageFragment;
 import com.ne1c.gitterclient.Models.MessageModel;
 import com.ne1c.gitterclient.Models.RoomModel;
 import com.ne1c.gitterclient.Models.StatusMessage;
-import com.ne1c.gitterclient.Models.UserModel;
 import com.ne1c.gitterclient.R;
 import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
 import com.ne1c.gitterclient.Services.NewMessagesService;
@@ -54,17 +52,15 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     private ArrayList<MessageModel> mMessages;
     private Activity mActivity;
     private EditText mMessageEditText;
-    private UserModel mUserModel;
     private IApiMethods mApiMethods;
 
     public MessagesAdapter(Activity activity, ArrayList<MessageModel> messages, EditText editText) {
         mActivity = activity;
         mMessages = messages;
         mMessageEditText = editText;
-        mUserModel = Utils.getInstance().getUserPref();
         mApiMethods = new RestAdapter
                 .Builder()
-                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .setEndpoint(Utils.GITTER_API_URL)
                 .build()
                 .create(IApiMethods.class);
     }
@@ -78,10 +74,10 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     public void onBindViewHolder(ViewHolder holder, final int position) {
         MessageModel message = mMessages.get(position);
 
-        if (message.urls.size() > 0) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, false));
-        } else if (message.sent.equals(StatusMessage.NO_SEND.name())) {
+        if (message.sent.equals(StatusMessage.NO_SEND.name())) {
             holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, true));
+        } else if (message.urls.size() > 0) {
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, false));
         }
 
         holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
@@ -94,14 +90,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         holder.timeText.setText(getTimeMessage(message));
         holder.nicknameText.setText(getUsername(message));
         //noinspection ResourceType
-        holder.messageMenu.setVisibility(getVisibilityMenu(message));
         setIconMessage(holder.statusMessage, message);
 
         ImageLoader.getInstance().displayImage(message.fromUser.avatarUrlSmall, holder.avatarImage);
     }
 
     private void makeDeletedMessageText(TextView text, MessageModel message) {
-        if (TextUtils.isEmpty(message.text)) {
+        if (message.text.isEmpty()) {
             Spannable span = new SpannableString("This message was deleted");
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             text.setText(span);
@@ -110,16 +105,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         }
     }
 
-    private int getVisibilityMenu(MessageModel message) {
-        if (message.fromUser.id.equals(mUserModel.id)) {
-            return View.VISIBLE;
-        } else {
-            return View.GONE;
-        }
-    }
-
     private String getUsername(MessageModel message) {
-        if (!TextUtils.isEmpty(message.fromUser.username)) {
+        if (!message.fromUser.username.isEmpty()) {
             return message.fromUser.username;
         } else {
             return message.fromUser.displayName;
@@ -133,22 +120,23 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     }
 
     private String getTimeMessage(MessageModel message) {
-        String time = null;
+        String time = "";
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
         try {
-            long hourOffset =  TimeUnit.HOURS.convert(TimeZone.getDefault().getRawOffset(), TimeUnit.MILLISECONDS);
+            // GMT TimeZone offset
+            long hourOffset = TimeUnit.HOURS.convert(TimeZone.getDefault().getRawOffset(), TimeUnit.MILLISECONDS);
 
             calendar.setTime(formatter.parse(message.sent));
             long hour = calendar.get(Calendar.HOUR_OF_DAY) + hourOffset;
             int minutes = calendar.get(Calendar.MINUTE);
 
+            // Example: 26:31 hours, output 02:31
             if (hour >= 24) {
                 hour -= 24;
             }
 
             time = String.format("%02d:%02d", hour, minutes);
-
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -156,8 +144,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         return time;
     }
 
+    // Set icon status for message: send, sending or no send
     private void setIconMessage(ImageView statusMessage, MessageModel message) {
-        if (message.fromUser.id.equals(mUserModel.id)) {
+        if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
             if (statusMessage.getVisibility() == View.INVISIBLE) {
                 statusMessage.setVisibility(View.VISIBLE);
             }
@@ -189,7 +178,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             @Override
             public void onClick(View v) {
                 mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse(Utils.getInstance().GITHUB_URL + "/" + message.fromUser.username))
+                        Uri.parse(Utils.GITHUB_URL + "/" + message.fromUser.username))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         };
@@ -204,6 +193,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
                         if (repeatSend) {
                             menu.add(R.string.retry_send);
+
                             menu.getItem(0).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                                 @Override
                                 public boolean onMenuItemClick(MenuItem item) {
@@ -216,10 +206,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         } else {
                             for (int i = 0; i < message.urls.size(); i++) {
                                 menu.add(message.urls.get(i).url);
+
                                 menu.getItem(i).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                                     @Override
                                     public boolean onMenuItemClick(MenuItem item) {
-                                        mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
+                                        mActivity.startActivity(
+                                                new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
                                         return true;
                                     }
                                 });
@@ -227,7 +219,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         }
                     }
                 });
+
                 v.showContextMenu();
+
                 return true;
             }
         };
@@ -238,42 +232,70 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             @Override
             public void onClick(View v) {
                 final PopupMenu menu = new PopupMenu(mActivity, v);
-                menu.inflate(R.menu.menu_message);
-                menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-
-                        switch (item.getItemId()) {
-                            case R.id.edit_message_menu:
-                                EditMessageFragment fragment = new EditMessageFragment();
-                                Bundle args = new Bundle();
-                                args.putParcelable("message", message);
-                                fragment.setArguments(args);
-                                fragment.show(mActivity.getFragmentManager(), "dialogEdit");
-                                return true;
-                            case R.id.delete_message_menu:
-                                mApiMethods.updateMessage(Utils.getInstance().getBearer(), mRoom.id, message.id, "",
-                                        new Callback<MessageModel>() {
-                                            @Override
-                                            public void success(MessageModel model, Response response) {
-                                                Toast.makeText(mActivity, "Deleted", Toast.LENGTH_SHORT).show();
-                                            }
-
-                                            @Override
-                                            public void failure(RetrofitError error) {
-                                                Toast.makeText(mActivity, "Deleted error", Toast.LENGTH_SHORT).show();
-                                            }
-                                        });
-                                return true;
-                            default:
-                                return false;
-                        }
-                    }
-                });
-
-                menu.show();
+                if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
+                    menu.inflate(R.menu.menu_message_user);
+                    showMenuUser(menu, message);
+                } else {
+                    menu.inflate(R.menu.menu_message_all);
+                    showMenuAll(menu, message);
+                }
             }
         };
+    }
+
+    private void showMenuUser(PopupMenu menu, final MessageModel message) {
+        menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.edit_message_menu:
+                        EditMessageFragment fragment = new EditMessageFragment();
+                        Bundle args = new Bundle();
+                        args.putParcelable("message", message);
+                        fragment.setArguments(args);
+                        fragment.show(mActivity.getFragmentManager(), "dialogEdit");
+                        return true;
+                    case R.id.delete_message_menu:
+                        mApiMethods.updateMessage(Utils.getInstance().getBearer(), mRoom.id, message.id, "",
+                                new Callback<MessageModel>() {
+                                    @Override
+                                    public void success(MessageModel model, Response response) {
+                                        Toast.makeText(mActivity, R.string.deleted, Toast.LENGTH_SHORT).show();
+                                    }
+
+                                    @Override
+                                    public void failure(RetrofitError error) {
+                                        Toast.makeText(mActivity, R.string.deleted_error, Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                        return true;
+                    case R.id.copy_text_menu:
+                        Utils.getInstance().copyToClipboard(message.text);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        menu.show();
+    }
+
+    private void showMenuAll(PopupMenu menu, final MessageModel message) {
+        menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.copy_text_menu:
+                        Utils.getInstance().copyToClipboard(message.text);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        menu.show();
     }
 
     @Override
