@@ -25,4 +25,8 @@
     <string name="cancel">Cancel</string>
     <string name="no_network">No network connection</string>
     <string name="retry_send">Retry send</string>
+    <string name="copy_text">Copy text</string>
+    <string name="deleted">Deleted</string>
+    <string name="deleted_error">Deleted error</string>
+    <string name="changes">Сhanges will take effect the next time the application</string>
 </resources>

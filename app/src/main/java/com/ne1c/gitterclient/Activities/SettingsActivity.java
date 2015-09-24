@@ -1,15 +1,14 @@
 package com.ne1c.gitterclient.Activities;
 
-
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.ne1c.gitterclient.Fragments.PreferencesFragment;
-
-import java.util.Random;
+import com.ne1c.gitterclient.R;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -49,5 +48,12 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void finish() {
+        Toast.makeText(getApplicationContext(), R.string.changes,
+                Toast.LENGTH_SHORT).show();
+        super.finish();
     }
 }
