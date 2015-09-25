@@ -53,6 +53,7 @@ import retrofit.client.Response;
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_MESSAGE_DELIVERED = "com.ne1c.gitterclient.MessageDeliveredReceiver";
+    public final static String BROADCAST_UNATHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
@@ -102,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void init() {
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
         registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
+        registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNATHORIZED));
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -109,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         mRestAdapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .setEndpoint(Utils.GITTER_API_URL)
                 .build();
 
         mClientDatabase = new ClientDatabase(getApplicationContext());
@@ -486,6 +488,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             @Override
             public void failure(RetrofitError error) {
                 Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+                if (error.getMessage().contains("401")) {
+                    mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+                }
             }
         });
     }
@@ -524,6 +529,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     };
 
+    private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Select "Sign Out"
+            mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+        }
+    };
+
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
         public static final int FROM_SERVER = 0;
         public static final int FROM_DATABASE = 1;
@@ -542,7 +555,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             if (mFlag == FROM_SERVER) {
                 mAdapter = new RestAdapter.Builder()
-                        .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                        .setEndpoint(Utils.GITTER_API_URL)
                         .build();
             }
         }

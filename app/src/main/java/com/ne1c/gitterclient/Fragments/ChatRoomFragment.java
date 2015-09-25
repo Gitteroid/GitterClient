@@ -167,6 +167,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
                                 .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
                                 .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+
+                        mMessageEditText.setText("");
                     } else {
                         if (getView() != null) {
                             Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
@@ -272,6 +274,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 isRefreshing = false;
                 mPtrFrameLayout.setVisibility(View.VISIBLE);
                 Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
+
+                if (error.getMessage().contains("401")) {
+                    getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNATHORIZED));
+                }
             }
         });
     }
@@ -332,7 +338,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             if (mMessagesArr.get(i).sent.equals(StatusMessage.SENDING.name()) &&
                     mMessagesArr.get(i).text.equals(model.text)) {
                 mMessagesArr.set(i, model);
-                mMessageEditText.setText("");
                 mMessagesAdapter.notifyItemChanged(i);
 
                 if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
@@ -344,6 +349,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
     @Override
     public void messageErrorDelivered(MessageModel model) {
+        Toast.makeText(getActivity(), R.string.error_send, Toast.LENGTH_SHORT).show();
+
         for (int i = 0; i < mMessagesArr.size(); i++) {
             if (mMessagesArr.get(i).sent.equals(StatusMessage.SENDING.name())) {
                 mMessagesArr.get(i).sent = StatusMessage.NO_SEND.name();

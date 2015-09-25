@@ -75,9 +75,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         MessageModel message = mMessages.get(position);
 
         if (message.sent.equals(StatusMessage.NO_SEND.name())) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, true));
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, position, true));
         } else if (message.urls.size() > 0) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, false));
+            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, position, false));
         }
 
         holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
@@ -184,7 +184,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message, final boolean repeatSend) {
+    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message, final int position, final boolean repeatSend) {
         return new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -197,9 +197,15 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                             menu.getItem(0).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                                 @Override
                                 public boolean onMenuItemClick(MenuItem item) {
+                                    // Repeat send
                                     mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
                                             .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
                                             .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+
+                                    // Update status message
+                                    mMessages.get(position).sent = StatusMessage.SENDING.name();
+                                    notifyItemChanged(position);
+
                                     return true;
                                 }
                             });
