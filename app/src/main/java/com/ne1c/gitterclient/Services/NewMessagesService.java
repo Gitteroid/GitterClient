@@ -38,9 +38,7 @@ import retrofit.client.OkClient;
 import rx.exceptions.OnErrorNotImplementedException;
 import rx.functions.Action1;
 
-
 public class NewMessagesService extends Service implements FayeClient.UnexpectedSituationCallback {
-
     public static final int NOTIF_REQUEST_CODE = 1000;
     public static final int NOTIF_CODE = 101;
 
@@ -77,13 +75,19 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
         RestAdapter adapter = new RestAdapter.Builder()
                 .setClient(new OkClient(okHttpClient))
-                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .setEndpoint(Utils.GITTER_API_URL)
                 .build();
         mApiMethods = adapter.create(IApiMethods.class);
+        mFayeClient = new FayeClient(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Reconnect if service start retry and update rooms
+        if (flags == START_FLAG_RETRY) {
+            disconnect();
+        }
+
         return START_STICKY;
     }
 
@@ -100,23 +104,25 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                             intent.putExtra(FROM_ROOM_EXTRA_KEY, room);
 
                             Gson gson = new GsonBuilder().create();
-                            MessageModel message = null;
+                            MessageModel message = new MessageModel();
                             if (response.getAsJsonObject("data") != null) {
-                                message = gson.fromJson(response.getAsJsonObject("data").getAsJsonObject("model"), MessageModel.class);
+                                message = gson.fromJson(
+                                        response.getAsJsonObject("data").getAsJsonObject("model"),
+                                        MessageModel.class);
                             }
 
                             intent.putExtra(NEW_MESSAGE_EXTRA_KEY, message);
-                            if (message != null) {
                                 if (message.text != null) {
                                     sendBroadcast(intent);
 
-                                    if (!message.fromUser.username.equals(Utils.getInstance().getUserPref().username) &&
-                                            PreferenceManager.getDefaultSharedPreferences(NewMessagesService.this).getBoolean("enable_notif", true)) {
+                                    boolean enableNotif = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                                            .getBoolean("enable_notif", true);
+                                    if (!message.fromUser.id.equals(Utils.getInstance().getUserPref().id) &&
+                                            enableNotif) {
                                         sendNotificationMessage(room, message);
                                     }
                                 }
                             }
-                        }
                     });
         }
     }
@@ -135,11 +141,20 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MessageModel message = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
-                            intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
-                            intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
-                    Intent sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
-                            .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
+                    MessageModel message = new MessageModel();
+                    Intent sendIntent;
+                    try {
+                        message = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
+                                intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
+                                intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
+                        sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
+                                .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
+                    } catch (RetrofitError e) {
+                        message.id = "";
+                        sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
+                                .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
+                    }
+
                     sendBroadcast(sendIntent);
 
                 }
@@ -151,9 +166,8 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Utils.getInstance().isNetworkConnected()) {
-                mFayeClient = new FayeClient(NewMessagesService.this);
                 try {
-                    mFayeClient.connect(Utils.getInstance().GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
+                    mFayeClient.connect(Utils.GITTER_FAYE_URL, Utils.getInstance().getAccessToken());
                     mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
                         @Override
                         public void call(Boolean aBoolean) {
@@ -162,6 +176,9 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                         }
                     });
                 } catch (OnErrorNotImplementedException | RetrofitError e) {
+                    if (e.getMessage().contains("401")) {
+                            sendBroadcast(new Intent(MainActivity.BROADCAST_UNATHORIZED));
+                        }
                     disconnect();
                 }
             } else {
@@ -173,7 +190,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     };
 
     private void sendNotificationMessage(RoomModel room, MessageModel message) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         boolean sound = prefs.getBoolean("notif_sound", true);
         boolean vibro = prefs.getBoolean("notif_vibro", true);
 
@@ -222,9 +239,10 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     @Override
     public void disconnect() {
-        mFayeClient.reconnect(new Action1<Boolean>() {
+        mFayeClient.reconnect(Utils.getInstance().getAccessToken(), new Action1<Boolean>() {
             @Override
             public void call(Boolean aBoolean) {
+                mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
                 createSubribers();
             }
         });
