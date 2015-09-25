@@ -212,7 +212,9 @@ public class FayeClient {
         });
     }
 
-    public void reconnect(Action1<Boolean> action) {
+    public void reconnect(String token, Action1<Boolean> action) {
+        mAcessToken = token;
+
         disconnect();
         connect(mUrl, mAcessToken);
         accessClientIdSubscriber().subscribe(action);
