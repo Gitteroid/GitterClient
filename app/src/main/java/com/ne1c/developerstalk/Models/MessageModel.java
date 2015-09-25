@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Models;
+package com.ne1c.developerstalk.Models;
 
 
 import android.os.Parcel;
@@ -6,7 +6,6 @@ import android.os.Parcelable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class MessageModel implements Parcelable {
     public String id;

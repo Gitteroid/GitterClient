@@ -1,20 +1,18 @@
-package com.ne1c.gitterclient.Fragments;
+package com.ne1c.developerstalk.Fragments;
 
 
 import android.app.DialogFragment;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.UpdateMessageEventBus;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.UpdateMessageEventBus;
 
 import de.greenrobot.event.EventBus;
 

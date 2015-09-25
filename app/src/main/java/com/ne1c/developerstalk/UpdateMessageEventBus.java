@@ -1,6 +1,6 @@
-package com.ne1c.gitterclient;
+package com.ne1c.developerstalk;
 
-import com.ne1c.gitterclient.Models.MessageModel;
+import com.ne1c.developerstalk.Models.MessageModel;
 
 public class UpdateMessageEventBus {
     private MessageModel mMessageModel;

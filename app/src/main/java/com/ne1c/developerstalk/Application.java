@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient;
+package com.ne1c.developerstalk;
 
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;

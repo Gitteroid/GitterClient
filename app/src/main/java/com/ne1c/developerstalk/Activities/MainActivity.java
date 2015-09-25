@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Activities;
+package com.ne1c.developerstalk.Activities;
 
 
 import android.app.LoaderManager;
@@ -30,15 +30,15 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
-import com.ne1c.gitterclient.Database.ClientDatabase;
-import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.Models.UserModel;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
-import com.ne1c.gitterclient.Services.NewMessagesService;
-import com.ne1c.gitterclient.Utils;
+import com.ne1c.developerstalk.Database.ClientDatabase;
+import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.Models.UserModel;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.Services.NewMessagesService;
+import com.ne1c.developerstalk.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 

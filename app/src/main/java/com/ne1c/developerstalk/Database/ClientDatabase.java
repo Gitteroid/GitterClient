@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Database;
+package com.ne1c.developerstalk.Database;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -6,9 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.Models.UserModel;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.Models.UserModel;
 
 import java.util.ArrayList;
 import java.util.List;

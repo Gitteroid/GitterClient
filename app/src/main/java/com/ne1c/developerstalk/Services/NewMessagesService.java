@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Services;
+package com.ne1c.developerstalk.Services;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -22,12 +22,12 @@ import android.text.style.StyleSpan;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.ne1c.gitterclient.Activities.MainActivity;
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
-import com.ne1c.gitterclient.Utils;
+import com.ne1c.developerstalk.Activities.MainActivity;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.Utils;
 import com.squareup.okhttp.OkHttpClient;
 
 import java.util.ArrayList;

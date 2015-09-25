@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Models;
+package com.ne1c.developerstalk.Models;
 
 public enum StatusMessage {
     NO_SEND, SENDING

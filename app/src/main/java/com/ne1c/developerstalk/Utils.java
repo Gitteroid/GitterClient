@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient;
+package com.ne1c.developerstalk;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -8,8 +8,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Models.AuthResponseModel;
-import com.ne1c.gitterclient.Models.UserModel;
+import com.ne1c.developerstalk.Models.AuthResponseModel;
+import com.ne1c.developerstalk.Models.UserModel;
 
 /**
  * Helper class

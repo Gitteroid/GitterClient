@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Models;
+package com.ne1c.developerstalk.Models;
 
 import android.os.Parcel;
 import android.os.Parcelable;

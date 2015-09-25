@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Activities;
+package com.ne1c.developerstalk.Activities;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -7,8 +7,8 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Fragments.PreferencesFragment;
-import com.ne1c.gitterclient.R;
+import com.ne1c.developerstalk.Fragments.PreferencesFragment;
+import com.ne1c.developerstalk.R;
 
 public class SettingsActivity extends AppCompatActivity {
 

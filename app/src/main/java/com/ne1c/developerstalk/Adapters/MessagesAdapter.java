@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Adapters;
+package com.ne1c.developerstalk.Adapters;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -22,15 +22,15 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Fragments.ChatRoomFragment;
-import com.ne1c.gitterclient.Fragments.EditMessageFragment;
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.Models.StatusMessage;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
-import com.ne1c.gitterclient.Services.NewMessagesService;
-import com.ne1c.gitterclient.Utils;
+import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
+import com.ne1c.developerstalk.Fragments.EditMessageFragment;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.Models.StatusMessage;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.Services.NewMessagesService;
+import com.ne1c.developerstalk.Utils;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.text.ParseException;
@@ -38,7 +38,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import retrofit.Callback;

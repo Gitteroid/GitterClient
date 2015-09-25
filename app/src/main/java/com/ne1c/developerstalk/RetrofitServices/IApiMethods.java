@@ -1,9 +1,9 @@
-package com.ne1c.gitterclient.RetrofitServices;
+package com.ne1c.developerstalk.RetrofitServices;
 
-import com.ne1c.gitterclient.Models.AuthResponseModel;
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.Models.UserModel;
+import com.ne1c.developerstalk.Models.AuthResponseModel;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.Models.UserModel;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Services;
+package com.ne1c.developerstalk.Services;
 
 import android.util.Log;
 
@@ -14,13 +14,10 @@ import com.squareup.okhttp.ws.WebSocket;
 import com.squareup.okhttp.ws.WebSocketCall;
 import com.squareup.okhttp.ws.WebSocketListener;
 
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import okio.Buffer;
 import okio.BufferedSource;

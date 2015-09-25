@@ -3,7 +3,7 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
-              tools:context="com.ne1c.gitterclient.Fragments.ChatRoomFragment">
+              tools:context="com.ne1c.developerstalk.Fragments.ChatRoomFragment">
 
     <ProgressBar
         android:id="@+id/progress_bar"

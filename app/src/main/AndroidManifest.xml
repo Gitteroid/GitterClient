@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest
-    package="com.ne1c.gitterclient"
+    package="com.ne1c.developerstalk"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -9,13 +9,13 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
-        android:name=".Application"
+        android:name="com.ne1c.developerstalk.Application"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".Activities.LoginActivity"
+            android:name="com.ne1c.developerstalk.Activities.LoginActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/app_name">
             <intent-filter>
@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activities.MainActivity"
+            android:name="com.ne1c.developerstalk.Activities.MainActivity"
             android:label="@string/app_name"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
             <intent-filter>
@@ -36,12 +36,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activities.SettingsActivity"
+            android:name="com.ne1c.developerstalk.Activities.SettingsActivity"
             android:label="@string/title_activity_settings">
         </activity>
 
         <receiver
-            android:name=".OnBootBroadcastReceiver"
+            android:name="com.ne1c.developerstalk.OnBootBroadcastReceiver"
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
@@ -49,7 +49,7 @@
         </receiver>
 
         <service
-            android:name=".Services.NewMessagesService"
+            android:name="com.ne1c.developerstalk.Services.NewMessagesService"
             android:enabled="true"
             android:process=":NewMessagesService">
         </service>

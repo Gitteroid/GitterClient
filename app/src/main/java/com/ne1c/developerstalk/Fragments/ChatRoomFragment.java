@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Fragments;
+package com.ne1c.developerstalk.Fragments;
 
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -18,22 +18,21 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Activities.MainActivity;
-import com.ne1c.gitterclient.Adapters.MessagesAdapter;
-import com.ne1c.gitterclient.Database.ClientDatabase;
-import com.ne1c.gitterclient.Models.MessageModel;
-import com.ne1c.gitterclient.Models.RoomModel;
-import com.ne1c.gitterclient.Models.StatusMessage;
-import com.ne1c.gitterclient.Models.UserModel;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
-import com.ne1c.gitterclient.Services.NewMessagesService;
-import com.ne1c.gitterclient.UpdateMessageEventBus;
-import com.ne1c.gitterclient.Utils;
+import com.ne1c.developerstalk.Activities.MainActivity;
+import com.ne1c.developerstalk.Adapters.MessagesAdapter;
+import com.ne1c.developerstalk.Database.ClientDatabase;
+import com.ne1c.developerstalk.Models.MessageModel;
+import com.ne1c.developerstalk.Models.RoomModel;
+import com.ne1c.developerstalk.Models.StatusMessage;
+import com.ne1c.developerstalk.Models.UserModel;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.Services.NewMessagesService;
+import com.ne1c.developerstalk.UpdateMessageEventBus;
+import com.ne1c.developerstalk.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Objects;
 
 import de.greenrobot.event.EventBus;
 import in.srain.cube.views.ptr.PtrClassicFrameLayout;

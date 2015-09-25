@@ -1,10 +1,10 @@
-package com.ne1c.gitterclient.Fragments;
+package com.ne1c.developerstalk.Fragments;
 
 
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 
-import com.ne1c.gitterclient.R;
+import com.ne1c.developerstalk.R;
 
 public class PreferencesFragment extends PreferenceFragment {
 

@@ -1,4 +1,4 @@
-package com.ne1c.gitterclient.Activities;
+package com.ne1c.developerstalk.Activities;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -6,7 +6,6 @@ import android.graphics.Bitmap;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -15,11 +14,10 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.ne1c.gitterclient.Models.AuthResponseModel;
-import com.ne1c.gitterclient.R;
-import com.ne1c.gitterclient.RetrofitServices.IApiMethods;
-import com.ne1c.gitterclient.Services.NewMessagesService;
-import com.ne1c.gitterclient.Utils;
+import com.ne1c.developerstalk.Models.AuthResponseModel;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.Utils;
 
 import retrofit.Callback;
 import retrofit.RestAdapter;
