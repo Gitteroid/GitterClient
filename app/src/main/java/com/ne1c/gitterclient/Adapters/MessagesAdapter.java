@@ -123,20 +123,38 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         String time = "";
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
+        Calendar nowCalendar = Calendar.getInstance();
+        nowCalendar.setTimeInMillis(System.currentTimeMillis());
+
         try {
             // GMT TimeZone offset
-            long hourOffset = TimeUnit.HOURS.convert(TimeZone.getDefault().getRawOffset(), TimeUnit.MILLISECONDS);
+            long hourOffset = TimeUnit.HOURS.convert(nowCalendar.getTimeZone().getRawOffset(), TimeUnit.MILLISECONDS);
 
             calendar.setTime(formatter.parse(message.sent));
             long hour = calendar.get(Calendar.HOUR_OF_DAY) + hourOffset;
             int minutes = calendar.get(Calendar.MINUTE);
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
 
             // Example: 26:31 hours, output 02:31
             if (hour >= 24) {
                 hour -= 24;
             }
 
-            time = String.format("%02d:%02d", hour, minutes);
+            if (year != nowCalendar.get(Calendar.YEAR)) {
+                time = String.format("%02d.%02d.%d", day, month, year);
+            } else if (day != nowCalendar.get(Calendar.DAY_OF_MONTH) ||
+                    month != nowCalendar.get(Calendar.MONTH)) {
+                time = String.format("%02d.%02d", day, month);
+            }
+
+            // If time contains already day or year
+            if (!time.isEmpty()) {
+                time += String.format(" %02d:%02d", hour, minutes);
+            } else {
+                time = String.format("%02d:%02d", hour, minutes);
+            }
         } catch (ParseException e) {
             e.printStackTrace();
         }
