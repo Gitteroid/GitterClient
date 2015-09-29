@@ -96,7 +96,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     private void makeDeletedMessageText(TextView text, MessageModel message) {
         if (message.text.isEmpty()) {
-            Spannable span = new SpannableString("This message was deleted");
+            Spannable span = new SpannableString(mActivity.getString(R.string.message_deleted));
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             text.setText(span);
         } else {
