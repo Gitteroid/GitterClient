@@ -145,7 +145,9 @@ public class FayeClient {
             pintThread.interrupt();
         }
 
-        mAccessClientIdSub.unsubscribe();
+        if (mAccessClientIdSub != null) {
+            mAccessClientIdSub.unsubscribe();
+        }
 
         for (Subscriber<? super JsonObject> sub : mSubscriberMap.values()) {
             sub.unsubscribe();
@@ -265,7 +267,7 @@ public class FayeClient {
             return Observable.create(new Observable.OnSubscribe<Boolean>() {
                 @Override
                 public void call(Subscriber<? super Boolean> subscriber) {
-                    mAccessClientIdSub = (Subscriber<Boolean>) subscriber;
+                    mAccessClientIdSub = (Subscriber <Boolean>) subscriber;
                 }
             });
     }
