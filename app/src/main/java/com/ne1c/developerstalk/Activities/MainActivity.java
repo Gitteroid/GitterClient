@@ -10,6 +10,8 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -20,6 +22,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.bumptech.glide.BitmapTypeRequest;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.FutureTarget;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.BitmapImageViewTarget;
+import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -39,10 +52,9 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.Utils;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 import de.greenrobot.event.EventBus;
 import retrofit.Callback;
@@ -76,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ClientDatabase mClientDatabase;
 
     private int selectedNavItem;
+    private boolean loadAvatarFromNetworkFlag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -210,7 +223,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         UserModel model = Utils.getInstance().getUserPref();
         if (!model.id.isEmpty()) {
-            mMainProfile = new ProfileDrawerItem().withName(model.username).withIcon(ImageLoader.getInstance().loadImageSync(model.avatarUrlMedium));
+            mMainProfile = new ProfileDrawerItem().withName(model.username);
+            loadImageFromCache();
         } else {
             mMainProfile = new ProfileDrawerItem().withName("Anonymous");
         }
@@ -225,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     @Override
                     public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
                         startActivity(new Intent(Intent.ACTION_VIEW,
-                                Uri.parse(Utils.getInstance().GITHUB_URL + Utils.getInstance().getUserPref().url)));
+                                Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
                         return false;
                     }
                 })
@@ -442,6 +456,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         try {
             unregisterReceiver(newMessageReceiver);
             unregisterReceiver(messageDeliveredReceiver);
+            unregisterReceiver(unauthorizedReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -451,6 +466,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         super.onDestroy();
+    }
+
+    private void loadImageFromCache() {
+        Glide.with(this).load(Utils.getInstance().getUserPref().avatarUrlMedium).diskCacheStrategy(DiskCacheStrategy.RESULT).into(new SimpleTarget<GlideDrawable>() {
+            @Override
+            public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                if (!loadAvatarFromNetworkFlag) {
+                    mAccountHeader.removeProfile(mMainProfile);
+                    mMainProfile.withIcon(resource.getCurrent());
+                    mAccountHeader.addProfiles(mMainProfile);
+                }
+            }
+        });
     }
 
     private void updateUserFromServer() {
@@ -472,17 +500,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 mMainProfile.withName(userModel.get(0).username);
                 mAccountHeader.addProfiles(mMainProfile);
 
-                ImageLoader.getInstance().loadImage(userModel.get(0).avatarUrlMedium, new SimpleImageLoadingListener() {
-                    @Override
-                    public void onLoadingComplete(String imageUri, View view, final Bitmap loadedImage) {
-                        super.onLoadingComplete(imageUri, view, loadedImage);
-
-                        // Update profile
-                        mAccountHeader.removeProfile(mMainProfile);
-                        mMainProfile.withIcon(loadedImage);
-                        mAccountHeader.addProfiles(mMainProfile);
-                    }
-                });
+                // Update profile
+                Glide.with(MainActivity.this).load(userModel.get(0).avatarUrlMedium).asBitmap()
+                        .into(new SimpleTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                                mAccountHeader.removeProfile(mMainProfile);
+                                mMainProfile.withIcon(resource);
+                                mAccountHeader.addProfiles(mMainProfile);
+                                loadAvatarFromNetworkFlag = true;
+                            }
+                        });
             }
 
             @Override

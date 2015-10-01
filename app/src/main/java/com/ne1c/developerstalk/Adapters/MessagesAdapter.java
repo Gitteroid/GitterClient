@@ -22,6 +22,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.Fragments.EditMessageFragment;
 import com.ne1c.developerstalk.Models.MessageModel;
@@ -31,7 +32,6 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.Utils;
-import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -91,7 +91,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         //noinspection ResourceType
         setIconMessage(holder.statusMessage, message);
 
-        ImageLoader.getInstance().displayImage(message.fromUser.avatarUrlSmall, holder.avatarImage);
+        Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(holder.avatarImage);
     }
 
     private void makeDeletedMessageText(TextView text, MessageModel message) {
