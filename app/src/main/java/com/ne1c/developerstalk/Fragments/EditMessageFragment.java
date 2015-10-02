@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.UpdateMessageEventBus;
+import com.ne1c.developerstalk.EventBusModels.UpdateMessageEventBus;
 
 import de.greenrobot.event.EventBus;
 

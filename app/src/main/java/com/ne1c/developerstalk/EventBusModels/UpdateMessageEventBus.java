@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk;
+package com.ne1c.developerstalk.EventBusModels;
 
 import com.ne1c.developerstalk.Models.MessageModel;
 
