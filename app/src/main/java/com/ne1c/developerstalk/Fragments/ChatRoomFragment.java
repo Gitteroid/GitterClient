@@ -9,6 +9,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import com.ne1c.developerstalk.Activities.MainActivity;
 import com.ne1c.developerstalk.Adapters.MessagesAdapter;
 import com.ne1c.developerstalk.Database.ClientDatabase;
+import com.ne1c.developerstalk.EventBusModels.ReadMessagesEventBus;
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.Models.StatusMessage;
@@ -28,7 +30,7 @@ import com.ne1c.developerstalk.Models.UserModel;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
-import com.ne1c.developerstalk.UpdateMessageEventBus;
+import com.ne1c.developerstalk.EventBusModels.UpdateMessageEventBus;
 import com.ne1c.developerstalk.Utils;
 
 import java.util.ArrayList;
@@ -91,6 +93,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
+        // Animation for add new item or change item
         DefaultItemAnimator anim = new DefaultItemAnimator();
         anim.setAddDuration(1000);
         mMessagesList.setItemAnimator(anim);
@@ -111,20 +114,11 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessagesList.setAdapter(mMessagesAdapter);
         mMessagesList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            public void onScrollStateChanged(final RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
-//                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-//                    int first = mListLayoutManager.findFirstCompletelyVisibleItemPosition();
-//                    int last = mListLayoutManager.findLastCompletelyVisibleItemPosition();
-//
-//                    for (int i = first; i <= last; i++) {
-//                        if (mMessagesArr.get(i).unread) {
-//                            mMessagesArr.get(i).unread = false;
-//                            mMessagesAdapter.read(((MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i))
-//                                    .newMessageIndicator, i);
-//                        }
-//                    }
-//                }
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    markMessagesAsRead(recyclerView);
+                }
             }
         });
 
@@ -141,7 +135,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mPtrFrameLayout.setSaveEnabled(true);
 
         mRestApiAdapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.getInstance().GITTER_API_URL)
+                .setEndpoint(Utils.GITTER_API_URL)
                 .build();
 
         mSendButton.setOnClickListener(new View.OnClickListener() {
@@ -226,6 +220,50 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         super.onDestroy();
     }
 
+    private void markMessagesAsRead(final RecyclerView recyclerView) {
+        final int first = mListLayoutManager.findFirstVisibleItemPosition();
+        final int last = mListLayoutManager.findLastVisibleItemPosition();
+
+        final ArrayList<String> listUnreadIds = new ArrayList<>();
+        if (first > -1 && last > -1) {
+            for (int i = first; i <= last; i++) {
+                if (mMessagesArr.get(i).unread) {
+                    listUnreadIds.add(mMessagesArr.get(i).id);
+                }
+            }
+        }
+
+        if (listUnreadIds.size() > 0) {
+            listUnreadIds.add(""); // If single item
+            mApiMethods.readMessages(Utils.getInstance().getBearer(),
+                    Utils.getInstance().getUserPref().id,
+                    mRoom.id,
+                    listUnreadIds.toArray(new String[listUnreadIds.size()]),
+                    new Callback<Response>() {
+                        @Override
+                        public void success(Response response, Response response2) {
+                            for (int i = first; i <= last; i++) {
+                                mMessagesArr.get(i).unread = false;
+                                mMessagesAdapter.read(((MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i))
+                                        .newMessageIndicator, i);
+                            }
+
+                            // Send notification to MainActivity
+                            ReadMessagesEventBus readMessagesEventBus = new ReadMessagesEventBus();
+
+                            // -1 but last item equals to empty string
+                            readMessagesEventBus.setCountRead(listUnreadIds.size() - 1);
+                            EventBus.getDefault().post(readMessagesEventBus);
+                        }
+
+                        @Override
+                        public void failure(RetrofitError error) {
+                            Log.d("readmess", error.getMessage());
+                            // If error read messages
+                        }
+                    });
+        }
+    }
     private void loadMessageRoomServer(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
         mMessagesAdapter.setRoom(roomModel);
 
@@ -250,6 +288,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 } else {
                     mMessagesAdapter.notifyDataSetChanged();
 
+                    // If room just was loaded
                     if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
                         mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
                     }
@@ -261,6 +300,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 }
 
                 isRefreshing = false;
+
+                // Set this state for call process reading messages
+                markMessagesAsRead(mMessagesList);
             }
 
             @Override
@@ -444,7 +486,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         void finish();
     }
 
+    // Callback for adapter
     public interface ReadMessageCallback {
         void read(ImageView indicator, int position);
+    }
+
+    // Callback for counter of navigation view in MainActivity
+    public interface ReadMessageCounterCallback {
+        void read(int count);
     }
 }

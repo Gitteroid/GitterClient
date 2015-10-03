@@ -113,9 +113,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     }
 
     private void processingIndicator(ImageView indicator, MessageModel message) {
-//        if (message.unread) {
-//            indicator.setImageResource(R.color.unreadMessage);
-//        }
+        if (message.unread) {
+            indicator.setImageResource(R.color.unreadMessage);
+        } else {
+            indicator.setImageResource(android.R.color.transparent);
+        }
     }
 
     private String getTimeMessage(MessageModel message) {
@@ -332,7 +334,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     @Override
     public void read(ImageView indicator, int position) {
-        indicator.animate().alpha(0f).setDuration(2000).withLayer();
+        indicator.animate().alpha(0f).setDuration(1500).withLayer();
         mMessages.get(position).unread = false;
     }
 

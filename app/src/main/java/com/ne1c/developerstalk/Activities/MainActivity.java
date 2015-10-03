@@ -10,8 +10,6 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -22,28 +20,24 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.bumptech.glide.BitmapTypeRequest;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.FutureTarget;
-import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.BitmapImageViewTarget;
-import com.bumptech.glide.request.target.GlideDrawableImageViewTarget;
 import com.bumptech.glide.request.target.SimpleTarget;
-import com.bumptech.glide.request.target.Target;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.BadgeStyle;
+import com.mikepenz.materialdrawer.holder.StringHolder;
 import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.developerstalk.Database.ClientDatabase;
+import com.ne1c.developerstalk.EventBusModels.ReadMessagesEventBus;
 import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
@@ -54,7 +48,6 @@ import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.Utils;
 
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
 
 import de.greenrobot.event.EventBus;
 import retrofit.Callback;
@@ -93,7 +86,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         if (Utils.getInstance().getAccessToken().isEmpty()) {
             startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -109,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setContentView(R.layout.activity_main);
 
+        EventBus.getDefault().register(this);
         init();
         initSavedInstaneState(savedInstanceState);
     }
@@ -465,6 +458,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mClientDatabase.close();
         }
 
+        EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
 
@@ -564,6 +558,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
         }
     };
+
+
+    // Update Badge in navigation item, if message was read
+    public void onEvent(ReadMessagesEventBus count) {
+        for (int i = 0; i < mRoomsList.size(); i++) {
+            if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                mActiveRoom.unreadItems -= count.getCountRead();
+
+                if (mActiveRoom.unreadItems <= 0) {
+                    mActiveRoom.unreadItems = 0;
+                    // Remove badge
+                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
+                } else {
+                    String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
+                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+                }
+
+                mRoomsList.set(i, mActiveRoom);
+                mDrawer.getAdapter().notifyDataSetChanged();
+            }
+        }
+    }
 
     static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
         public static final int FROM_SERVER = 0;
