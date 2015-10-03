@@ -247,6 +247,8 @@ public class ClientDatabase {
     public void insertRooms(ArrayList<RoomModel> list) {
         mDatabase.beginTransaction();
 
+        removeOldRooms(list);
+
         for (RoomModel model : list) {
             ContentValues cv = new ContentValues();
             cv.put(COLUMN_ROOM_ID, model.id);
@@ -310,6 +312,22 @@ public class ClientDatabase {
 
     public void close() {
         mDatabase.close();
+    }
+
+    // Remove old rooms, which not exist in new list of rooms
+    public void removeOldRooms(ArrayList<RoomModel> newList) {
+        ArrayList<RoomModel> olderList = getRooms();
+
+        mDatabase.beginTransaction();
+
+        for (RoomModel model : olderList) {
+            if (!newList.contains(model)) {
+                mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[]{model.id});
+            }
+        }
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
     }
 
     private class DBWorker extends SQLiteOpenHelper {
