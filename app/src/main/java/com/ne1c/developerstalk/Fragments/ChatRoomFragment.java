@@ -302,7 +302,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 isRefreshing = false;
 
                 // Set this state for call process reading messages
-                markMessagesAsRead(mMessagesList);
+                //markMessagesAsRead(mMessagesList);
             }
 
             @Override
@@ -370,6 +370,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
             }
+
+            markMessagesAsRead(mMessagesList);
         }
     }
 
@@ -489,10 +491,5 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     // Callback for adapter
     public interface ReadMessageCallback {
         void read(ImageView indicator, int position);
-    }
-
-    // Callback for counter of navigation view in MainActivity
-    public interface ReadMessageCounterCallback {
-        void read(int count);
     }
 }

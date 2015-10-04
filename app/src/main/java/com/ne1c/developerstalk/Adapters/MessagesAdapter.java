@@ -114,7 +114,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     private void processingIndicator(ImageView indicator, MessageModel message) {
         if (message.unread) {
-            indicator.setImageResource(R.color.unreadMessage);
+            if (!message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
+                indicator.setImageResource(R.color.unreadMessage);
+            }
         } else {
             indicator.setImageResource(android.R.color.transparent);
         }
