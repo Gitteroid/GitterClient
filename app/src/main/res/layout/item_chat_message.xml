@@ -97,8 +97,5 @@
         android:id="@+id/new_message_image"
         android:layout_width="2dp"
         android:layout_height="match_parent"
-        android:layout_marginLeft="1dp"
-        android:layout_marginTop="4dp"
-        android:layout_weight="0"
-        android:visibility="gone"/>
+        android:layout_weight="0"/>
 </LinearLayout>
