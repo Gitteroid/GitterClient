@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RestAdapter mRestAdapter;
     private ClientDatabase mClientDatabase;
 
-    private int selectedNavItem;
+    private int selectedNavItem = -1; // Default, item not selected
     private boolean loadAvatarFromNetworkFlag;
 
     @Override
@@ -194,17 +194,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         // If get intent from notification
         if (mRoomsList != null) {
-            mActiveRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            RoomModel intentRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
-            for (int i = 0; i < mRoomsList.size(); i++) {
-                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                    selectedNavItem = i + 1;
+            // If selected room not equal room id from notification, than load room
+            if (mActiveRoom == null || !intentRoom.id.equals(mActiveRoom.id)) {
+                mActiveRoom = intentRoom;
+
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                        selectedNavItem = i + 1;
+                    }
                 }
-            }
 
-            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-            EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
-            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+            }
 
             mDrawer.closeDrawer();
         }
@@ -361,6 +366,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
                     mChatRoomFragment.onRefreshRoom();
+                    getLoaderManager().restartLoader(LOAD_ROOM_ID, null, this).forceLoad();
                 }
                 break;
         }
@@ -436,9 +442,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         if (data.size() > 0) {
-            selectedNavItem = 1;
+            if (selectedNavItem == -1) {
+                selectedNavItem = 1;
+            }
             mDrawer.setSelectionAtPosition(selectedNavItem + 1);
         }
+
+        mDrawer.getAdapter().notifyDataSetChanged();
     }
 
     @Override
