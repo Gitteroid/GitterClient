@@ -336,10 +336,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     @Override
     public void read(ImageView indicator, int position) {
-        // May be null if user scrolling further and view already not exist
-        if (indicator != null) {
-            indicator.animate().alpha(0f).setDuration(1000).withLayer();
-        }
+        indicator.animate().alpha(0f).setDuration(1000).withLayer();
         mMessages.get(position).unread = false;
     }
 

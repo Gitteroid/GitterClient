@@ -243,9 +243,11 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         @Override
                         public void success(Response response, Response response2) {
                             for (int i = first; i <= last; i++) {
-                                mMessagesArr.get(i).unread = false;
-                                mMessagesAdapter.read(((MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i))
-                                        .newMessageIndicator, i);
+                                MessagesAdapter.ViewHolder holder = (MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                if (holder != null) {
+                                    mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                    mMessagesArr.get(i).unread = false;
+                                }
                             }
 
                             // Send notification to MainActivity
@@ -264,6 +266,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     });
         }
     }
+
     private void loadMessageRoomServer(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
         mMessagesAdapter.setRoom(roomModel);
 
