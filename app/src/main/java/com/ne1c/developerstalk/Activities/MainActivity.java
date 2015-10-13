@@ -366,7 +366,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
                     mChatRoomFragment.onRefreshRoom();
-                    getLoaderManager().restartLoader(LOAD_ROOM_ID, null, this).forceLoad();
+
+                    if (Utils.getInstance().isNetworkConnected()) {
+                        getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+                    }
                 }
                 break;
         }

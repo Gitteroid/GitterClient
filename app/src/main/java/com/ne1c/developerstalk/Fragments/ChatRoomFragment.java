@@ -224,46 +224,48 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         final int first = mListLayoutManager.findFirstVisibleItemPosition();
         final int last = mListLayoutManager.findLastVisibleItemPosition();
 
-        final ArrayList<String> listUnreadIds = new ArrayList<>();
-        if (first > -1 && last > -1) {
-            for (int i = first; i <= last; i++) {
-                if (mMessagesArr.get(i).unread) {
-                    listUnreadIds.add(mMessagesArr.get(i).id);
+        if (Utils.getInstance().isNetworkConnected()) {
+            final ArrayList<String> listUnreadIds = new ArrayList<>();
+            if (first > -1 && last > -1) {
+                for (int i = first; i <= last; i++) {
+                    if (mMessagesArr.get(i).unread) {
+                        listUnreadIds.add(mMessagesArr.get(i).id);
+                    }
                 }
             }
-        }
 
-        if (listUnreadIds.size() > 0) {
-            listUnreadIds.add(""); // If single item
-            mApiMethods.readMessages(Utils.getInstance().getBearer(),
-                    Utils.getInstance().getUserPref().id,
-                    mRoom.id,
-                    listUnreadIds.toArray(new String[listUnreadIds.size()]),
-                    new Callback<Response>() {
-                        @Override
-                        public void success(Response response, Response response2) {
-                            for (int i = first; i <= last; i++) {
-                                MessagesAdapter.ViewHolder holder = (MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                if (holder != null) {
-                                    mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                    mMessagesArr.get(i).unread = false;
+            if (listUnreadIds.size() > 0) {
+                listUnreadIds.add(""); // If single item
+                mApiMethods.readMessages(Utils.getInstance().getBearer(),
+                        Utils.getInstance().getUserPref().id,
+                        mRoom.id,
+                        listUnreadIds.toArray(new String[listUnreadIds.size()]),
+                        new Callback<Response>() {
+                            @Override
+                            public void success(Response response, Response response2) {
+                                for (int i = first; i <= last; i++) {
+                                    MessagesAdapter.ViewHolder holder = (MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                    if (holder != null) {
+                                        mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                        mMessagesArr.get(i).unread = false;
+                                    }
                                 }
+
+                                // Send notification to MainActivity
+                                ReadMessagesEventBus readMessagesEventBus = new ReadMessagesEventBus();
+
+                                // -1 but last item equals to empty string
+                                readMessagesEventBus.setCountRead(listUnreadIds.size() - 1);
+                                EventBus.getDefault().post(readMessagesEventBus);
                             }
 
-                            // Send notification to MainActivity
-                            ReadMessagesEventBus readMessagesEventBus = new ReadMessagesEventBus();
-
-                            // -1 but last item equals to empty string
-                            readMessagesEventBus.setCountRead(listUnreadIds.size() - 1);
-                            EventBus.getDefault().post(readMessagesEventBus);
-                        }
-
-                        @Override
-                        public void failure(RetrofitError error) {
-                            Log.d("readmess", error.getMessage());
-                            // If error read messages
-                        }
-                    });
+                            @Override
+                            public void failure(RetrofitError error) {
+                                Log.d("readmess", error.getMessage());
+                                // If error read messages
+                            }
+                        });
+            }
         }
     }
 
