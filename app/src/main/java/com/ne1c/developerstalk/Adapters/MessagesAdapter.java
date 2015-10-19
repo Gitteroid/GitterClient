@@ -10,6 +10,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -332,6 +333,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     public void setRoom(RoomModel model) {
         mRoom = model;
+    }
+
+    // Use for set new message, because if used notifyItemChanged, then call draw
+    // bad animation
+    public void setMessage(int position, MessageModel message) {
+        mMessages.set(position, message);
     }
 
     @Override

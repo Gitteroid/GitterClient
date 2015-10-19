@@ -44,6 +44,7 @@ import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.Models.UserModel;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
+import com.ne1c.developerstalk.RoomAsyncLoader;
 import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.Utils;
 
@@ -58,7 +59,7 @@ import retrofit.client.Response;
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_MESSAGE_DELIVERED = "com.ne1c.gitterclient.MessageDeliveredReceiver";
-    public final static String BROADCAST_UNATHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
+    public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void init() {
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
         registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
-        registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNATHORIZED));
+        registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -577,12 +578,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onEvent(ReadMessagesEventBus count) {
         for (int i = 0; i < mRoomsList.size(); i++) {
             if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                // Update mActiveRoom, fix it.
+                // Make update will mActiveRoom while first load room or refresh room
+                mActiveRoom = mRoomsList.get(i);
                 mActiveRoom.unreadItems -= count.getCountRead();
 
                 if (mActiveRoom.unreadItems <= 0) {
                     mActiveRoom.unreadItems = 0;
                     // Remove badge
-                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
+                    mDrawer.updateItem(
+                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1))
+                                    .withBadge(new StringHolder(null)));
                 } else {
                     String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
                     mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
@@ -590,42 +596,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
                 mRoomsList.set(i, mActiveRoom);
                 mDrawer.getAdapter().notifyDataSetChanged();
-            }
-        }
-    }
-
-    static class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
-        public static final int FROM_SERVER = 0;
-        public static final int FROM_DATABASE = 1;
-
-        private RestAdapter mAdapter;
-        private final int mFlag;
-
-        private MainActivity mActivity;
-
-        public RoomAsyncLoader(MainActivity activity, int flag) {
-            super(activity);
-
-            mActivity = activity;
-
-            mFlag = flag;
-
-            if (mFlag == FROM_SERVER) {
-                mAdapter = new RestAdapter.Builder()
-                        .setEndpoint(Utils.GITTER_API_URL)
-                        .build();
-            }
-        }
-
-        @Override
-        public ArrayList<RoomModel> loadInBackground() {
-            if (mFlag == FROM_SERVER) {
-                IApiMethods methods = mAdapter.create(IApiMethods.class);
-                return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-            } else if (mFlag == FROM_DATABASE) {
-                return mActivity.mClientDatabase.getRooms();
-            } else {
-                return null;
             }
         }
     }

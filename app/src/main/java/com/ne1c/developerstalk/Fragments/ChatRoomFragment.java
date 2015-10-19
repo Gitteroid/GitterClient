@@ -154,7 +154,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
                         if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
-                            mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+                            mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
                         }
 
                         getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
@@ -164,12 +164,12 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         mMessageEditText.setText("");
                     } else {
                         if (getView() != null) {
-                            Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
                         }
                     }
                 } else {
                     if (getView() != null) {
-                        Snackbar.make(getView(), R.string.message_empty, Snackbar.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -322,7 +322,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
 
                 if (error.getMessage().contains("401")) {
-                    getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNATHORIZED));
+                    getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
                 }
             }
         });
@@ -364,7 +364,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         && !item.sent.equals(StatusMessage.SENDING.name())
                         && item.id.equals(model.id)) {
                     mMessagesArr.set(i, model);
-                    mMessagesAdapter.notifyItemChanged(i);
+                    mMessagesAdapter.setMessage(i, model);
                     return;
                 }
             }
@@ -412,7 +412,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         if (Utils.getInstance().isNetworkConnected()) {
             loadMessageRoomServer(mRoom, true, true);
         } else if (getView() != null && mMessagesArr.size() > 0) {
-            Snackbar.make(getView(), R.string.no_network, Snackbar.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -426,13 +426,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     new Callback<MessageModel>() {
                         @Override
                         public void success(MessageModel model, Response response) {
-                            Toast.makeText(getActivity(), "Updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), R.string.updated, Toast.LENGTH_SHORT).show();
                             mClientDatabase.insertMessage(model, mRoom.id);
                         }
 
                         @Override
                         public void failure(RetrofitError error) {
-                            Toast.makeText(getActivity(), "Updated error", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getActivity(), R.string.updated_error, Toast.LENGTH_SHORT).show();
                         }
                     });
         }

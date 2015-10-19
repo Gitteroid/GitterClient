@@ -177,7 +177,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                     });
                 } catch (OnErrorNotImplementedException | RetrofitError e) {
                     if (e.getMessage().contains("401")) {
-                            sendBroadcast(new Intent(MainActivity.BROADCAST_UNATHORIZED));
+                            sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
                         }
                     disconnect();
                 }

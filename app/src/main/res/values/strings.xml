@@ -31,4 +31,6 @@
     <string name="changes">Сhanges will take effect the next time the application</string>
     <string name="error_send">Error sending message</string>
     <string name="message_deleted">This message was deleted</string>
+    <string name="updated">Updated</string>
+    <string name="updated_error">Updated error</string>
 </resources>
