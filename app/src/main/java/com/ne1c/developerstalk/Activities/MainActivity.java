@@ -2,7 +2,6 @@ package com.ne1c.developerstalk.Activities;
 
 
 import android.app.LoaderManager;
-import android.content.AsyncTaskLoader;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -104,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         EventBus.getDefault().register(this);
         init();
-        initSavedInstaneState(savedInstanceState);
+        initSavedInstanceState(savedInstanceState);
     }
 
     private void init() {
@@ -133,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setNavigationView();
     }
 
-    private void initSavedInstaneState(Bundle savedInstanceState) {
+    private void initSavedInstanceState(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
             getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
@@ -170,17 +169,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
             if (mRoomsList.size() > 0) {
                 // If activity open from notification
-                if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) == null) {
-                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-                } else {
-                    mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
-                    for (int i = 0; i < mRoomsList.size(); i++) {
-                        if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                            selectedNavItem = i + 1;
-                        }
+                if (mActiveRoom == null || mActiveRoom.id == null) {
+                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                }
+
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                        selectedNavItem = i + 1;
                     }
                 }
+
 
                 mDrawer.setSelectionAtPosition(selectedNavItem + 1);
 
