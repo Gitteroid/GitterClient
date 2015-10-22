@@ -186,13 +186,15 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 // Message not sent or sending, it hasn't id
                 if (!mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
                     mApiMethods.getMessagesBeforeId(Utils.getInstance().getBearer(),
-                            mRoom.id, countLoadMessages, mMessagesArr.get(0).id,
+                            mRoom.id, 10, mMessagesArr.get(0).id,
                             new Callback<ArrayList<MessageModel>>() {
                                 @Override
                                 public void success(ArrayList<MessageModel> messageModels, Response response) {
                                     mMessagesArr.addAll(0, messageModels);
-                                    mMessagesAdapter.notifyDataSetChanged();
+                                    mMessagesAdapter.notifyItemRangeInserted(0, 10);
                                     mPtrFrameLayout.refreshComplete();
+
+                                    countLoadMessages += 10;
                                 }
 
                                 @Override
