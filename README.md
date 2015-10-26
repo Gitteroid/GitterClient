@@ -3,6 +3,7 @@
   <img alt="Get it on Google Play"
        src="https://developer.android.com/images/brand/en_generic_rgb_wo_45.png" />
 </a>
+<br>
 Unofficial Gitter.im Android Client
 
 <h2>
