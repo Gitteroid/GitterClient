@@ -3,4 +3,7 @@
     <item
         android:id="@+id/copy_text_menu"
         android:title="@string/copy_text" />
+    <item
+        android:id="@+id/links_menu"
+        android:title="@string/links" />
 </menu>

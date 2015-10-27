@@ -9,4 +9,10 @@
     <item
         android:id="@+id/delete_message_menu"
         android:title="@string/delete_message" />
+    <item
+        android:id="@+id/links_menu"
+        android:title="@string/links" />
+    <item
+        android:id="@+id/retry_send_menu"
+        android:title="@string/retry_send" />
 </menu>

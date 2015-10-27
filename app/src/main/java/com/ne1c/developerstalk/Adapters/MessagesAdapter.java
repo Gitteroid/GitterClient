@@ -5,12 +5,12 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -26,13 +26,14 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.Fragments.EditMessageFragment;
+import com.ne1c.developerstalk.Fragments.LinksDialogFragment;
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.Models.StatusMessage;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
-import com.ne1c.developerstalk.Utils;
+import com.ne1c.developerstalk.Util.Utils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -71,14 +72,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, final int position) {
+    public void onBindViewHolder(ViewHolder holder, int position) {
         MessageModel message = mMessages.get(position);
-
-        if (message.sent.equals(StatusMessage.NO_SEND.name())) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, position, true));
-        } else if (message.urls.size() > 0) {
-            holder.parentLayout.setOnLongClickListener(setParentLayoutLongClick(message, position, false));
-        }
 
         holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
         holder.avatarImage.setOnClickListener(getAvatarImageClick(message));
@@ -206,55 +201,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnLongClickListener setParentLayoutLongClick(final MessageModel message, final int position, final boolean repeatSend) {
-        return new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                v.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-                    @Override
-                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                        if (repeatSend) {
-                            menu.add(R.string.retry_send);
-
-                            menu.getItem(0).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                                @Override
-                                public boolean onMenuItemClick(MenuItem item) {
-                                    // Repeat send
-                                    mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
-                                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
-
-                                    // Update status message
-                                    mMessages.get(position).sent = StatusMessage.SENDING.name();
-                                    notifyItemChanged(position);
-
-                                    return true;
-                                }
-                            });
-                        } else {
-                            for (int i = 0; i < message.urls.size(); i++) {
-                                menu.add(message.urls.get(i).url);
-
-                                menu.getItem(i).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                                    @Override
-                                    public boolean onMenuItemClick(MenuItem item) {
-                                        mActivity.startActivity(
-                                                new Intent(Intent.ACTION_VIEW, Uri.parse(item.getTitle().toString())));
-                                        return true;
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
-
-                v.showContextMenu();
-
-                return true;
-            }
-        };
-    }
-
     private View.OnClickListener getMenuClick(final MessageModel message) {
         return new View.OnClickListener() {
             @Override
@@ -300,16 +246,48 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                     case R.id.copy_text_menu:
                         Utils.getInstance().copyToClipboard(message.text);
                         return true;
+                    case R.id.retry_send_menu:
+                        // Repeat send
+                        mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                                .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
+                                .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+
+                        // Update status message
+                        message.sent = StatusMessage.SENDING.name();
+                        for (int i = 0; i < mMessages.size(); i++) {
+                            if (mMessages.get(i).id.equals(message.id)) {
+                                mMessages.set(i, message);
+                                notifyItemChanged(i);
+                            }
+                        }
+
+                        return true;
+                    case R.id.links_menu:
+                        LinksDialogFragment links = new LinksDialogFragment();
+                        Bundle argsLinks = new Bundle();
+                        argsLinks.putStringArray("links", (String[]) message.urls.toArray());
+                        links.setArguments(argsLinks);
+                        links.show(mActivity.getFragmentManager(), "dialogLinks");
+
+                        return true;
                     default:
                         return false;
                 }
             }
         });
 
+        if (message.urls.size() < 0) {
+            menu.getMenu().removeItem(R.id.links_menu);
+        }
+
+        if (!message.sent.equals(StatusMessage.NO_SEND.name())) {
+            menu.getMenu().removeItem(R.id.retry_send_menu);
+        }
+
         menu.show();
     }
 
-    private void showMenuAll(PopupMenu menu, final MessageModel message) {
+    private void showMenuAll(final PopupMenu menu, final MessageModel message) {
         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
@@ -317,11 +295,23 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                     case R.id.copy_text_menu:
                         Utils.getInstance().copyToClipboard(message.text);
                         return true;
+                    case R.id.links_menu:
+                        LinksDialogFragment links = new LinksDialogFragment();
+                        Bundle argsLinks = new Bundle();
+                        argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
+                        links.setArguments(argsLinks);
+                        links.show(mActivity.getFragmentManager(), "dialogLinks");
+
+                        return true;
                     default:
                         return false;
                 }
             }
         });
+
+        if (message.urls.size() <= 0) {
+            menu.getMenu().removeItem(R.id.links_menu);
+        }
 
         menu.show();
     }
