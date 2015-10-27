@@ -1,9 +1,11 @@
 package com.ne1c.developerstalk.Fragments;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -63,7 +65,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private RestAdapter mRestApiAdapter;
     private IApiMethods mApiMethods;
 
-    private int countLoadMessages = 10;
+    private int startNumberLoadMessages = 10;
+    private int countLoadMessages = 0;
     private boolean isRefreshing = false;
 
     private ClientDatabase mClientDatabase;
@@ -75,6 +78,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         EventBus.getDefault().register(this);
 
         mClientDatabase = new ClientDatabase(getActivity());
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
+        startNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
     }
 
     @Override
@@ -281,7 +287,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         }
 
         mApiMethods = mRestApiAdapter.create(IApiMethods.class);
-        mApiMethods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, countLoadMessages, new Callback<ArrayList<MessageModel>>() {
+        mApiMethods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, startNumberLoadMessages + countLoadMessages, new Callback<ArrayList<MessageModel>>() {
             @Override
             public void success(ArrayList<MessageModel> messageModels, Response response) {
                 mMessagesArr.clear();
@@ -334,7 +340,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     // Load messages of room
     public void onEvent(RoomModel model) {
         mRoom = model;
-        countLoadMessages = 10;
+        countLoadMessages = 0;
 
         if (mPtrFrameLayout.isRefreshing()) {
             mPtrFrameLayout.refreshComplete();

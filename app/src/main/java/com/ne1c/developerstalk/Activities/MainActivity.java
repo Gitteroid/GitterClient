@@ -94,11 +94,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
 
-        // User data already exist
-        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
-            startService(new Intent(getApplicationContext(), NewMessagesService.class));
-        }
-
         setContentView(R.layout.activity_main);
 
         EventBus.getDefault().register(this);
@@ -142,6 +137,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
 
             updateUserFromServer();
+
+            // User data already exist
+            if (!Utils.getInstance().getUserPref().id.isEmpty()) {
+                stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+                startService(new Intent(getApplicationContext(), NewMessagesService.class));
+            }
         } else {
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
@@ -286,6 +287,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             finish();
                         } else if (item.getName().toString().equals(getString(R.string.exit))) {
                             finish();
+                            System.exit(0);
                         } else if (mRoomsList != null && mRoomsList.size() > 0) {
                             if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
                                 for (int i = 0; i < mRoomsList.size(); i++) {
@@ -537,9 +539,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             MessageModel message = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
             RoomModel room = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
-            if (room.id.equals(mActiveRoom.id)) {
+            if (room != null && room.id.equals(mActiveRoom.id)) {
                 mChatRoomFragment.newMessage(message);
-            } else {
+            } else if (room != null) {
                 for (int i = 0; i < mRoomsList.size(); i++) {
                     if (mRoomsList.get(i).id.equals(room.id)) {
                         mRoomsList.get(i).unreadItems += 1;
@@ -587,8 +589,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     mActiveRoom.unreadItems = 0;
                     // Remove badge
                     mDrawer.updateItem(
-                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1))
-                                    .withBadge(new StringHolder(null)));
+                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
                 } else {
                     String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
                     mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
