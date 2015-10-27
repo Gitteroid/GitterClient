@@ -19,14 +19,16 @@
         android:id="@+id/auth_webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/auth_but"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minWidth="120dp"
         android:layout_marginTop="8dp"
+        android:background="#E0E0E0"
+        android:elevation="4dp"
+        android:minWidth="120dp"
         android:text="Sign In" />
 
 </LinearLayout>
