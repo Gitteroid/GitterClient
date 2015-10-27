@@ -14,6 +14,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -36,6 +37,7 @@ import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.developerstalk.Database.ClientDatabase;
+import com.ne1c.developerstalk.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.EventBusModels.ReadMessagesEventBus;
 import com.ne1c.developerstalk.Fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.Models.MessageModel;
@@ -45,7 +47,8 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.RoomAsyncLoader;
 import com.ne1c.developerstalk.Services.NewMessagesService;
-import com.ne1c.developerstalk.Utils;
+import com.ne1c.developerstalk.Util.UIUtils;
+import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
 
@@ -68,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ChatRoomFragment mChatRoomFragment;
 
     private ActionBarDrawerToggle mDrawerToggle;
+    private Toolbar mToolbar;
 
     private Drawer mDrawer;
     private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
@@ -96,6 +100,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setContentView(R.layout.activity_main);
 
+        // User data already exist
+        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
+            stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+            startService(new Intent(getApplicationContext(), NewMessagesService.class));
+        }
+
         EventBus.getDefault().register(this);
         init();
         initSavedInstanceState(savedInstanceState);
@@ -105,6 +115,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
         registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
+
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mToolbar);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -137,12 +150,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
 
             updateUserFromServer();
-
-            // User data already exist
-            if (!Utils.getInstance().getUserPref().id.isEmpty()) {
-                stopService(new Intent(getApplicationContext(), NewMessagesService.class));
-                startService(new Intent(getApplicationContext(), NewMessagesService.class));
-            }
         } else {
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
@@ -312,6 +319,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onResume() {
         super.onResume();
+
+        int actionBarSize = UIUtils.calculateActionBarSize(this);
+        DrawShadowFrameLayout drawShadowFrameLayout =
+                (DrawShadowFrameLayout) findViewById(R.id.shadow_layout);
+        if (drawShadowFrameLayout != null) {
+            drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
+        }
+        UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
 
         if (mRoomsList != null) {
             if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) != null) {
