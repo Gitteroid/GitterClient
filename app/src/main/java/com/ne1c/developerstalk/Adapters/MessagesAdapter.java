@@ -276,7 +276,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             }
         });
 
-        if (message.urls.size() < 0) {
+        if (message.urls.size() <= 0) {
             menu.getMenu().removeItem(R.id.links_menu);
         }
 
