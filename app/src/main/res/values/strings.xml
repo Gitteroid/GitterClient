@@ -35,4 +35,5 @@
     <string name="updated_error">Updated error</string>
     <string name="load_mess">Load messages</string>
     <string name="count_load_mess">Number messages for loading</string>
+    <string name="links">Links</string>
 </resources>

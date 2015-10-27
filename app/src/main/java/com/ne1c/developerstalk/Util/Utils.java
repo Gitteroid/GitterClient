@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk;
+package com.ne1c.developerstalk.Util;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;

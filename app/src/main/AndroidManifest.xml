@@ -27,7 +27,7 @@
         <activity
             android:name="com.ne1c.developerstalk.Activities.MainActivity"
             android:label="@string/app_name"
-            android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
+            android:windowSoftInputMode="stateHidden|adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -37,7 +37,8 @@
         </activity>
         <activity
             android:name="com.ne1c.developerstalk.Activities.SettingsActivity"
-            android:label="@string/title_activity_settings">
+            android:label="@string/title_activity_settings"
+            android:theme="@style/SettingsTheme">
         </activity>
 
         <receiver

@@ -67,6 +67,7 @@ public class SettingsActivity extends AppCompatActivity {
                                 .getLaunchIntentForPackage(getBaseContext().getPackageName());
                         i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(i);
+                        System.exit(0);
                     }
                 })
                 .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {

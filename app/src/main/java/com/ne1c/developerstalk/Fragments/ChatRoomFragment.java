@@ -6,11 +6,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,7 +31,7 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.EventBusModels.UpdateMessageEventBus;
-import com.ne1c.developerstalk.Utils;
+import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -147,7 +145,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!TextUtils.isEmpty(mMessageEditText.getText().toString())) {
+                if (!mMessageEditText.getText().toString().isEmpty()) {
                     if (Utils.getInstance().isNetworkConnected()) {
                         MessageModel model = new MessageModel();
                         UserModel user = Utils.getInstance().getUserPref();
@@ -211,6 +209,16 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                             });
                 }
                 //loadMessageRoomServer(mRoom, false, true);
+            }
+        });
+
+        mMessageEditText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int last = mListLayoutManager.findLastVisibleItemPosition();
+                if (last != mMessagesArr.size() - 1) {
+                    mListLayoutManager.scrollToPosition(mMessagesArr.size() - 1);
+                }
             }
         });
     }

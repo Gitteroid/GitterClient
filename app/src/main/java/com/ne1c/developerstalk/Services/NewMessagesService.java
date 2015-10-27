@@ -27,7 +27,7 @@ import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
-import com.ne1c.developerstalk.Utils;
+import com.ne1c.developerstalk.Util.Utils;
 import com.squareup.okhttp.OkHttpClient;
 
 import java.util.ArrayList;
@@ -53,6 +53,9 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     private IApiMethods mApiMethods;
 
+    private boolean mSound;
+    private boolean mVibro;
+
     @Override
     public IBinder onBind(Intent intent) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -61,6 +64,10 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     @Override
     public void onCreate() {
         super.onCreate();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mSound = prefs.getBoolean("notif_sound", true);
+        mVibro = prefs.getBoolean("notif_vibro", true);
 
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -190,11 +197,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     };
 
     private void sendNotificationMessage(RoomModel room, MessageModel message) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        boolean sound = prefs.getBoolean("notif_sound", true);
-        boolean vibro = prefs.getBoolean("notif_vibro", true);
-
-
         Intent notifIntent = new Intent(getApplicationContext(), MainActivity.class);
         notifIntent.putExtra(FROM_ROOM_EXTRA_KEY, room);
         notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -224,11 +226,11 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
         notification.defaults = Notification.DEFAULT_LIGHTS;
 
-        if (vibro) {
+        if (mVibro) {
             notification.defaults |= Notification.DEFAULT_VIBRATE;
         }
 
-        if (sound) {
+        if (mSound) {
             notification.defaults |= Notification.DEFAULT_SOUND;
         }
 
