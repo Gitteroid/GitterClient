@@ -2,10 +2,13 @@ package com.ne1c.developerstalk.Activities;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.util.TypedValue;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -14,10 +17,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.ne1c.developerstalk.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.Models.AuthResponseModel;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
-import com.ne1c.developerstalk.Utils;
+import com.ne1c.developerstalk.Util.UIUtils;
+import com.ne1c.developerstalk.Util.Utils;
 
 import retrofit.Callback;
 import retrofit.RestAdapter;
@@ -33,6 +38,7 @@ public class LoginActivity extends AppCompatActivity {
     public final String AUTH_URL = "https://gitter.im/login/oauth/authorize?"
             + "client_id=" + CLIENT_ID + "&response_type=" + RESPONSE_TYPE + "&redirect_uri=" + REDIRECT_URL;
 
+    private Toolbar mToolbar;
     private Button mAuthBut;
     private ImageView mLogoImg;
     private WebView mAuthWebView;
@@ -40,8 +46,10 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_login);
+
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mToolbar);
 
         mAuthBut = (Button) findViewById(R.id.auth_but);
         mLogoImg = (ImageView) findViewById(R.id.logo_img);
@@ -66,6 +74,19 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        int actionBarSize = UIUtils.calculateActionBarSize(this);
+        DrawShadowFrameLayout drawShadowFrameLayout =
+                (DrawShadowFrameLayout) findViewById(R.id.shadow_layout);
+        if (drawShadowFrameLayout != null) {
+            drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
+        }
+        UIUtils.setContentTopClearance(findViewById(R.id.content_layout), actionBarSize);
     }
 
     @Override
@@ -138,11 +159,12 @@ public class LoginActivity extends AppCompatActivity {
             // startLoadToken check that don't run second request
             if (url.contains("code=") && !url.contains("state=") && !startLoadToken) {
                 view.stopLoading();
+                view.destroy();
 
                 startLoadToken = true;
                 // Get access token and show MainActivity
                 loadAccessToken(url.substring(url.indexOf('=') + 1, url.length()));
-            } else {
+            } else if (!url.contains("about/:blank")) {
                 super.onPageStarted(view, url, favicon);
             }
         }
