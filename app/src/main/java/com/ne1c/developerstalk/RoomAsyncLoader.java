@@ -1,6 +1,8 @@
 package com.ne1c.developerstalk;
 
+import android.app.LoaderManager;
 import android.content.AsyncTaskLoader;
+import android.content.Context;
 
 import com.ne1c.developerstalk.Activities.MainActivity;
 import com.ne1c.developerstalk.Database.ClientDatabase;
@@ -21,8 +23,8 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
 
     private ClientDatabase mClientDatabase;
 
-    public RoomAsyncLoader(MainActivity activity, int flag) {
-        super(activity);
+    public RoomAsyncLoader(Context context, int flag) {
+        super(context);
 
         mFlag = flag;
 
@@ -31,7 +33,7 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
                     .setEndpoint(Utils.GITTER_API_URL)
                     .build();
         } else {
-            mClientDatabase = new ClientDatabase(activity);
+            mClientDatabase = new ClientDatabase(context);
         }
     }
 
