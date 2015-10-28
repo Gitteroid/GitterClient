@@ -8,6 +8,7 @@ import android.support.v7.widget.Toolbar;
 import com.ne1c.developerstalk.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.Fragments.RoomsListFragment;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.Services.NewMessagesService;
 import com.ne1c.developerstalk.Util.UIUtils;
 import com.ne1c.developerstalk.Util.Utils;
 
@@ -28,6 +29,11 @@ public class RoomsActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_rooms);
+
+        // User data already exist
+        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
+            startService(new Intent(getApplicationContext(), NewMessagesService.class));
+        }
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);

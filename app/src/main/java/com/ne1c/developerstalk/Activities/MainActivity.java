@@ -100,12 +100,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setContentView(R.layout.activity_main);
 
-        // User data already exist
-        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
-            stopService(new Intent(getApplicationContext(), NewMessagesService.class));
-            startService(new Intent(getApplicationContext(), NewMessagesService.class));
-        }
-
         EventBus.getDefault().register(this);
         init();
         initSavedInstanceState(savedInstanceState);
@@ -463,7 +457,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         if (data.size() > 0) {
-            if (selectedNavItem == -1) {
+            String roomId = getIntent().getStringExtra("roomId");
+            getIntent().removeExtra("roomId");
+
+            if (roomId != null) {
+                for (int i = 0; i < data.size(); i++) {
+                    if (roomId.equals(data.get(i).id)) {
+                        selectedNavItem = i + 1;
+                    }
+                }
+            } else if (selectedNavItem == -1) {
                 selectedNavItem = 1;
             }
             mDrawer.setSelectionAtPosition(selectedNavItem + 1);

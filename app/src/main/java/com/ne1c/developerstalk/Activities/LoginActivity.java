@@ -118,7 +118,7 @@ public class LoginActivity extends AppCompatActivity {
                         Utils.getInstance().writeAuthResponsePref(authResponseModel);
                         dialog.dismiss();
 
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class)
+                        startActivity(new Intent(getApplicationContext(), RoomsActivity.class)
                                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
                         finish();
                     }

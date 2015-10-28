@@ -371,16 +371,19 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
                 MessageModel item = mMessagesArr.get(i);
 
+                // Send message
                 if (model.text.equals(item.text) &&
                         item.sent.equals(StatusMessage.SENDING.name())) {
                     return;
                 }
 
+                // Update message
                 if (!item.sent.equals(StatusMessage.NO_SEND.name())
                         && !item.sent.equals(StatusMessage.SENDING.name())
                         && item.id.equals(model.id)) {
                     mMessagesArr.set(i, model);
                     mMessagesAdapter.setMessage(i, model);
+                    mMessagesAdapter.notifyItemChanged(i);
                     return;
                 }
             }

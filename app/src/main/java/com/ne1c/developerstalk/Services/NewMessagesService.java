@@ -65,10 +65,6 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
     public void onCreate() {
         super.onCreate();
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        mSound = prefs.getBoolean("notif_sound", true);
-        mVibro = prefs.getBoolean("notif_vibro", true);
-
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
@@ -90,6 +86,10 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mSound = prefs.getBoolean("notif_sound", true);
+        mVibro = prefs.getBoolean("notif_vibro", true);
+
         // Reconnect if service start retry and update rooms
         if (flags == START_FLAG_RETRY) {
             disconnect();
@@ -98,7 +98,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
         return START_STICKY;
     }
 
-    private void createSubribers() {
+    private void createSubscribers() {
         String channelEndpoint = "/api/v1/rooms/%s/chatMessages";
 
         for (final RoomModel room : mRoomsList) {
@@ -179,7 +179,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                         @Override
                         public void call(Boolean aBoolean) {
                             mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                            createSubribers();
+                            createSubscribers();
                         }
                     });
                 } catch (OnErrorNotImplementedException | RetrofitError e) {
@@ -245,7 +245,7 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
             @Override
             public void call(Boolean aBoolean) {
                 mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                createSubribers();
+                createSubscribers();
             }
         });
     }
