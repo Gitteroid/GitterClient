@@ -158,14 +158,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
                             .withBadge(badgeText)
                             .withBadgeStyle(badgeStyle)
-                            .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                            .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
                 } else {
                     mDrawer.addItemAtPosition(
                             new PrimaryDrawerItem()
                                     .withIcon(R.mipmap.ic_room)
                                     .withName(room.name)
                                     .withBadgeStyle(badgeStyle)
-                                    .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                                    .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
                 }
             }
 
@@ -256,7 +256,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
-        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_exit_to_app).withName(getString(R.string.exit)));
 
         mDrawer = new DrawerBuilder().withActivity(this)
                 .withTranslucentStatusBar(false)
@@ -286,9 +285,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                                     .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
                             stopService(new Intent(getApplicationContext(), NewMessagesService.class));
                             finish();
-                        } else if (item.getName().toString().equals(getString(R.string.exit))) {
-                            finish();
-                            System.exit(0);
                         } else if (mRoomsList != null && mRoomsList.size() > 0) {
                             if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
                                 for (int i = 0; i < mRoomsList.size(); i++) {
@@ -430,8 +426,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mRoomsList = data;
 
         // Remove old items
-        // 5 but items: "Home", "Divider", "Settings", etc.
-        while (mDrawer.getDrawerItems().size() != 5) {
+        // 4 but items: "Home", "Divider", "Settings", "Sign Out".
+        while (mDrawer.getDrawerItems().size() != 4) {
             mDrawer.removeItemByPosition(2); // 2? Wtf?
         }
 
@@ -445,20 +441,27 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
-                        .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                        .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
             } else {
                 mDrawer.addItemAtPosition(
                         new PrimaryDrawerItem()
                                 .withIcon(R.mipmap.ic_room)
                                 .withName(room.name)
                                 .withBadgeStyle(badgeStyle)
-                                .withSelectable(true), mDrawer.getDrawerItems().size() - 3);
+                                .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
             }
         }
 
         if (data.size() > 0) {
-            String roomId = getIntent().getStringExtra("roomId");
-            getIntent().removeExtra("roomId");
+            RoomModel room = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            String roomId = room != null ? room.id : null;
+
+            if (roomId == null) {
+                roomId = getIntent().getStringExtra("roomId");
+                getIntent().removeExtra("roomId");
+            } else {
+                getIntent().removeExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            }
 
             if (roomId != null) {
                 for (int i = 0; i < data.size(); i++) {
