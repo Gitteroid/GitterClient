@@ -8,8 +8,8 @@ android {
         applicationId "com.ne1c.developerstalk"
         minSdkVersion 16
         targetSdkVersion 22
-        versionCode 4
-        versionName "1.1.1"
+        versionCode 5
+        versionName "1.1.2"
     }
     buildTypes {
         release {
