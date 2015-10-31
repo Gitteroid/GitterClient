@@ -456,6 +456,12 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     });
         }
     }
+//
+//    @Override
+//    public void retrySendNotif(MessageModel message, int position) {
+//        mMessagesArr.set(position, message);
+//        mMessagesAdapter.notifyItemChanged(position);
+//    }
 
     private class LoadMessageDatabaseAsync extends AsyncTask<String, Void, ArrayList<MessageModel>> {
         private RoomModel mRoom;

@@ -11,7 +11,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -77,7 +76,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
         holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
         holder.avatarImage.setOnClickListener(getAvatarImageClick(message));
-        holder.messageMenu.setOnClickListener(getMenuClick(message));
+        holder.messageMenu.setOnClickListener(getMenuClick(message, position));
 
         processingIndicator(holder.newMessageIndicator, message);
         makeDeletedMessageText(holder.messageText, message);
@@ -201,14 +200,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private View.OnClickListener getMenuClick(final MessageModel message) {
+    private View.OnClickListener getMenuClick(final MessageModel message, final int position) {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final PopupMenu menu = new PopupMenu(mActivity, v);
                 if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
                     menu.inflate(R.menu.menu_message_user);
-                    showMenuUser(menu, message);
+                    showMenuUser(menu, message, position);
                 } else {
                     menu.inflate(R.menu.menu_message_all);
                     showMenuAll(menu, message);
@@ -217,7 +216,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         };
     }
 
-    private void showMenuUser(PopupMenu menu, final MessageModel message) {
+    private void showMenuUser(PopupMenu menu, final MessageModel message, final int position) {
         menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
@@ -247,18 +246,21 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         Utils.getInstance().copyToClipboard(message.text);
                         return true;
                     case R.id.retry_send_menu:
-                        // Repeat send
-                        mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
-                                .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                        if (Utils.getInstance().isNetworkConnected()) {
+                            if (mMessages.get(position).sent.equals(StatusMessage.NO_SEND.name()) &&
+                                    mMessages.get(position).text.equals(message.text)) {
+                                // Update status message
+                                mMessages.get(position).sent = StatusMessage.SENDING.name();
 
-                        // Update status message
-                        message.sent = StatusMessage.SENDING.name();
-                        for (int i = 0; i < mMessages.size(); i++) {
-                            if (mMessages.get(i).id.equals(message.id)) {
-                                mMessages.set(i, message);
-                                notifyItemChanged(i);
+                                // Repeat send
+                                mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                                        .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, message.text)
+                                        .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+
+                                notifyItemChanged(position);
                             }
+                        } else {
+                            Toast.makeText(mActivity, R.string.no_network, Toast.LENGTH_SHORT).show();
                         }
 
                         return true;
