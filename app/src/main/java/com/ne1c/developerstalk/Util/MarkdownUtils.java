@@ -1,28 +1,35 @@
 package com.ne1c.developerstalk.Util;
 
-import com.ne1c.developerstalk.Models.StatusMessage;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// Need to testing
 public class MarkdownUtils {
-    private static final Pattern TEXT_PATTERN = Pattern.compile("\\w+");
-    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("`(.*?)`"); // `code`
-    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("'''(.*?)'''");  // '''code'''
-    private static final Pattern BOLD_PATTERN = Pattern.compile("\\*{2}(.*?)\\*{2}"); // **bold**
-    private static final Pattern ITALICS_PATTERN = Pattern.compile("[*](.*?)[*]"); // *italics*
-    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*?~{2}"); // ~~strikethrough~~
-    private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s.*?\\s*"); // > blockquote
-    private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S"); // #123
-    private static final Pattern LINK_PATTERN = Pattern.compile("\\[\\.*?\\S]\\(\\bhttp\\b://.*?\\)"); // [title](http://)
-    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[\\balt\\b]\\(\\bhttp\\b://.*?\\)"); // ![alt](http://)
+    public static final int SINGLELINE_CODE = 0;
+    public static final int MULTILINE_CODE = 1;
+    public static final int BOLD = 2;
+    public static final int ITALICS = 3;
+    public static final int STRIKETHROUGH = 4;
+    public static final int QUOTE = 5;
+    public static final int ISSUE = 6;
+    public static final int LINK = 7;
+    public static final int IMAGE_LINK = 8;
+
+    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(.*)`(.*?)`(.*)"); // `code`
+    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("(.*)'''(.*?)'''(.*)");  // '''code'''
+    private static final Pattern BOLD_PATTERN = Pattern.compile("(.*)\\*{2}(.*?)\\*{2}(.*)"); // **bold**
+    private static final Pattern ITALICS_PATTERN = Pattern.compile("(.*)[*](.*?)[*](.*)"); // *italics*
+    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("(.*)~{2}.*?~{2}(.*)"); // ~~strikethrough~~
+    private static final Pattern QUOTE_PATTERN = Pattern.compile("(.*)>\\s.*?\\s*(.*)"); // > blockquote
+    private static final Pattern ISSUE_PATTERN = Pattern.compile("(.*)#.*?\\S(.*)"); // #123
+    private static final Pattern LINK_PATTERN = Pattern.compile("(.*)\\[\\.*?\\S]\\(\\bhttp\\b://.*?\\)(.*)"); // [title](http://)
+    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("(.*)!\\[\\balt\\b]\\(\\bhttp\\b://.*?\\)(.*)"); // ![alt](http://)
 
     private final String mMessage;
 
-    private List<String> mText;
     private List<String> mMultilineCode;
     private List<String> mSinglelineCode;
     private List<String> mBold;
@@ -41,24 +48,26 @@ public class MarkdownUtils {
         }
     }
 
-    private List readText(String message) {
-        Matcher matcher = TEXT_PATTERN.matcher(message);
+    private List convertWithPatterns(String message) {
+        String mess = new String(message); // Copy text
 
-        if (mText != null) {
-            return mText;
+        mess.replaceAll(SINGLELINE_CODE_PATTERN.pattern(), "{" + String.valueOf(SINGLELINE_CODE) + "}");
+        mess.replaceAll(MULTILINE_CODE_PATTERN.pattern(), "{" + String.valueOf(MULTILINE_CODE) + "}");
+        mess.replaceAll(BOLD_PATTERN.pattern(), "{" + String.valueOf(BOLD) + "}");
+        mess.replaceAll(ITALICS_PATTERN.pattern(), "{" + String.valueOf(ITALICS) + "}");
+        mess.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
+        mess.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
+        mess.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
+        mess.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
+        mess.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
+
+        List<String> list = new ArrayList<>();
+
+        for (String s : mess.split("(.*)\\{\\d\\}(.*)")) {
+            list.add(s);
         }
 
-        if (matcher.find()) {
-            mText = new ArrayList<>();
-
-            /*
-              Hard work!
-             */
-
-            return mText;
-        }
-
-        return Collections.EMPTY_LIST;
+        return list;
     }
 
     private List readMultilineCode(String message) {
@@ -274,9 +283,5 @@ public class MarkdownUtils {
 
     public List getIssues() {
         return readIssues(mMessage);
-    }
-
-    public List getText() {
-        return readText(mMessage);
     }
 }
