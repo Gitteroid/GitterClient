@@ -1,12 +1,12 @@
 package com.ne1c.developerstalk.Util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// Need to testing
 public class MarkdownUtils {
     public static final int SINGLELINE_CODE = 0;
     public static final int MULTILINE_CODE = 1;
@@ -18,15 +18,15 @@ public class MarkdownUtils {
     public static final int LINK = 7;
     public static final int IMAGE_LINK = 8;
 
-    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(.*)`(.*?)`(.*)"); // `code`
-    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("(.*)'''(.*?)'''(.*)");  // '''code'''
-    private static final Pattern BOLD_PATTERN = Pattern.compile("(.*)\\*{2}(.*?)\\*{2}(.*)"); // **bold**
-    private static final Pattern ITALICS_PATTERN = Pattern.compile("(.*)[*](.*?)[*](.*)"); // *italics*
-    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("(.*)~{2}.*?~{2}(.*)"); // ~~strikethrough~~
-    private static final Pattern QUOTE_PATTERN = Pattern.compile("(.*)>\\s.*?\\s*(.*)"); // > blockquote
-    private static final Pattern ISSUE_PATTERN = Pattern.compile("(.*)#.*?\\S(.*)"); // #123
-    private static final Pattern LINK_PATTERN = Pattern.compile("(.*)\\[\\.*?\\S]\\(\\bhttp\\b://.*?\\)(.*)"); // [title](http://)
-    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("(.*)!\\[\\balt\\b]\\(\\bhttp\\b://.*?\\)(.*)"); // ![alt](http://)
+    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.*?)(?!``)`"); // `code`
+    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.*?|\\n)+```");  // ```code```
+    private static final Pattern BOLD_PATTERN = Pattern.compile("\\*{2}(.*?)\\*{2}"); // **bold**
+    private static final Pattern ITALICS_PATTERN = Pattern.compile("[*](.*?)[*]"); // *italics*
+    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*?~{2}"); // ~~strikethrough~~
+    private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s(.*?|\\n)+(\\n{2})"); // > blockquote
+    private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S"); // #123
+    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?\\S]\\(\\bhttp\\b:/{2}.*?\\)"); // [title](http://)
+    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[\\balt\\b]\\(\\bhttp\\b:/{2}.*?\\)"); // ![alt](http://)
 
     private final String mMessage;
 
@@ -49,22 +49,39 @@ public class MarkdownUtils {
     }
 
     private List convertWithPatterns(String message) {
-        String mess = new String(message); // Copy text
-
-        mess.replaceAll(SINGLELINE_CODE_PATTERN.pattern(), "{" + String.valueOf(SINGLELINE_CODE) + "}");
-        mess.replaceAll(MULTILINE_CODE_PATTERN.pattern(), "{" + String.valueOf(MULTILINE_CODE) + "}");
-        mess.replaceAll(BOLD_PATTERN.pattern(), "{" + String.valueOf(BOLD) + "}");
-        mess.replaceAll(ITALICS_PATTERN.pattern(), "{" + String.valueOf(ITALICS) + "}");
-        mess.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
-        mess.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
-        mess.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
-        mess.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
-        mess.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
+        message = message.replaceAll(SINGLELINE_CODE_PATTERN.pattern(), "{" + String.valueOf(SINGLELINE_CODE) + "}");
+        message = message.replaceAll(MULTILINE_CODE_PATTERN.pattern(), "{" + String.valueOf(MULTILINE_CODE) + "}");
+        message = message.replaceAll(BOLD_PATTERN.pattern(), "{" + String.valueOf(BOLD) + "}");
+        message = message.replaceAll(ITALICS_PATTERN.pattern(), "{" + String.valueOf(ITALICS) + "}");
+        message = message.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
+        message = message.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
+        message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
+        message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
+        message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
 
         List<String> list = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\\{\\d}").matcher(message);
+        String[] splitted = message.split("\\{\\d}");
 
-        for (String s : mess.split("(.*)\\{\\d\\}(.*)")) {
-            list.add(s);
+        if (matcher.find()) {
+            int i = 0;
+            do {
+                if (splitted[i] != "\\n") {
+                    list.add(splitted[i]);
+                }
+
+                try {
+                    list.add(matcher.group(0));
+                } catch (IndexOutOfBoundsException | IllegalStateException e) {
+                    System.out.print(e);
+                }
+
+                i++;
+                matcher.find();
+            } while (i < splitted.length);
+
+        } else {
+            list.addAll(Arrays.asList(splitted));
         }
 
         return list;
@@ -283,5 +300,9 @@ public class MarkdownUtils {
 
     public List getIssues() {
         return readIssues(mMessage);
+    }
+
+    public List getParsedString() {
+        return convertWithPatterns(mMessage);
     }
 }
