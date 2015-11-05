@@ -10,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -360,6 +361,41 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             timeText = (TextView) itemView.findViewById(R.id.time_text);
             messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
             statusMessage = (ImageView) itemView.findViewById(R.id.status_mess_image);
+        }
+    }
+
+    private class MarkdownViews {
+        public TextView getSignlelineCodeView() {
+            return (TextView) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
+        }
+
+        public TextView getMultilineCodeView() {
+            return (TextView) LayoutInflater.from(mActivity).inflate(R.layout.multiline_code_view, null);
+        }
+
+        public Spannable getBoldSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new StyleSpan(Typeface.BOLD), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+        }
+
+        public Spannable getItalicSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+        }
+
+        public Spannable getStrikethroughSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new StyleSpan(new StrikethroughSpan().getSpanTypeId()), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+        }
+
+        public ViewGroup getQuoteText(String text) {
+            return null;
         }
     }
 }
