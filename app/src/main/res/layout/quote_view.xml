@@ -3,18 +3,21 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-    android:background="@color/md_grey_500">
+    android:background="@drawable/rounded_corner_light"
+    android:padding="8dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Quote"
+        android:text="@string/quote"
         android:textStyle="bold"
         android:textColor="@color/md_black_1000"
-        android:textSize="16sp"/>
+        android:textSize="16sp"
+        />
 
     <TextView
         android:id="@+id/text_quote"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
 </LinearLayout>

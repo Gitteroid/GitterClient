@@ -22,16 +22,19 @@
         android:src="@mipmap/ic_avatar"/>
 
     <LinearLayout
+        android:id="@+id/message_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="2dp"
+        android:layout_marginRight="8dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
             android:orientation="horizontal">
 
             <TextView
@@ -49,18 +52,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/black"
-                android:paddingRight="8dp"
                 android:textSize="12sp"
                 tools:text="20:16"/>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/primary_text_default_material_light"
-            tools:text="Test text"/>
+        <!--<TextView-->
+        <!--android:id="@+id/message_text"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="4dp"-->
+        <!--android:textColor="@color/primary_text_default_material_light"-->
+        <!--tools:text="Test text"/>-->
     </LinearLayout>
 
 

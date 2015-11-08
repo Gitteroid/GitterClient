@@ -2,7 +2,6 @@
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
           android:layout_width="match_parent"
           android:layout_height="match_parent"
-          android:background="@color/md_black_1000"
-          android:textStyle="italic"
-          android:orientation="vertical"
-          android:textColor="@color/md_pink_500"/>
+          android:background="@drawable/rounded_corner_dark"
+          android:padding="8dp"
+          android:textColor="@color/md_amber_200"/>
