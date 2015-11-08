@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-    android:background="@drawable/rounded_corner_light"
-    android:padding="8dp">
+              android:background="@drawable/rounded_corner_light"
+              android:orientation="vertical"
+              android:padding="8dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/quote"
-        android:textStyle="bold"
         android:textColor="@color/md_black_1000"
         android:textSize="16sp"
-        />
+        android:textStyle="bold"/>
 
     <TextView
         android:id="@+id/text_quote"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="12dp"
+        android:textColor="@color/md_grey_900"/>
 </LinearLayout>
