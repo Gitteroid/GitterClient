@@ -20,13 +20,13 @@ public class MarkdownUtils {
 
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.*?)(?!``)`"); // `code`
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.*?|\\n)+```");  // ```code```
-    private static final Pattern BOLD_PATTERN = Pattern.compile("\\*{2}(.*?)\\*{2}"); // **bold**
+    private static final Pattern BOLD_PATTERN = Pattern.compile("[*]{2}(.*?)[*]{2}"); // **bold**
     private static final Pattern ITALICS_PATTERN = Pattern.compile("[*](.*?)[*]"); // *italics*
     private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*?~{2}"); // ~~strikethrough~~
-    private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s(.*?|\\n)+(\\n{2})"); // > blockquote
+    private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s(.*[\\n]?)+"); // > blockquote
     private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S"); // #123
-    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?\\S]\\(\\bhttp\\b:/{2}.*?\\)"); // [title](http://)
-    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[\\balt\\b]\\(\\bhttp\\b:/{2}.*?\\)"); // ![alt](http://)
+    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?\\S]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
+    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[\\balt\\b]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
 
     private final String mMessage;
 
@@ -48,7 +48,7 @@ public class MarkdownUtils {
         }
     }
 
-    private List convertWithPatterns(String message) {
+    private List<String> convertWithPatterns(String message) {
         message = message.replaceAll(SINGLELINE_CODE_PATTERN.pattern(), "{" + String.valueOf(SINGLELINE_CODE) + "}");
         message = message.replaceAll(MULTILINE_CODE_PATTERN.pattern(), "{" + String.valueOf(MULTILINE_CODE) + "}");
         message = message.replaceAll(BOLD_PATTERN.pattern(), "{" + String.valueOf(BOLD) + "}");
@@ -56,18 +56,18 @@ public class MarkdownUtils {
         message = message.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
         message = message.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
         message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
-        message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
+        message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
         List<String> list = new ArrayList<>();
-        Matcher matcher = Pattern.compile("\\{\\d}").matcher(message);
-        String[] splitted = message.split("\\{\\d}");
+        Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
+        String[] splitted = message.split("\\{\\d\\}");
 
         if (matcher.find()) {
             int i = 0;
             do {
-                if (splitted[i] != "\\n") {
-                    list.add(splitted[i]);
+                if (splitted.length > 0 && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
+                    list.add(splitted[i].replaceAll("\\n", ""));
                 }
 
                 try {
@@ -87,7 +87,7 @@ public class MarkdownUtils {
         return list;
     }
 
-    private List readMultilineCode(String message) {
+    private List<String> readMultilineCode(String message) {
         Matcher matcher = MULTILINE_CODE_PATTERN.matcher(message);
 
         if (mMultilineCode != null) {
@@ -97,16 +97,22 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mMultilineCode = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mMultilineCode.add(matcher.group(i).replace("\'\'\'", ""));
-            }
+            do {
+                String code = matcher.group(0).replace("```", "");
+                code = code.substring(1, code.length() - 1); // remove \n
+                mMultilineCode.add(code);
+            } while (matcher.find());
+
+            // remove new line
+
+
             return mMultilineCode;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readSinglelineCode(String message) {
+    private List<String> readSinglelineCode(String message) {
         Matcher matcher = SINGLELINE_CODE_PATTERN.matcher(message);
 
         if (mSinglelineCode != null) {
@@ -116,17 +122,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mSinglelineCode = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mSinglelineCode.add(matcher.group(i).replace("`", ""));
-            }
+            do {
+                mSinglelineCode.add(matcher.group(0).replace("`", ""));
+            } while (matcher.find());
 
             return mSinglelineCode;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readBold(String message) {
+    private List<String> readBold(String message) {
         Matcher matcher = BOLD_PATTERN.matcher(message);
 
         if (mBold != null) {
@@ -136,17 +142,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mBold = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mBold.add(matcher.group(i).replace("**", ""));
-            }
+            do {
+                mBold.add(matcher.group(0).replace("**", ""));
+            } while (matcher.find());
 
             return mBold;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readStrikethrough(String message) {
+    private List<String> readStrikethrough(String message) {
         Matcher matcher = STRIKETHROUGH_PATTERN.matcher(message);
 
         if (mStrikethrough != null) {
@@ -156,17 +162,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mStrikethrough = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mStrikethrough.add(matcher.group(i).replace("~~", ""));
-            }
+            do {
+                mStrikethrough.add(matcher.group(0).replace("~~", ""));
+            } while (matcher.find());
 
             return mStrikethrough;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readQuote(String message) {
+    private List<String> readQuote(String message) {
         Matcher matcher = QUOTE_PATTERN.matcher(message);
 
         if (mQuote != null) {
@@ -176,17 +182,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mQuote = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mQuote.add(matcher.group(i).replace(">", ""));
-            }
+            do {
+                mQuote.add(matcher.group(0).replace("> ", "").replaceAll("\\n", ""));
+            } while (matcher.find());
 
             return mQuote;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readItalics(String message) {
+    private List<String> readItalics(String message) {
         Matcher matcher = ITALICS_PATTERN.matcher(message);
 
         if (mItalics != null) {
@@ -196,17 +202,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mItalics = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mItalics.add(matcher.group(i).replace("*", ""));
-            }
+            do {
+                mItalics.add(matcher.group(0).replace("*", ""));
+            } while (matcher.find());
 
             return mBold;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readLinks(String message) {
+    private List<String> readLinks(String message) {
         Matcher matcher = LINK_PATTERN.matcher(message);
 
         if (mLinks != null) {
@@ -216,17 +222,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mLinks = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mLinks.add(matcher.group(i).replaceFirst("\\[]\\(\\bhttp\\b://\\)", ""));
-            }
+            do {
+                mLinks.add(matcher.group(0).replaceFirst("\\[]\\(\\bhttp\\b://\\)", ""));
+            } while (matcher.find());
 
             return mLinks;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readImageLinks(String message) {
+    private List<String> readImageLinks(String message) {
         Matcher matcher = IMAGE_LINK_PATTERN.matcher(message);
 
         if (mImageLinks != null) {
@@ -236,17 +242,17 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mImageLinks = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mImageLinks.add(matcher.group(i).replaceFirst("!\\[\\balt\\b]\\(\\bhttp\\b://.*?\\)", ""));
-            }
+            do {
+                mImageLinks.add(matcher.group(0).replaceFirst("!\\[\\balt\\b]\\(", "").replace(")", ""));
+            } while (matcher.find());
 
-            return mLinks;
+            return mImageLinks;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    private List readIssues(String message) {
+    private List<String> readIssues(String message) {
         Matcher matcher = ISSUE_PATTERN.matcher(message);
 
         if (mIssues != null) {
@@ -256,53 +262,65 @@ public class MarkdownUtils {
         if (matcher.find()) {
             mIssues = new ArrayList<>();
 
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                mIssues.add(matcher.group(i).replace("#", ""));
-            }
+            do {
+                mIssues.add(matcher.group(0).replace("#", ""));
+            } while (matcher.find());
 
             return mIssues;
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
-    public List getSinglelineCode() {
+    public List<String> getSinglelineCode() {
         return readSinglelineCode(mMessage);
     }
 
-    public List getMultilineCode() {
+    public List<String> getMultilineCode() {
         return readMultilineCode(mMessage);
     }
 
-    public List getBold() {
+    public List<String> getBold() {
         return readBold(mMessage);
     }
 
-    public List getStrikethrough() {
+    public List<String> getStrikethrough() {
         return readStrikethrough(mMessage);
     }
 
-    public List getQuote() {
+    public List<String> getQuote() {
         return readQuote(mMessage);
     }
 
-    public List getItalics() {
+    public List<String> getItalics() {
         return readItalics(mMessage);
     }
 
-    public List getLinks() {
+    public List<String> getLinks() {
         return readLinks(mMessage);
     }
 
-    public List getImageLinks() {
+    public List<String> getImageLinks() {
         return readImageLinks(mMessage);
     }
 
-    public List getIssues() {
+    public List<String> getIssues() {
         return readIssues(mMessage);
     }
 
-    public List getParsedString() {
+    public List<String> getParsedString() {
         return convertWithPatterns(mMessage);
+    }
+
+    public boolean existMarkdown() {
+        return getSinglelineCode().size() > 0 ||
+                getMultilineCode().size() > 0 ||
+                getBold().size() > 0 ||
+                getStrikethrough().size() > 0 ||
+                getQuote().size() > 0 ||
+                getItalics().size() > 0 ||
+                getImageLinks().size() > 0 ||
+                getLinks().size() > 0 ||
+                getIssues().size() > 0;
     }
 }

@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.Adapters;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,8 +11,10 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,6 +36,7 @@ import com.ne1c.developerstalk.Models.StatusMessage;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
+import com.ne1c.developerstalk.Util.MarkdownUtils;
 import com.ne1c.developerstalk.Util.Utils;
 
 import java.text.ParseException;
@@ -80,7 +84,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         holder.messageMenu.setOnClickListener(getMenuClick(message, position));
 
         processingIndicator(holder.newMessageIndicator, message);
-        makeDeletedMessageText(holder.messageText, message);
+        setMessageText(holder, message);
 
         holder.timeText.setText(getTimeMessage(message));
         holder.nicknameText.setText(getUsername(message));
@@ -90,13 +94,147 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(holder.avatarImage);
     }
 
-    private void makeDeletedMessageText(TextView text, MessageModel message) {
+    private void setMessageText(ViewHolder holder, MessageModel message) {
+        holder.messageLayout.removeViews(1, holder.messageLayout.getChildCount() - 1);
+
         if (message.text.isEmpty()) {
             Spannable span = new SpannableString(mActivity.getString(R.string.message_deleted));
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            text.setText(span);
+
+            TextView textView = new MarkdownViews().getTextView();
+            textView.setText(message.text);
+
+            holder.messageLayout.addView(textView);
         } else {
-            text.setText(message.text);
+            setMessageText(holder, message.text);
+        }
+    }
+
+    private void setMessageText(ViewHolder holder, String text) {
+        MarkdownUtils markdown = new MarkdownUtils(text);
+        MarkdownViews views = new MarkdownViews();
+
+        int counterSingleline = -1;
+        int counterMultiline = -1;
+        int counterBold = -1;
+        int counterItalics = -1;
+        int counterQuote = -1;
+        int counterStrikethrough = -1;
+        int counterIssue = -1;
+        int counterLinks = -1;
+        int counterImageLinks = -1;
+
+        if (markdown.existMarkdown()) {
+            for (int i = 0; i < markdown.getParsedString().size(); i++) {
+                switch (markdown.getParsedString().get(i)) {
+                    case "{0}":
+                        TextView singleline = views.getSignlelineCodeView();
+                        singleline.setText(markdown.getSinglelineCode().get(++counterSingleline));
+                        holder.messageLayout.addView(singleline);
+
+                        break;
+                    case "{1}":
+                        TextView multiline = views.getMultilineCodeView();
+                        multiline.setText(markdown.getMultilineCode().get(++counterMultiline));
+                        holder.messageLayout.addView(multiline);
+
+                        break;
+                    case "{2}":
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getBoldSpannableText(markdown.getBold().get(++counterBold)));
+                        } else {
+                            TextView textView = views.getTextView();
+                            textView.setText(views.getBoldSpannableText(markdown.getBold().get(++counterBold)));
+                            holder.messageLayout.addView(textView);
+                        }
+
+                        break;
+                    case "{3}":
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getItalicSpannableText(markdown.getItalics().get(++counterItalics)));
+                        } else {
+                            TextView textView = views.getTextView();
+                            textView.setText(views.getItalicSpannableText(markdown.getItalics().get(++counterItalics)));
+                            holder.messageLayout.addView(textView);
+                        }
+
+                        break;
+                    case "{4}":
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
+                        } else {
+                            TextView textView = views.getTextView();
+                            textView.setText(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
+                            holder.messageLayout.addView(textView);
+                        }
+
+                        break;
+                    case "{5}":
+                        LinearLayout quote = views.getQuoteText(markdown.getQuote().get(++counterQuote));
+                        holder.messageLayout.addView(quote);
+
+                        break;
+                    case "{6}":
+                        TextView issue = views.getTextView();
+                        issue.setText(views.getIssueSpannableText(markdown.getIssues().get(++counterIssue)));
+                        holder.messageLayout.addView(issue);
+
+                        break;
+                    case "{7}":
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getLinksSpannableText(markdown.getLinks().get(++counterLinks)));
+                        } else {
+                            TextView textView = views.getTextView();
+                            String link = markdown.getLinks().get(++counterLinks);
+                            link = link.substring(1, link.indexOf("]"));
+
+                            textView.setText(views.getLinksSpannableText(link));
+                            holder.messageLayout.addView(textView);
+                        }
+                        break;
+                    case "{8}":
+                        final String linkImage = markdown.getImageLinks().get(++counterImageLinks);
+
+                        ImageView image = views.getLinkImage();
+                        image.setScaleType(ImageView.ScaleType.CENTER);
+
+                        image.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(linkImage)));
+                            }
+                        });
+
+                        //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
+                        Glide.with(mActivity).load(linkImage).into(image);
+
+                        holder.messageLayout.addView(image);
+
+//                        ViewGroup.LayoutParams params = image.getLayoutParams();
+//                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        image.setLayoutParams(params);
+
+                        break;
+                    default:
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(markdown.getParsedString().get(i));
+                        } else {
+                            TextView textView = views.getTextView();
+                            textView.setText(markdown.getParsedString().get(i));
+                            holder.messageLayout.addView(textView);
+                        }
+                }
+            }
+        } else {
+            TextView textView = views.getTextView();
+            textView.setText(text);
+            holder.messageLayout.addView(textView);
         }
     }
 
@@ -268,7 +406,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                     case R.id.links_menu:
                         LinksDialogFragment links = new LinksDialogFragment();
                         Bundle argsLinks = new Bundle();
-                        argsLinks.putStringArray("links", (String[]) message.urls.toArray());
+                        argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
                         links.setArguments(argsLinks);
                         links.show(mActivity.getFragmentManager(), "dialogLinks");
 
@@ -342,22 +480,24 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout parentLayout;
+        public LinearLayout messageLayout;
         public ImageView avatarImage;
         public ImageView newMessageIndicator;
         public ImageView messageMenu;
         public ImageView statusMessage;
         public TextView nicknameText;
-        public TextView messageText;
+        //public TextView messageText;
         public TextView timeText;
 
         public ViewHolder(View itemView) {
             super(itemView);
 
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
+            messageLayout = (LinearLayout) itemView.findViewById(R.id.message_layout);
             avatarImage = (ImageView) itemView.findViewById(R.id.avatar_image);
             newMessageIndicator = (ImageView) itemView.findViewById(R.id.new_message_image);
             nicknameText = (TextView) itemView.findViewById(R.id.nickname_text);
-            messageText = (TextView) itemView.findViewById(R.id.message_text);
+            //messageText = (TextView) itemView.findViewById(R.id.message_text);
             timeText = (TextView) itemView.findViewById(R.id.time_text);
             messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
             statusMessage = (ImageView) itemView.findViewById(R.id.status_mess_image);
@@ -375,27 +515,56 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
         public Spannable getBoldSpannableText(String text) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new StyleSpan(Typeface.BOLD), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StyleSpan(Typeface.BOLD), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
         }
 
         public Spannable getItalicSpannableText(String text) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
         }
 
         public Spannable getStrikethroughSpannableText(String text) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new StyleSpan(new StrikethroughSpan().getSpanTypeId()), 0, text.length() - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StyleSpan(new StrikethroughSpan().getSpanTypeId()), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
         }
 
-        public ViewGroup getQuoteText(String text) {
-            return null;
+        public LinearLayout getQuoteText(String text) {
+            LinearLayout parent = (LinearLayout) LayoutInflater.from(mActivity).inflate(R.layout.quote_view, null);
+
+            ((TextView) parent.findViewById(R.id.text_quote)).setText(text);
+
+            return parent;
+        }
+
+        public Spannable getLinksSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new ForegroundColorSpan(Color.BLUE), 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new UnderlineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+        }
+
+        public ImageView getLinkImage() {
+            return new ImageView(mActivity);
+        }
+
+        public Spannable getIssueSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new ForegroundColorSpan(Color.GREEN), 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+        }
+
+        public TextView getTextView() {
+            TextView view = new TextView(mActivity);
+            view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
+            return view;
         }
     }
 }
