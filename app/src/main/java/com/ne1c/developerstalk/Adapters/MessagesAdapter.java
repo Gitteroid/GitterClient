@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -102,7 +103,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             TextView textView = new MarkdownViews().getTextView();
-            textView.setText(message.text);
+            textView.setText(mActivity.getString(R.string.message_deleted));
 
             holder.messageLayout.addView(textView);
         } else {
@@ -128,14 +129,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             for (int i = 0; i < markdown.getParsedString().size(); i++) {
                 switch (markdown.getParsedString().get(i)) {
                     case "{0}":
-                        TextView singleline = views.getSignlelineCodeView();
-                        singleline.setText(markdown.getSinglelineCode().get(++counterSingleline));
+                        FrameLayout singleline = views.getSignlelineCodeView();
+                        ((TextView) singleline.findViewById(R.id.singleline_textView)).setText(markdown.getSinglelineCode().get(++counterSingleline));
                         holder.messageLayout.addView(singleline);
 
                         break;
                     case "{1}":
-                        TextView multiline = views.getMultilineCodeView();
-                        multiline.setText(markdown.getMultilineCode().get(++counterMultiline));
+                        FrameLayout multiline = views.getMultilineCodeView();
+                        ((TextView) multiline.findViewById(R.id.multiline_textView)).setText(markdown.getMultilineCode().get(++counterMultiline));
                         holder.messageLayout.addView(multiline);
 
                         break;
@@ -166,9 +167,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
                                     .append(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
                         } else {
-                            TextView textView = views.getTextView();
-                            textView.setText(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
-                            holder.messageLayout.addView(textView);
+                            TextView strikeView = views.getTextView();
+                            strikeView.setText(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
+                            holder.messageLayout.addView(strikeView);
                         }
 
                         break;
@@ -200,8 +201,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         final String linkImage = markdown.getImageLinks().get(++counterImageLinks);
 
                         ImageView image = views.getLinkImage();
-                        image.setScaleType(ImageView.ScaleType.CENTER);
-
+                        image.setScaleType(ImageView.ScaleType.FIT_XY);
                         image.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -214,10 +214,10 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
                         holder.messageLayout.addView(image);
 
-//                        ViewGroup.LayoutParams params = image.getLayoutParams();
-//                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-//                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-//                        image.setLayoutParams(params);
+                        ViewGroup.LayoutParams params = image.getLayoutParams();
+                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        image.setLayoutParams(params);
 
                         break;
                     default:
@@ -505,12 +505,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     }
 
     private class MarkdownViews {
-        public TextView getSignlelineCodeView() {
-            return (TextView) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
+        public FrameLayout getSignlelineCodeView() {
+            return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
         }
 
-        public TextView getMultilineCodeView() {
-            return (TextView) LayoutInflater.from(mActivity).inflate(R.layout.multiline_code_view, null);
+        public FrameLayout getMultilineCodeView() {
+            return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.multiline_code_view, null);
         }
 
         public Spannable getBoldSpannableText(String text) {
@@ -529,7 +529,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
         public Spannable getStrikethroughSpannableText(String text) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new StyleSpan(new StrikethroughSpan().getSpanTypeId()), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new StrikethroughSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
         }

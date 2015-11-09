@@ -22,11 +22,11 @@ public class MarkdownUtils {
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.*?|\\n)+```");  // ```code```
     private static final Pattern BOLD_PATTERN = Pattern.compile("[*]{2}(.*?)[*]{2}"); // **bold**
     private static final Pattern ITALICS_PATTERN = Pattern.compile("[*](.*?)[*]"); // *italics*
-    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*?~{2}"); // ~~strikethrough~~
+    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*~{2}"); // ~~strikethrough~~
     private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s(.*[\\n]?)+"); // > blockquote
-    private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S"); // #123
-    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?\\S]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
-    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[\\balt\\b]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
+    private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S+"); // #123
+    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
+    private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
 
     private final String mMessage;
 
@@ -55,7 +55,7 @@ public class MarkdownUtils {
         message = message.replaceAll(ITALICS_PATTERN.pattern(), "{" + String.valueOf(ITALICS) + "}");
         message = message.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
         message = message.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
-        message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
+        //message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
@@ -206,7 +206,7 @@ public class MarkdownUtils {
                 mItalics.add(matcher.group(0).replace("*", ""));
             } while (matcher.find());
 
-            return mBold;
+            return mItalics;
         }
 
         return Collections.emptyList();
@@ -223,7 +223,7 @@ public class MarkdownUtils {
             mLinks = new ArrayList<>();
 
             do {
-                mLinks.add(matcher.group(0).replaceFirst("\\[]\\(\\bhttp\\b://\\)", ""));
+                mLinks.add(matcher.group(0).replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)", ""));
             } while (matcher.find());
 
             return mLinks;
@@ -243,7 +243,7 @@ public class MarkdownUtils {
             mImageLinks = new ArrayList<>();
 
             do {
-                mImageLinks.add(matcher.group(0).replaceFirst("!\\[\\balt\\b]\\(", "").replace(")", ""));
+                mImageLinks.add(matcher.group(0).replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
             } while (matcher.find());
 
             return mImageLinks;
