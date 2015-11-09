@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-          android:layout_width="match_parent"
-          android:layout_height="match_parent"
-          android:background="@drawable/rounded_corner_dark"
-          android:padding="8dp"
-          android:textColor="@color/md_amber_200"/>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/multiline_textView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/rounded_corner_dark"
+        android:padding="8dp"
+        android:textColor="@color/md_amber_200"/>
+</FrameLayout>
