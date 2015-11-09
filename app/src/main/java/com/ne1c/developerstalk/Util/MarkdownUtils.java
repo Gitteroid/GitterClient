@@ -30,6 +30,7 @@ public class MarkdownUtils {
 
     private final String mMessage;
 
+    private List<String> mParsedString;
     private List<String> mMultilineCode;
     private List<String> mSinglelineCode;
     private List<String> mBold;
@@ -49,6 +50,12 @@ public class MarkdownUtils {
     }
 
     private List<String> convertWithPatterns(String message) {
+        if (mParsedString == null) {
+            mParsedString = new ArrayList<>();
+        } else {
+            return mParsedString;
+        }
+
         message = message.replaceAll(SINGLELINE_CODE_PATTERN.pattern(), "{" + String.valueOf(SINGLELINE_CODE) + "}");
         message = message.replaceAll(MULTILINE_CODE_PATTERN.pattern(), "{" + String.valueOf(MULTILINE_CODE) + "}");
         message = message.replaceAll(BOLD_PATTERN.pattern(), "{" + String.valueOf(BOLD) + "}");
@@ -59,32 +66,30 @@ public class MarkdownUtils {
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
-        List<String> list = new ArrayList<>();
         Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
         String[] splitted = message.split("\\{\\d\\}");
 
         if (matcher.find()) {
             int i = 0;
             do {
-                if (splitted.length > 0 && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
-                    list.add(splitted[i].replaceAll("\\n", ""));
+                if (i < splitted.length && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
+                    mParsedString.add(splitted[i].replaceAll("\\n", ""));
                 }
 
                 try {
-                    list.add(matcher.group(0));
+                    mParsedString.add(matcher.group(0));
                 } catch (IndexOutOfBoundsException | IllegalStateException e) {
                     System.out.print(e);
                 }
 
                 i++;
-                matcher.find();
-            } while (i < splitted.length);
+            } while (i < splitted.length || matcher.find());
 
         } else {
-            list.addAll(Arrays.asList(splitted));
+            mParsedString.addAll(Arrays.asList(splitted));
         }
 
-        return list;
+        return mParsedString;
     }
 
     private List<String> readMultilineCode(String message) {
