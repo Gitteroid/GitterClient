@@ -1,7 +1,5 @@
 package com.ne1c.developerstalk.Util;
 
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,9 +14,9 @@ public class MarkdownUtils {
     public static final int ITALICS = 3;
     public static final int STRIKETHROUGH = 4;
     public static final int QUOTE = 5;
-    public static final int ISSUE = 6;
-    public static final int LINK = 7;
-    public static final int IMAGE_LINK = 8;
+    public static final int LINK = 6;
+    public static final int IMAGE_LINK = 7;
+    public static final int ISSUE = 8;
 
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.+)(?!``)`"); // `code`
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n)+```");  // ```code```
