@@ -20,13 +20,13 @@ public class MarkdownUtils {
     public static final int LINK = 7;
     public static final int IMAGE_LINK = 8;
 
-    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.*?)(?!``)`"); // `code`
-    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.*?|\\n)+```");  // ```code```
+    private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.+)(?!``)`"); // `code`
+    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n)+```");  // ```code```
     private static final Pattern BOLD_PATTERN = Pattern.compile("[*]{2}(.*?)[*]{2}"); // **bold**
-    private static final Pattern ITALICS_PATTERN = Pattern.compile("\\*.*?\\*"); // *italics*
-    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*~{2}"); // ~~strikethrough~~
-    private static final Pattern QUOTE_PATTERN = Pattern.compile("(\\n|^)>\\s((.[\\n]?))+", Pattern.MULTILINE); // > blockquote
-    private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S+"); // #123
+    private static final Pattern ITALICS_PATTERN = Pattern.compile("\\*(.*?)\\*"); // *italics*
+    private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}(.*?)~{2}"); // ~~strikethrough~~
+    private static final Pattern QUOTE_PATTERN = Pattern.compile("(\\n|^)>((.[\\n]?))+", Pattern.MULTILINE); // >blockquote
+    private static final Pattern ISSUE_PATTERN = Pattern.compile("#(.*?)\\S+"); // #123
     private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
     private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
 
@@ -77,7 +77,19 @@ public class MarkdownUtils {
             int i = 0;
             do {
                 if (i < splitted.length && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
-                    mParsedString.add(splitted[i].replaceAll("\\n", ""));
+                    String text = splitted[i];
+
+                    if (text.length() > 0) {
+                        if (text.substring(0, 1).equals("\n")) {
+                            text = text.substring(1);
+                        }
+
+                        if (text.substring(text.length() - 1).equals("\n")) {
+                            text = text.substring(0, text.length() - 1);
+                        }
+                    }
+
+                    mParsedString.add(text);
                 }
 
                 if (find) {
@@ -191,14 +203,16 @@ public class MarkdownUtils {
             mQuote = new ArrayList<>();
 
             do {
-                String text = matcher.group().replaceFirst(">\\s", "");
+                String text = matcher.group().replaceFirst(">\\s?", "");
 
-                if (text.substring(0, 1).equals("\n")) {
-                    text = text.substring(1);
-                }
+                if (text.length() > 0) {
+                    if (text.substring(0, 1).equals("\n")) {
+                        text = text.substring(1);
+                    }
 
-                if (text.substring(text.length() - 1).equals("\n")) {
-                    text = text.substring(0, text.length() - 1);
+                    if (text.substring(text.length() - 1).equals("\n")) {
+                        text = text.substring(0, text.length() - 1);
+                    }
                 }
 
                 mQuote.add(text);
