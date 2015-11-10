@@ -38,6 +38,13 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+        <ImageButton
+            android:id="@+id/markdown_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackground"
+            android:src="@mipmap/ic_layout"/>
+
         <EditText
             android:id="@+id/message_edit_text"
             android:layout_width="0dp"

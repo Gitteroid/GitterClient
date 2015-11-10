@@ -1,10 +1,10 @@
 package com.ne1c.developerstalk.Fragments;
 
+import android.app.Fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.preference.PreferenceManager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -23,6 +23,7 @@ import com.ne1c.developerstalk.Activities.MainActivity;
 import com.ne1c.developerstalk.Adapters.MessagesAdapter;
 import com.ne1c.developerstalk.Database.ClientDatabase;
 import com.ne1c.developerstalk.EventBusModels.ReadMessagesEventBus;
+import com.ne1c.developerstalk.EventBusModels.UpdateMessageEventBus;
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.Models.StatusMessage;
@@ -30,7 +31,7 @@ import com.ne1c.developerstalk.Models.UserModel;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Services.NewMessagesService;
-import com.ne1c.developerstalk.EventBusModels.UpdateMessageEventBus;
+import com.ne1c.developerstalk.Util.MarkdownUtils;
 import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
@@ -106,7 +107,63 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
         setDataToView(savedInstanceState);
 
+        v.findViewById(R.id.markdown_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DialogMarkdownFragment dialog = new DialogMarkdownFragment();
+                dialog.setTargetFragment(ChatRoomFragment.this, DialogMarkdownFragment.REQUEST_CODE);
+                dialog.show(getFragmentManager(), "MARKDOWN_DIALOG");
+            }
+        });
         return v;
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == DialogMarkdownFragment.REQUEST_CODE) {
+            switch (data.getIntExtra("layout_id", -1)) {
+                case MarkdownUtils.SINGLELINE_CODE:
+                    mMessageEditText.append("``");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 1);
+                    break;
+                case MarkdownUtils.MULTILINE_CODE:
+                    mMessageEditText.append("``````");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 3);
+                    break;
+                case MarkdownUtils.BOLD:
+                    mMessageEditText.append("****");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 2);
+                    break;
+                case MarkdownUtils.ITALICS:
+                    mMessageEditText.append("**");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 1);
+                    break;
+                case MarkdownUtils.STRIKETHROUGH:
+                    mMessageEditText.append("~~~~");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 2);
+                    break;
+                case MarkdownUtils.QUOTE:
+                    if (mMessageEditText.length() > 0) {
+                        mMessageEditText.append("\n>");
+                    } else {
+                        mMessageEditText.append(">");
+                    }
+
+                    mMessageEditText.setSelection(mMessageEditText.length());
+                    break;
+                case MarkdownUtils.LINK:
+                    mMessageEditText.append("[](http://)");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 10);
+                    break;
+                case MarkdownUtils.IMAGE_LINK:
+                    mMessageEditText.append("![](http://)");
+                    mMessageEditText.setSelection(mMessageEditText.length() - 10);
+                    break;
+                default: break;
+            }
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
