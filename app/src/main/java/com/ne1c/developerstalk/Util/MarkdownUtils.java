@@ -1,5 +1,7 @@
 package com.ne1c.developerstalk.Util;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,9 +23,9 @@ public class MarkdownUtils {
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("(?!``)`(.*?)(?!``)`"); // `code`
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.*?|\\n)+```");  // ```code```
     private static final Pattern BOLD_PATTERN = Pattern.compile("[*]{2}(.*?)[*]{2}"); // **bold**
-    private static final Pattern ITALICS_PATTERN = Pattern.compile("[*](.*?)[*]"); // *italics*
+    private static final Pattern ITALICS_PATTERN = Pattern.compile("\\*.*?\\*"); // *italics*
     private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}.*~{2}"); // ~~strikethrough~~
-    private static final Pattern QUOTE_PATTERN = Pattern.compile(">\\s(.*[\\n]?)+"); // > blockquote
+    private static final Pattern QUOTE_PATTERN = Pattern.compile("(\\n|^)>\\s((.[\\n]?))+", Pattern.MULTILINE); // > blockquote
     private static final Pattern ISSUE_PATTERN = Pattern.compile("#.*?\\S+"); // #123
     private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
     private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
@@ -69,21 +71,22 @@ public class MarkdownUtils {
         Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
         String[] splitted = message.split("\\{\\d\\}");
 
-        if (matcher.find()) {
+        boolean find = matcher.find();
+
+        if (find) {
             int i = 0;
             do {
                 if (i < splitted.length && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
                     mParsedString.add(splitted[i].replaceAll("\\n", ""));
                 }
 
-                try {
-                    mParsedString.add(matcher.group(0));
-                } catch (IndexOutOfBoundsException | IllegalStateException e) {
-                    System.out.print(e);
+                if (find) {
+                    mParsedString.add(matcher.group());
                 }
 
                 i++;
-            } while (i < splitted.length || matcher.find());
+                find = matcher.find();
+            } while (i < splitted.length || find);
 
         } else {
             mParsedString.addAll(Arrays.asList(splitted));
@@ -103,7 +106,7 @@ public class MarkdownUtils {
             mMultilineCode = new ArrayList<>();
 
             do {
-                String code = matcher.group(0).replace("```", "");
+                String code = matcher.group().replace("```", "");
                 code = code.substring(1, code.length() - 1); // remove \n
                 mMultilineCode.add(code);
             } while (matcher.find());
@@ -128,7 +131,7 @@ public class MarkdownUtils {
             mSinglelineCode = new ArrayList<>();
 
             do {
-                mSinglelineCode.add(matcher.group(0).replace("`", ""));
+                mSinglelineCode.add(matcher.group().replace("`", ""));
             } while (matcher.find());
 
             return mSinglelineCode;
@@ -148,7 +151,7 @@ public class MarkdownUtils {
             mBold = new ArrayList<>();
 
             do {
-                mBold.add(matcher.group(0).replace("**", ""));
+                mBold.add(matcher.group().replace("**", ""));
             } while (matcher.find());
 
             return mBold;
@@ -168,7 +171,7 @@ public class MarkdownUtils {
             mStrikethrough = new ArrayList<>();
 
             do {
-                mStrikethrough.add(matcher.group(0).replace("~~", ""));
+                mStrikethrough.add(matcher.group().replace("~~", ""));
             } while (matcher.find());
 
             return mStrikethrough;
@@ -188,7 +191,17 @@ public class MarkdownUtils {
             mQuote = new ArrayList<>();
 
             do {
-                mQuote.add(matcher.group(0).replace("> ", "").replaceAll("\\n", ""));
+                String text = matcher.group().replaceFirst(">\\s", "");
+
+                if (text.substring(0, 1).equals("\n")) {
+                    text = text.substring(1);
+                }
+
+                if (text.substring(text.length() - 1).equals("\n")) {
+                    text = text.substring(0, text.length() - 1);
+                }
+
+                mQuote.add(text);
             } while (matcher.find());
 
             return mQuote;
@@ -208,7 +221,8 @@ public class MarkdownUtils {
             mItalics = new ArrayList<>();
 
             do {
-                mItalics.add(matcher.group(0).replace("*", ""));
+                String text = matcher.group(); // remove *
+                mItalics.add(text.substring(1, text.length() - 1));
             } while (matcher.find());
 
             return mItalics;
@@ -228,7 +242,7 @@ public class MarkdownUtils {
             mLinks = new ArrayList<>();
 
             do {
-                mLinks.add(matcher.group(0).replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)", ""));
+                mLinks.add(matcher.group().replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)", ""));
             } while (matcher.find());
 
             return mLinks;
@@ -248,7 +262,7 @@ public class MarkdownUtils {
             mImageLinks = new ArrayList<>();
 
             do {
-                mImageLinks.add(matcher.group(0).replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
+                mImageLinks.add(matcher.group().replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
             } while (matcher.find());
 
             return mImageLinks;
@@ -268,7 +282,7 @@ public class MarkdownUtils {
             mIssues = new ArrayList<>();
 
             do {
-                mIssues.add(matcher.group(0).replace("#", ""));
+                mIssues.add(matcher.group().replace("#", ""));
             } while (matcher.find());
 
             return mIssues;

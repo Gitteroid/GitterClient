@@ -186,8 +186,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         break;
                     case "{7}":
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            String link = markdown.getLinks().get(++counterLinks);
+                            link = link.substring(1, link.indexOf("]"));
+
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
-                                    .append(views.getLinksSpannableText(markdown.getLinks().get(++counterLinks)));
+                                    .append(views.getLinksSpannableText(link));
                         } else {
                             TextView textView = views.getTextView();
                             String link = markdown.getLinks().get(++counterLinks);

@@ -560,7 +560,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             MessageModel message = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
             RoomModel room = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
-            if (room != null && room.id.equals(mActiveRoom.id)) {
+            if (room.id != null && room.id.equals(mActiveRoom.id)) {
                 mChatRoomFragment.newMessage(message);
             } else if (room != null) {
                 for (int i = 0; i < mRoomsList.size(); i++) {
