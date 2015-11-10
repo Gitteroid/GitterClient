@@ -52,7 +52,7 @@ import retrofit.RestAdapter;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
-public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHolder> implements
+public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements
         ChatRoomFragment.ReadMessageCallback {
     private RoomModel mRoom;
     private ArrayList<MessageModel> mMessages;
@@ -72,46 +72,73 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
     }
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_message, parent, false));
-    }
-
-    @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
-        MessageModel message = mMessages.get(position);
-
-        holder.parentLayout.setOnClickListener(getParentLayoutClick(message));
-        holder.avatarImage.setOnClickListener(getAvatarImageClick(message));
-        holder.messageMenu.setOnClickListener(getMenuClick(message, position));
-
-        processingIndicator(holder.newMessageIndicator, message);
-        setMessageText(holder, message);
-
-        holder.timeText.setText(getTimeMessage(message));
-        holder.nicknameText.setText(getUsername(message));
-        //noinspection ResourceType
-        setIconMessage(holder.statusMessage, message);
-
-        Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(holder.avatarImage);
-    }
-
-    private void setMessageText(ViewHolder holder, MessageModel message) {
-        holder.messageLayout.removeViews(1, holder.messageLayout.getChildCount() - 1);
-
-        if (message.text.isEmpty()) {
-            Spannable span = new SpannableString(mActivity.getString(R.string.message_deleted));
-            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            TextView textView = new MarkdownViews().getTextView();
-            textView.setText(mActivity.getString(R.string.message_deleted));
-
-            holder.messageLayout.addView(textView);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == 0) {
+            return new DynamicViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_dynamic_message, parent, false));
         } else {
-            setMessageText(holder, message.text);
+            return new StaticViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_message, parent, false));
         }
     }
 
-    private void setMessageText(ViewHolder holder, String text) {
+    @Override
+    public int getItemViewType(int position) {
+        MarkdownUtils markdownUtils = new MarkdownUtils(mMessages.get(position).text);
+        if (markdownUtils.existMarkdown()) {
+            return 0; // Dynamic
+        } else {
+            return 1; // Static
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        MessageModel message = mMessages.get(position);
+
+        if (getItemViewType(position) == 0) {
+            DynamicViewHolder dynamicHolder = (DynamicViewHolder) holder;
+            dynamicHolder.parentLayout.setOnClickListener(getParentLayoutClick(message));
+            dynamicHolder.avatarImage.setOnClickListener(getAvatarImageClick(message));
+            dynamicHolder.messageMenu.setOnClickListener(getMenuClick(message, position));
+
+            processingIndicator(dynamicHolder.newMessageIndicator, message);
+            setMessageDynamicText(dynamicHolder, message.text);
+
+            dynamicHolder.timeText.setText(getTimeMessage(message));
+            dynamicHolder.nicknameText.setText(getUsername(message));
+            //noinspection ResourceType
+            setIconMessage(dynamicHolder.statusMessage, message);
+
+            Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(dynamicHolder.avatarImage);
+        } else {
+            StaticViewHolder staticHolder = (StaticViewHolder) holder;
+            staticHolder.parentLayout.setOnClickListener(getParentLayoutClick(message));
+            staticHolder.avatarImage.setOnClickListener(getAvatarImageClick(message));
+            staticHolder.messageMenu.setOnClickListener(getMenuClick(message, position));
+
+            processingIndicator(staticHolder.newMessageIndicator, message);
+            setMessageStaticText(staticHolder, message.text);
+
+            staticHolder.timeText.setText(getTimeMessage(message));
+            staticHolder.nicknameText.setText(getUsername(message));
+            //noinspection ResourceType
+            setIconMessage(staticHolder.statusMessage, message);
+
+            Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(staticHolder.avatarImage);
+        }
+    }
+
+    private void setMessageStaticText(StaticViewHolder holder, String message) {
+        if (message.isEmpty()) {
+            Spannable span = new SpannableString(mActivity.getString(R.string.message_deleted));
+            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            holder.messageText.setText(span);
+        } else {
+            holder.messageText.setText(message);
+        }
+    }
+
+    private void setMessageDynamicText(DynamicViewHolder holder, String text) {
         MarkdownUtils markdown = new MarkdownUtils(text);
         MarkdownViews views = new MarkdownViews();
 
@@ -179,12 +206,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
 
                         break;
                     case "{6}":
-                        TextView issue = views.getTextView();
-                        issue.setText(views.getIssueSpannableText(markdown.getIssues().get(++counterIssue)));
-                        holder.messageLayout.addView(issue);
-
-                        break;
-                    case "{7}":
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             String link = markdown.getLinks().get(++counterLinks);
                             link = link.substring(1, link.indexOf("]"));
@@ -200,7 +221,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                             holder.messageLayout.addView(textView);
                         }
                         break;
-                    case "{8}":
+                    case "{7}":
                         final String linkImage = markdown.getImageLinks().get(++counterImageLinks);
 
                         ImageView image = views.getLinkImage();
@@ -221,6 +242,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
                         params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                         params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
                         image.setLayoutParams(params);
+
+                        break;
+                    case "{8}":
+                        TextView issue = views.getTextView();
+                        issue.setText(views.getIssueSpannableText(markdown.getIssues().get(++counterIssue)));
+                        holder.messageLayout.addView(issue);
 
                         break;
                     default:
@@ -481,7 +508,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         mMessages.get(position).unread = false;
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class DynamicViewHolder extends RecyclerView.ViewHolder {
         public LinearLayout parentLayout;
         public LinearLayout messageLayout;
         public ImageView avatarImage;
@@ -489,10 +516,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
         public ImageView messageMenu;
         public ImageView statusMessage;
         public TextView nicknameText;
-        //public TextView messageText;
         public TextView timeText;
 
-        public ViewHolder(View itemView) {
+        public DynamicViewHolder(View itemView) {
             super(itemView);
 
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
@@ -500,7 +526,30 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.ViewHo
             avatarImage = (ImageView) itemView.findViewById(R.id.avatar_image);
             newMessageIndicator = (ImageView) itemView.findViewById(R.id.new_message_image);
             nicknameText = (TextView) itemView.findViewById(R.id.nickname_text);
-            //messageText = (TextView) itemView.findViewById(R.id.message_text);
+            timeText = (TextView) itemView.findViewById(R.id.time_text);
+            messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
+            statusMessage = (ImageView) itemView.findViewById(R.id.status_mess_image);
+        }
+    }
+
+    public class StaticViewHolder extends RecyclerView.ViewHolder {
+        public LinearLayout parentLayout;
+        public ImageView avatarImage;
+        public ImageView newMessageIndicator;
+        public ImageView messageMenu;
+        public ImageView statusMessage;
+        public TextView nicknameText;
+        public TextView messageText;
+        public TextView timeText;
+
+        public StaticViewHolder(View itemView) {
+            super(itemView);
+
+            parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
+            avatarImage = (ImageView) itemView.findViewById(R.id.avatar_image);
+            newMessageIndicator = (ImageView) itemView.findViewById(R.id.new_message_image);
+            nicknameText = (TextView) itemView.findViewById(R.id.nickname_text);
+            messageText = (TextView) itemView.findViewById(R.id.message_text);
             timeText = (TextView) itemView.findViewById(R.id.time_text);
             messageMenu = (ImageView) itemView.findViewById(R.id.overflow_message_menu);
             statusMessage = (ImageView) itemView.findViewById(R.id.status_mess_image);

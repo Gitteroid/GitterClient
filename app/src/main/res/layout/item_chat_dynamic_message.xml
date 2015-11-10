@@ -56,13 +56,13 @@
                 tools:text="20:16"/>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/primary_text_default_material_light"
-            tools:text="Test text"/>
+        <!--<TextView-->
+        <!--android:id="@+id/message_text"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="4dp"-->
+        <!--android:textColor="@color/primary_text_default_material_light"-->
+        <!--tools:text="Test text"/>-->
     </LinearLayout>
 
 

@@ -127,7 +127,12 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     mMessageEditText.setSelection(mMessageEditText.length() - 1);
                     break;
                 case MarkdownUtils.MULTILINE_CODE:
-                    mMessageEditText.append("``````");
+                    if (mMessageEditText.length() > 0) {
+                        mMessageEditText.append("``````");
+                    } else {
+                        mMessageEditText.append("\n``````");
+                    }
+
                     mMessageEditText.setSelection(mMessageEditText.length() - 3);
                     break;
                 case MarkdownUtils.BOLD:
@@ -319,10 +324,18 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                             @Override
                             public void success(Response response, Response response2) {
                                 for (int i = first; i <= last; i++) {
-                                    MessagesAdapter.ViewHolder holder = (MessagesAdapter.ViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                    if (holder != null) {
-                                        mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                        mMessagesArr.get(i).unread = false;
+                                    if (mMessagesAdapter.getItemViewType(i) == 0) {
+                                        MessagesAdapter.DynamicViewHolder holder = (MessagesAdapter.DynamicViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                        if (holder != null) {
+                                            mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                            mMessagesArr.get(i).unread = false;
+                                        }
+                                    } else {
+                                        MessagesAdapter.StaticViewHolder holder = (MessagesAdapter.StaticViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                        if (holder != null) {
+                                            mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                            mMessagesArr.get(i).unread = false;
+                                        }
                                     }
                                 }
 
