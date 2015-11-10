@@ -12,7 +12,7 @@
         android:text="@string/quote"
         android:textColor="@color/md_black_1000"
         android:textSize="16sp"
-        android:textStyle="bold"/>
+        android:textStyle="italic"/>
 
     <TextView
         android:id="@+id/text_quote"
