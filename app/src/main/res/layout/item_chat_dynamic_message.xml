@@ -22,12 +22,11 @@
         android:src="@mipmap/ic_avatar"/>
 
     <LinearLayout
-        android:id="@+id/message_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
-        android:layout_marginTop="2dp"
         android:layout_marginRight="8dp"
+        android:layout_marginTop="2dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -56,13 +55,11 @@
                 tools:text="20:16"/>
         </LinearLayout>
 
-        <!--<TextView-->
-        <!--android:id="@+id/message_text"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_marginTop="4dp"-->
-        <!--android:textColor="@color/primary_text_default_material_light"-->
-        <!--tools:text="Test text"/>-->
+        <LinearLayout
+            android:id="@+id/message_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
     </LinearLayout>
 
 
