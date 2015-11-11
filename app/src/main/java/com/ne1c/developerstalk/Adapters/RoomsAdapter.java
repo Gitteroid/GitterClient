@@ -15,7 +15,7 @@ import com.ne1c.developerstalk.R;
 
 import java.util.ArrayList;
 
-public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder>{
+public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> {
     private ArrayList<RoomModel> mRooms;
     private Context mContext;
 
@@ -34,6 +34,20 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder>{
         final RoomModel room = mRooms.get(position);
 
         holder.roomName.setText(room.name);
+        if (room.mentions > 0) {
+            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
+            holder.counterMess.setText("@");
+
+            holder.counterMess.setVisibility(View.VISIBLE);
+        } else if (room.unreadItems > 0) {
+            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
+            holder.counterMess.setText(String.valueOf(room.unreadItems));
+
+            holder.counterMess.setVisibility(View.VISIBLE);
+        } else {
+            holder.counterMess.setVisibility(View.GONE);
+        }
+
         holder.parentLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -52,12 +66,14 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder>{
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView roomName;
+        public TextView counterMess;
         public LinearLayout parentLayout;
 
         public ViewHolder(View itemView) {
             super(itemView);
 
             roomName = (TextView) itemView.findViewById(R.id.room_name);
+            counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
         }
     }

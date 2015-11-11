@@ -1,16 +1,15 @@
 package com.ne1c.developerstalk.Fragments;
 
-
+import android.app.Fragment;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
-import android.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 
 import com.ne1c.developerstalk.Adapters.RoomsAdapter;
 import com.ne1c.developerstalk.Database.ClientDatabase;
@@ -22,10 +21,10 @@ import com.ne1c.developerstalk.Util.Utils;
 import java.util.ArrayList;
 
 public class RoomsListFragment extends Fragment implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
-    private ProgressBar mProgressBar;
-
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
+    private SwipeRefreshLayout mRefreshLayout;
+
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
 
     @Override
@@ -35,11 +34,18 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+
+        refreshRooms();
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_rooms_list, container, false);
 
-        mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
+        mRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.refresh_rooms_layout);
 
         mRoomsList = (RecyclerView) v.findViewById(R.id.rooms_list);
         LinearLayoutManager manager = new LinearLayoutManager(getActivity());
@@ -47,14 +53,19 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mAdapter = new RoomsAdapter(mRooms, getActivity());
         mRoomsList.setAdapter(mAdapter);
 
-        if (mRooms.size() == 0) {
-            getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
-
-            mProgressBar.setVisibility(View.VISIBLE);
-            mRoomsList.setVisibility(View.GONE);
-        }
+        mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refreshRooms();
+            }
+        });
 
         return v;
+    }
+
+    private void refreshRooms() {
+        mRefreshLayout.setRefreshing(true);
+        getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
     }
 
     @Override
@@ -69,11 +80,9 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         } else if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
             ClientDatabase client = new ClientDatabase(getActivity());
             client.insertRooms(data);
-        }
-
-        if (mRoomsList.getVisibility() != View.VISIBLE) {
-            mProgressBar.setVisibility(View.GONE);
-            mRoomsList.setVisibility(View.VISIBLE);
+            mRefreshLayout.setRefreshing(false);
+        } else if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && !Utils.getInstance().isNetworkConnected()) {
+            mRefreshLayout.setRefreshing(false);
         }
 
         if (data.size() > 0) {
