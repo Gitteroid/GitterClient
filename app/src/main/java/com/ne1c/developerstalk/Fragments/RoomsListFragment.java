@@ -5,6 +5,7 @@ import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -50,6 +51,7 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mRoomsList = (RecyclerView) v.findViewById(R.id.rooms_list);
         LinearLayoutManager manager = new LinearLayoutManager(getActivity());
         mRoomsList.setLayoutManager(manager);
+        mRoomsList.setItemAnimator(new DefaultItemAnimator());
         mAdapter = new RoomsAdapter(mRooms, getActivity());
         mRoomsList.setAdapter(mAdapter);
 
