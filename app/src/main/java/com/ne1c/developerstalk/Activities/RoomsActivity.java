@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 
 import com.ne1c.developerstalk.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.Fragments.RoomsListFragment;
@@ -48,6 +49,12 @@ public class RoomsActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_room, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
