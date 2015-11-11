@@ -35,7 +35,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
 
         holder.roomName.setText(room.name);
         if (room.mentions > 0) {
-            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
+            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
             holder.counterMess.setText("@");
 
             holder.counterMess.setVisibility(View.VISIBLE);
