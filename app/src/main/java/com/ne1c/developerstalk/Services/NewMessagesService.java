@@ -18,6 +18,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -178,8 +179,13 @@ public class NewMessagesService extends Service implements FayeClient.Unexpected
                     mFayeClient.accessClientIdSubscriber().subscribe(new Action1<Boolean>() {
                         @Override
                         public void call(Boolean aBoolean) {
-                            mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
-                            createSubscribers();
+                            try {
+                                mRoomsList = mApiMethods.getCurrentUserRooms(Utils.getInstance().getBearer());
+                                createSubscribers();
+                            } catch (RetrofitError e) {
+                                Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+
                         }
                     });
                 } catch (OnErrorNotImplementedException | RetrofitError e) {
