@@ -152,7 +152,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         int counterLinks = -1;
         int counterImageLinks = -1;
 
-        holder.messageLayout.removeViews(0, holder.messageLayout.getChildCount() - 1);
+        holder.messageLayout.removeAllViews();
 
         if (markdown.existMarkdown()) {
             for (int i = 0; i < markdown.getParsedString().size(); i++) {
