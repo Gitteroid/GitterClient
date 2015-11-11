@@ -98,7 +98,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
-        mMessagesList.setItemViewCacheSize(100);
+        mMessagesList.setItemViewCacheSize(50);
 
         // Animation for add new item or change item
         DefaultItemAnimator anim = new DefaultItemAnimator();
@@ -285,11 +285,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 }
             }
         });
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
     }
 
     @Override

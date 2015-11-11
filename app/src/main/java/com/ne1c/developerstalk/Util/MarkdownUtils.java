@@ -351,7 +351,6 @@ public class MarkdownUtils {
                 getQuote().size() > 0 ||
                 getItalics().size() > 0 ||
                 getImageLinks().size() > 0 ||
-                getLinks().size() > 0 ||
-                getIssues().size() > 0;
+                getLinks().size() > 0;
     }
 }
