@@ -11,6 +11,7 @@ import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
 import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import retrofit.RestAdapter;
 
@@ -39,13 +40,28 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
 
     @Override
     public ArrayList<RoomModel> loadInBackground() {
+        ArrayList<RoomModel> rooms=null;
+
         if (mFlag == FROM_SERVER) {
             IApiMethods methods = mAdapter.create(IApiMethods.class);
-            return methods.getCurrentUserRooms(Utils.getInstance().getBearer());
+            rooms = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
         } else if (mFlag == FROM_DATABASE) {
-            return mClientDatabase.getRooms();
-        } else {
-            return null;
+            rooms = mClientDatabase.getRooms();
         }
+        if (rooms==null) return null;
+
+        ArrayList<RoomModel> multi = new ArrayList<>();
+        ArrayList<RoomModel> one = new ArrayList<>();
+        for (RoomModel room : rooms) {
+            if (room.oneToOne) one.add(room);
+            else multi.add(room);
+        }
+
+        Collections.sort(multi, new RoomModel.TypeComparator());
+        Collections.sort(one, new RoomModel.TypeComparator());
+        rooms.clear();
+        rooms.addAll(multi);
+        rooms.addAll(one);
+        return rooms;
     }
 }

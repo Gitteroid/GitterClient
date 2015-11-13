@@ -91,33 +91,36 @@ public class ClientDatabase {
                 list.add(model);
             } while (cursor.moveToNext());
         }
-
         return list;
     }
+
 
     public UserModel getUser(String userId) {
         Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_USER_ID + " = ?",
                 new String[]{userId}, null, null, null, null);
+        try {
 
-        if (cursor.moveToFirst()) {
-            int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
-            int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
-            int columnDisplayname = cursor.getColumnIndex(COLUMN_DISPLAY_NAME);
-            int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
-            int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
+            if (cursor.moveToFirst()) {
+                int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
+                int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
+                int columnDisplayName = cursor.getColumnIndex(COLUMN_DISPLAY_NAME);
+                int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
+                int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
 
-            do {
-                UserModel model = new UserModel();
-                model.id = cursor.getString(columnUserId);
-                model.username = cursor.getString(columnUsername);
-                model.displayName = cursor.getString(columnDisplayname);
-                model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
-                model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
+                do {
+                    UserModel model = new UserModel();
+                    model.id = cursor.getString(columnUserId);
+                    model.username = cursor.getString(columnUsername);
+                    model.displayName = cursor.getString(columnDisplayName);
+                    model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
+                    model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
 
-                return model;
-            } while (cursor.moveToNext());
+                    return model;
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
         }
-
         return null;
     }
 

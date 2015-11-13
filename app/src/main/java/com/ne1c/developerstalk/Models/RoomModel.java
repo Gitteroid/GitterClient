@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class RoomModel implements Parcelable {
     public String id;
@@ -72,4 +73,11 @@ public class RoomModel implements Parcelable {
             return new RoomModel[size];
         }
     };
+
+    public final static class TypeComparator implements Comparator<RoomModel> {
+        @Override
+        public int compare(RoomModel r1, RoomModel r2) {
+            return r1.name.compareTo(r2.name);
+        }
+    }
 }
