@@ -79,10 +79,10 @@
             android:scaleType="fitCenter"
             android:src="@mipmap/ic_menu"/>
 
-        <View
+        <Space
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_weight="1" />
 
         <ImageView
             android:id="@+id/status_mess_image"

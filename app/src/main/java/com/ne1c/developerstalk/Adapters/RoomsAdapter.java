@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -48,12 +49,14 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             holder.counterMess.setVisibility(View.GONE);
         }
 
+        if (room.oneToOne) holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
+        else holder.roomImage.setImageResource(R.mipmap.ic_room_item);
+
         holder.parentLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, MainActivity.class);
                 intent.putExtra("roomId", room.id);
-
                 mContext.startActivity(intent);
             }
         });
@@ -66,6 +69,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView roomName;
+        public ImageView roomImage;
         public TextView counterMess;
         public LinearLayout parentLayout;
 
@@ -73,6 +77,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             super(itemView);
 
             roomName = (TextView) itemView.findViewById(R.id.room_name);
+            roomImage = (ImageView) itemView.findViewById(R.id.room_image);
             counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
         }
