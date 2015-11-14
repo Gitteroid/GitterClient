@@ -321,19 +321,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (mRoomsList != null) {
             if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) != null) {
                 mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                        selectedNavItem = i + 1;
-                    }
-                }
-
-                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
-                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-
-                mDrawer.closeDrawer();
+            } else if (selectedNavItem >= 0){
+                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
             }
+
+            for (int i = 0; i < mRoomsList.size(); i++) {
+                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+                    selectedNavItem = i + 1;
+                }
+            }
+
+            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+            EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+
+            mDrawer.closeDrawer();
         } else {
             getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
         }
