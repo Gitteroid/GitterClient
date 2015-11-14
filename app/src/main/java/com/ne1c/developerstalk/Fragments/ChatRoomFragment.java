@@ -252,17 +252,20 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             @Override
             public void onRefreshBegin(PtrFrameLayout ptrFrameLayout) {
                 // Message not sent or sending, it hasn't id
-                if (!mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
+                if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
                     mApiMethods.getMessagesBeforeId(Utils.getInstance().getBearer(),
                             mRoom.id, 10, mMessagesArr.get(0).id,
                             new Callback<ArrayList<MessageModel>>() {
                                 @Override
                                 public void success(ArrayList<MessageModel> messageModels, Response response) {
-                                    mMessagesArr.addAll(0, messageModels);
-                                    mMessagesAdapter.notifyItemRangeInserted(0, 10);
-                                    mPtrFrameLayout.refreshComplete();
+                                    if (messageModels.size() > 0) {
+                                        mMessagesArr.addAll(0, messageModels);
+                                        mMessagesAdapter.notifyItemRangeInserted(0, messageModels.size());
 
-                                    countLoadMessages += 10;
+                                        countLoadMessages += messageModels.size();
+                                    }
+
+                                    mPtrFrameLayout.refreshComplete();
                                 }
 
                                 @Override
@@ -271,8 +274,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                                     Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
                                 }
                             });
+                } else {
+                    mPtrFrameLayout.refreshComplete();
                 }
-                //loadMessageRoomServer(mRoom, false, true);
             }
         });
 
