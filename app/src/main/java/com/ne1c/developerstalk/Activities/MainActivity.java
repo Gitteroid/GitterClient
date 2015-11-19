@@ -10,6 +10,7 @@ import android.content.Loader;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Parcelable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -318,12 +319,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
         UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
 
-        if (mRoomsList != null) {
-            if (getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY) != null) {
-                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-            } else if (selectedNavItem >= 0){
-                mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-            }
+        RoomModel extraRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+        if (mRoomsList != null && extraRoom != null) {
+            mActiveRoom = extraRoom;
+            getIntent().putExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY, (Parcelable) null);
 
             for (int i = 0; i < mRoomsList.size(); i++) {
                 if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
@@ -336,8 +335,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
 
             mDrawer.closeDrawer();
-        } else {
-            getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
         }
     }
 
