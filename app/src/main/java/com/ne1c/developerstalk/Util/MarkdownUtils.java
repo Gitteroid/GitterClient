@@ -19,7 +19,7 @@ public class MarkdownUtils {
     public static final int ISSUE = 8;
 
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("((?!``)`(.+?)`(?!```))|(```(.+?)```)"); // `code` or ```code```
-    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n?)+```");  // ```code``` multiline
+    private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n?)+?```");  // ```code``` multiline
     private static final Pattern BOLD_PATTERN = Pattern.compile("[*]{2}(.+?)[*]{2}"); // **bold**
     private static final Pattern ITALICS_PATTERN = Pattern.compile("\\*(.+?)\\*"); // *italics*
     private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}(.+?)~{2}"); // ~~strikethrough~~
