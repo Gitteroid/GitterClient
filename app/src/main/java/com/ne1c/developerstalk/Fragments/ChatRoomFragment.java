@@ -164,7 +164,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                     mMessageEditText.append("![](http://)");
                     mMessageEditText.setSelection(mMessageEditText.length() - 10);
                     break;
-                default: break;
+                default:
+                    break;
             }
         }
 
@@ -314,26 +315,31 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             }
 
             if (listUnreadIds.size() > 0) {
-                listUnreadIds.add(""); // If single item
+                listUnreadIds.add(""); // If listUnreadIds have one item
+
+                final String roomId = mRoom.id;
+
                 mApiMethods.readMessages(Utils.getInstance().getBearer(),
                         Utils.getInstance().getUserPref().id,
-                        mRoom.id,
+                        roomId,
                         listUnreadIds.toArray(new String[listUnreadIds.size()]),
                         new Callback<Response>() {
                             @Override
                             public void success(Response response, Response response2) {
-                                for (int i = first; i <= last; i++) {
-                                    if (mMessagesAdapter.getItemViewType(i) == 0) {
-                                        MessagesAdapter.DynamicViewHolder holder = (MessagesAdapter.DynamicViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                        if (holder != null) {
-                                            mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                            mMessagesArr.get(i).unread = false;
-                                        }
-                                    } else {
-                                        MessagesAdapter.StaticViewHolder holder = (MessagesAdapter.StaticViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                        if (holder != null) {
-                                            mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                            mMessagesArr.get(i).unread = false;
+                                if (roomId.equals(mRoom.id)) {
+                                    for (int i = first; i <= last; i++) {
+                                        if (mMessagesAdapter.getItemViewType(i) == 0) {
+                                            MessagesAdapter.DynamicViewHolder holder = (MessagesAdapter.DynamicViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                            if (holder != null) {
+                                                mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                                mMessagesArr.get(i).unread = false;
+                                            }
+                                        } else {
+                                            MessagesAdapter.StaticViewHolder holder = (MessagesAdapter.StaticViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
+                                            if (holder != null) {
+                                                mMessagesAdapter.read(holder.newMessageIndicator, i);
+                                                mMessagesArr.get(i).unread = false;
+                                            }
                                         }
                                     }
                                 }

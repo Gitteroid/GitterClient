@@ -77,10 +77,10 @@ public class MarkdownUtils {
         if (find) {
             int i = 0;
             do {
-                if (i < splitted.length && !splitted[i].equals("\\n") && !splitted[i].isEmpty()) {
+                if (i < splitted.length && !splitted[i].equals("\n") && !splitted[i].isEmpty()) {
                     String text = splitted[i];
 
-                    if (text.length() > 0) {
+                    if (!text.isEmpty()) {
                         if (text.substring(0, 1).equals("\n")) {
                             text = text.substring(1);
                         }
