@@ -2,11 +2,14 @@ package com.ne1c.developerstalk.Adapters;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.v4.content.res.TypedArrayUtils;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -15,6 +18,8 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -224,19 +229,29 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
                         break;
                     case "{7}":
-                        final String linkImage = markdown.getImageLinks().get(++counterImageLinks);
+                        Object link = markdown.getImageLinks().get(++counterImageLinks);
+                        String previewUrl;
+                        final String fullUrl;
+
+                        if (link instanceof MarkdownUtils.PreviewImageModel) {
+                            previewUrl = ((MarkdownUtils.PreviewImageModel) link).getPreviewUrl();
+                            fullUrl = ((MarkdownUtils.PreviewImageModel) link).getFullUrl();
+                        } else {
+                            previewUrl = String.valueOf(link);
+                            fullUrl = previewUrl;
+                        }
 
                         ImageView image = views.getLinkImage();
                         image.setScaleType(ImageView.ScaleType.FIT_XY);
                         image.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(linkImage)));
+                                mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl)));
                             }
                         });
 
                         //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
-                        Glide.with(mActivity).load(linkImage).into(image);
+                        Glide.with(mActivity).load(previewUrl).into(image);
 
                         holder.messageLayout.addView(image);
 
@@ -605,7 +620,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
 
         public ImageView getLinkImage() {
-            return new ImageView(mActivity);
+            return (ImageView) LayoutInflater.from(mActivity).inflate(R.layout.image_link_view, null);
         }
 
         public Spannable getIssueSpannableText(String text) {

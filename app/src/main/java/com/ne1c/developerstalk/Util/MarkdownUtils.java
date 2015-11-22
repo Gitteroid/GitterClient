@@ -27,6 +27,8 @@ public class MarkdownUtils {
     private static final Pattern ISSUE_PATTERN = Pattern.compile("#(.+?)\\S+"); // #123
     private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
     private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
+    private static final Pattern PREVIEW_IMAGE_LINK_PATTERN =
+            Pattern.compile("\\[!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [![alt](preview_url)(full_url)]
 
     private final String mMessage;
 
@@ -38,7 +40,7 @@ public class MarkdownUtils {
     private List<String> mStrikethrough;
     private List<String> mQuote;
     private List<String> mLinks;
-    private List<String> mImageLinks;
+    private List<Object> mImageLinks;
     private List<String> mIssues;
 
     public MarkdownUtils(String message) {
@@ -63,6 +65,7 @@ public class MarkdownUtils {
         message = message.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
         message = message.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
         //message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
+        message = message.replaceAll(PREVIEW_IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
@@ -263,19 +266,33 @@ public class MarkdownUtils {
         return Collections.emptyList();
     }
 
-    private List<String> readImageLinks(String message) {
-        Matcher matcher = IMAGE_LINK_PATTERN.matcher(message);
+    private List<Object> readImageLinks(String message) {
+        Matcher prewiew_matcher = PREVIEW_IMAGE_LINK_PATTERN.matcher(message);
+        Matcher full_matcher = IMAGE_LINK_PATTERN.matcher(message);
 
         if (mImageLinks != null) {
             return mImageLinks;
         }
 
-        if (matcher.find()) {
+        if (prewiew_matcher.find()) {
             mImageLinks = new ArrayList<>();
 
             do {
-                mImageLinks.add(matcher.group().replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
-            } while (matcher.find());
+                String previewUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\(", "").replaceFirst("(\\)\\].*)+", "");
+                String fullUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\((.*?)\\)\\]\\(", "").replaceFirst("\\)", "");
+
+                PreviewImageModel link = new PreviewImageModel(previewUrl, fullUrl);
+
+                mImageLinks.add(link);
+            } while (prewiew_matcher.find());
+
+            return mImageLinks;
+        } else if (full_matcher.find()) {
+            mImageLinks = new ArrayList<>();
+
+            do {
+                mImageLinks.add(full_matcher.group().replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
+            } while (full_matcher.find());
 
             return mImageLinks;
         }
@@ -331,7 +348,7 @@ public class MarkdownUtils {
         return readLinks(mMessage);
     }
 
-    public List<String> getImageLinks() {
+    public List<Object> getImageLinks() {
         return readImageLinks(mMessage);
     }
 
@@ -352,5 +369,23 @@ public class MarkdownUtils {
                 getItalics().size() > 0 ||
                 getImageLinks().size() > 0 ||
                 getLinks().size() > 0;
+    }
+
+    public static class PreviewImageModel {
+        private String mPreviewUrl;
+        private String mFullUrl;
+
+        public PreviewImageModel(String previewUrl, String fullUrl) {
+            mPreviewUrl = previewUrl;
+            mFullUrl = fullUrl;
+        }
+
+        public String getPreviewUrl() {
+            return mPreviewUrl == null ? "" : mPreviewUrl;
+        }
+
+        public String getFullUrl() {
+            return mFullUrl == null ? "" : mFullUrl;
+        }
     }
 }
