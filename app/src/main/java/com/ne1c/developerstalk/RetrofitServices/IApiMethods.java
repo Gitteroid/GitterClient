@@ -1,5 +1,7 @@
 package com.ne1c.developerstalk.RetrofitServices;
 
+import android.telecom.Call;
+
 import com.ne1c.developerstalk.Models.AuthResponseModel;
 import com.ne1c.developerstalk.Models.MessageModel;
 import com.ne1c.developerstalk.Models.RoomModel;
@@ -11,6 +13,7 @@ import java.util.List;
 import retrofit.Callback;
 import retrofit.client.Response;
 import retrofit.http.Body;
+import retrofit.http.DELETE;
 import retrofit.http.Field;
 import retrofit.http.FieldMap;
 import retrofit.http.FormUrlEncoded;
@@ -38,42 +41,83 @@ public interface IApiMethods {
             "Accept: application/json"
     })
     @GET("/v1/rooms/{roomId}/chatMessages")
-    void getMessagesRoom(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Query("limit") int limit, Callback<ArrayList<MessageModel>> callback);
+    void getMessagesRoom(@Header("Authorization") String access_token,
+                         @Path("roomId") String roomId,
+                         @Query("limit") int limit,
+                         Callback<ArrayList<MessageModel>> callback);
 
     @FormUrlEncoded
     @POST("/v1/rooms/{roomId}/chatMessages")
-    MessageModel sendMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId, @Field("text") String text);
+    MessageModel sendMessage(@Header("Authorization") String access_token,
+                             @Path("roomId") String roomId,
+                             @Field("text") String text);
 
     @FormUrlEncoded
     @PUT("/v1/rooms/{roomId}/chatMessages/{chatMessageId}")
-    void updateMessage(@Header("Authorization") String access_token, @Path("roomId") String roomId,
+    void updateMessage(@Header("Authorization") String access_token,
+                       @Path("roomId") String roomId,
                        @Path("chatMessageId") String chatMessageId,
-                       @Field("text") String messageText, Callback<MessageModel> callback);
+                       @Field("text") String messageText,
+                       Callback<MessageModel> callback);
 
     @Headers({
             "Content-Type: application/json",
             "Accept: application/json",
     })
     @GET("/v1/user")
-    void getCurrentUser(@Header("Authorization") String access_token, Callback<ArrayList<UserModel>> callback);
+    void getCurrentUser(@Header("Authorization") String access_token,
+                        Callback<ArrayList<UserModel>> callback);
 
     @Headers({
             "Content-Type: application/json",
             "Accept: application/json"
     })
     @GET("/v1/rooms/{roomId}/chatMessages")
-    void getMessagesBeforeId(@Header("Authorization") String access_token, @Path("roomId") String roomId,
+    void getMessagesBeforeId(@Header("Authorization") String access_token,
+                             @Path("roomId") String roomId,
                              @Query("limit") int limit,
-                             @Query("beforeId") String beforeId, Callback<ArrayList<MessageModel>> callback);
+                             @Query("beforeId") String beforeId,
+                             Callback<ArrayList<MessageModel>> callback);
 
     @FormUrlEncoded
     @POST("/login/oauth/token")
-    void authorization(@Field("client_id") String client_id, @Field("client_secret") String client_secret,
-                       @Field("code") String code, @Field("grant_type") String grant_type,
-                       @Field("redirect_uri") String redirect_uri, Callback<AuthResponseModel> callback);
+    void authorization(@Field("client_id") String client_id,
+                       @Field("client_secret") String client_secret,
+                       @Field("code") String code,
+                       @Field("grant_type") String grant_type,
+                       @Field("redirect_uri") String redirect_uri,
+                       Callback<AuthResponseModel> callback);
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
     void readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
                       @Path("roomId") String roomId, @Field("chat") String[] chat, Callback<Response> callback);
+
+    @DELETE("/v1/rooms/{roomId}/users/{userId}")
+    void leaveRoom(@Header("Authorization") String access_token,
+                   @Path("roomId") String roomId,
+                   @Path("userId") String userId,
+                   Callback<Response> callback);
+
+    @POST("/v1/rooms")
+    @FormUrlEncoded
+    void joinRoom(@Header("Authorization") String access_token,
+                  @Field("uri") String roomUri,
+                  Callback<RoomModel> callback);
+
+    @GET("/v1/rooms")
+    void searchRooms(@Header("Authorization") String access_token,
+                     @Query("q") String searchTerm,
+                     Callback<Response> callback);
+
+    @GET("/v1/rooms")
+    void searchRooms(@Header("Authorization") String access_token,
+                     @Query("q") String searchTerm,
+                     @Query("limit") int limit,
+                     Callback<Response> callback);
+
+    @GET("/v1/user")
+    void searchUsers(@Header("Authorization") String access_token,
+                     @Query("q") String searchTerm,
+                     Callback<Response> callback);
 }

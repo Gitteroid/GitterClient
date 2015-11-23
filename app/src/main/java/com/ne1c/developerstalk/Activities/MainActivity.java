@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RoomModel mActiveRoom;
 
     private RestAdapter mRestAdapter;
+    private IApiMethods mApi;
     private ClientDatabase mClientDatabase;
 
     private int selectedNavItem = -1; // Default, item not selected
@@ -122,6 +123,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mRestAdapter = new RestAdapter.Builder()
                 .setEndpoint(Utils.GITTER_API_URL)
                 .build();
+
+        mApi = mRestAdapter.create(IApiMethods.class);
 
         mClientDatabase = new ClientDatabase(getApplicationContext());
 
@@ -379,6 +382,30 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     }
                 }
                 break;
+            case R.id.action_leave:
+                if (mActiveRoom.oneToOne) {
+                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
+
+                    break;
+                }
+
+                mApi.leaveRoom(Utils.getInstance().getBearer(),
+                        mActiveRoom.id,
+                        Utils.getInstance().getUserPref().id,
+                        new Callback<Response>() {
+                            @Override
+                            public void success(Response response, Response response2) {
+                                finish();
+                            }
+
+                            @Override
+                            public void failure(RetrofitError error) {
+                                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+
+                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -512,8 +539,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void updateUserFromServer() {
-        IApiMethods methods = mRestAdapter.create(IApiMethods.class);
-        methods.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
+        mApi.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
             @Override
             public void success(final ArrayList<UserModel> userModel, Response response) {
                 // If this is the first launch of the application
