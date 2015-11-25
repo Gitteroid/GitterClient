@@ -36,4 +36,11 @@
         android:minWidth="24dp"
         android:padding="1dp"
         android:textColor="@android:color/white"/>
+
+    <ImageView
+        android:id="@+id/edit_room"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/ic_edit_item"
+        android:visibility="gone"/>
 </LinearLayout>

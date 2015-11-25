@@ -11,14 +11,17 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ne1c.developerstalk.Activities.MainActivity;
+import com.ne1c.developerstalk.Adapters.helper.ItemTouchHelperAdapter;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.R;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> {
+public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> implements ItemTouchHelperAdapter {
     private ArrayList<RoomModel> mRooms;
     private Context mContext;
+    private boolean mIsEdit = false;
 
     public RoomsAdapter(ArrayList<RoomModel> rooms, Context context) {
         this.mRooms = rooms;
@@ -49,6 +52,12 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             holder.counterMess.setVisibility(View.GONE);
         }
 
+        if (mIsEdit) {
+            holder.editRoom.setVisibility(View.VISIBLE);
+        } else {
+            holder.editRoom.setVisibility(View.INVISIBLE);
+        }
+
         if (room.oneToOne) holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
         else holder.roomImage.setImageResource(R.mipmap.ic_room_item);
 
@@ -67,9 +76,32 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         return mRooms.size();
     }
 
+    @Override
+    public boolean onItemMove(int fromPosition, int toPosition) {
+        Collections.swap(mRooms, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
+        return true;
+    }
+
+    @Override
+    public void onItemDismiss(int position) {
+        mRooms.remove(position);
+        notifyItemRemoved(position);
+    }
+
+    public void setEdit(boolean edit) {
+        mIsEdit = edit;
+        notifyDataSetChanged();
+    }
+
+    public boolean isEdit() {
+        return mIsEdit;
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView roomName;
         public ImageView roomImage;
+        public ImageView editRoom;
         public TextView counterMess;
         public LinearLayout parentLayout;
 
@@ -78,6 +110,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
 
             roomName = (TextView) itemView.findViewById(R.id.room_name);
             roomImage = (ImageView) itemView.findViewById(R.id.room_image);
+            editRoom = (ImageView) itemView.findViewById(R.id.edit_room);
             counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
         }

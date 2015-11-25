@@ -8,11 +8,14 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.ne1c.developerstalk.Adapters.RoomsAdapter;
+import com.ne1c.developerstalk.Adapters.helper.OnStartDragListener;
+import com.ne1c.developerstalk.Adapters.helper.SimpleItemTouchHelperCallback;
 import com.ne1c.developerstalk.Database.ClientDatabase;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.R;
@@ -21,10 +24,12 @@ import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
 
-public class RoomsListFragment extends Fragment implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
+public class RoomsListFragment extends Fragment implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>>,
+        OnStartDragListener {
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
     private SwipeRefreshLayout mRefreshLayout;
+    private ItemTouchHelper mItemTouchHelper;
 
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
 
@@ -55,6 +60,9 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mAdapter = new RoomsAdapter(mRooms, getActivity());
         mRoomsList.setAdapter(mAdapter);
 
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
+        mItemTouchHelper = new ItemTouchHelper(callback);
+
         mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -63,6 +71,19 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         });
 
         return v;
+    }
+
+    public boolean isEdit() {
+        return mAdapter.isEdit();
+    }
+
+    public void setEdit(boolean edit) {
+        if (edit) {
+            mItemTouchHelper.attachToRecyclerView(mRoomsList);
+        } else {
+            mItemTouchHelper.attachToRecyclerView(null);
+        }
+        mAdapter.setEdit(edit);
     }
 
     private void refreshRooms() {
@@ -98,5 +119,10 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onLoaderReset(Loader<ArrayList<RoomModel>> loader) {
 
+    }
+
+    @Override
+    public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
+        mItemTouchHelper.startDrag(viewHolder);
     }
 }
