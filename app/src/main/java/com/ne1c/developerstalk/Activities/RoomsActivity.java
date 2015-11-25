@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
+import android.view.MenuItem;
 
 import com.ne1c.developerstalk.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.Fragments.RoomsListFragment;
@@ -55,6 +56,15 @@ public class RoomsActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_room, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_edit_room) {
+            mRoomsListFragment.setEdit(!mRoomsListFragment.isEdit());
+        }
+
+        return true;
     }
 
     @Override

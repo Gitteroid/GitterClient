@@ -55,7 +55,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         if (mIsEdit) {
             holder.editRoom.setVisibility(View.VISIBLE);
         } else {
-            holder.editRoom.setVisibility(View.INVISIBLE);
+            holder.editRoom.setVisibility(View.GONE);
         }
 
         if (room.oneToOne) holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
