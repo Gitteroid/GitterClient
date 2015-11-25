@@ -19,6 +19,7 @@ public class RoomModel implements Parcelable {
     public boolean lurk;
     public String url;
     public String githubType;
+    public boolean hide;
     public int v;
 
 

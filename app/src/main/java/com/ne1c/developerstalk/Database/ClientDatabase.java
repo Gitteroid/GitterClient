@@ -15,7 +15,7 @@ import java.util.List;
 
 public class ClientDatabase {
 
-    public static final int DB_VERSION = 1;
+    public static final int DB_VERSION = 2;
     public static final String DB_NAME = "gitter_db";
 
     public static final String ROOM_TABLE = "room";
@@ -33,6 +33,7 @@ public class ClientDatabase {
     public static final String COLUMN_URL = "url";
     public static final String COLUMN_VERSION = "version";
     public static final String COLUMN_USERS_IDS = "users_ids";
+    public static final String COLUMN_HIDE = "hide";
 
     public static final String COLUMN_MESSAGE_ID = "message_id";
     public static final String COLUMN_TEXT = "text";
@@ -72,6 +73,7 @@ public class ClientDatabase {
             int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
             int columnUrl = cursor.getColumnIndex(COLUMN_URL);
             int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+            int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
 
             do {
                 RoomModel model = new RoomModel();
@@ -83,6 +85,7 @@ public class ClientDatabase {
                 model.unreadItems = cursor.getInt(columnUnreadItems);
                 model.url = cursor.getString(columnUrl);
                 model.v = cursor.getInt(columnVersion);
+                model.hide = cursor.getInt(columnHide) == 1;
 
                 String idsStr = cursor.getString(columnUsersIds);
                 String[] idsArr = getUsersIds(idsStr);
@@ -262,6 +265,7 @@ public class ClientDatabase {
             cv.put(COLUMN_UNREAD_ITEMS, model.unreadItems);
             cv.put(COLUMN_URL, model.url);
             cv.put(COLUMN_VERSION, model.v);
+            cv.put(COLUMN_HIDE, model.hide ? 1 : 0);
 
             String userIds = "";
             for (UserModel user : model.users) {
@@ -378,7 +382,18 @@ public class ClientDatabase {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            if (oldVersion == 1 && newVersion == 2) {
+                db.beginTransaction();
 
+                try {
+                    db.execSQL("ALTER TABLE " + ROOM_TABLE
+                            + " ADD " + COLUMN_HIDE + " integer;");
+
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
+            }
         }
     }
 }
