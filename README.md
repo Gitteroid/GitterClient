@@ -5,7 +5,6 @@
 </a>
 <br>
 Unofficial Gitter.im Android Client
-
 <h2>
     <a id="user-content-license" class="anchor" href="#license" aria-hidden="true">
     <span class="octicon octicon-link"></span></a>License
