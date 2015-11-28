@@ -34,6 +34,7 @@ public class ClientDatabase {
     public static final String COLUMN_VERSION = "version";
     public static final String COLUMN_USERS_IDS = "users_ids";
     public static final String COLUMN_HIDE = "hide";
+    public static final String COLUMN_LIST_POSITION = "list_pos";
 
     public static final String COLUMN_MESSAGE_ID = "message_id";
     public static final String COLUMN_TEXT = "text";
@@ -74,6 +75,7 @@ public class ClientDatabase {
             int columnUrl = cursor.getColumnIndex(COLUMN_URL);
             int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
             int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
+            int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
 
             do {
                 RoomModel model = new RoomModel();
@@ -86,6 +88,7 @@ public class ClientDatabase {
                 model.url = cursor.getString(columnUrl);
                 model.v = cursor.getInt(columnVersion);
                 model.hide = cursor.getInt(columnHide) == 1;
+                model.listPosition = cursor.getInt(columnListPos);
 
                 String idsStr = cursor.getString(columnUsersIds);
                 String[] idsArr = getUsersIds(idsStr);
@@ -266,6 +269,7 @@ public class ClientDatabase {
             cv.put(COLUMN_URL, model.url);
             cv.put(COLUMN_VERSION, model.v);
             cv.put(COLUMN_HIDE, model.hide ? 1 : 0);
+            cv.put(COLUMN_LIST_POSITION, model.listPosition);
 
             String userIds = "";
             for (UserModel user : model.users) {
@@ -387,7 +391,8 @@ public class ClientDatabase {
 
                 try {
                     db.execSQL("ALTER TABLE " + ROOM_TABLE
-                            + " ADD " + COLUMN_HIDE + " integer;");
+                            + " ADD (" + COLUMN_HIDE + " integer," +
+                            COLUMN_LIST_POSITION + " integer);");
 
                     db.setTransactionSuccessful();
                 } finally {

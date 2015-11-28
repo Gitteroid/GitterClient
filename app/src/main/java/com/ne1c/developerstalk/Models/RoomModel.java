@@ -21,6 +21,7 @@ public class RoomModel implements Parcelable {
     public String githubType;
     public boolean hide;
     public int v;
+    public int listPosition = -1;
 
 
     @Override
