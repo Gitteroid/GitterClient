@@ -66,6 +66,21 @@ public class RoomModel implements Parcelable {
         this.v = in.readInt();
     }
 
+    // r1 - old list, r2 - new list
+    // copy position, status hideRoom from r1 to r2
+    public static ArrayList<RoomModel> margeRooms(ArrayList<RoomModel> r1, ArrayList<RoomModel> r2) {
+        for (RoomModel r1Model : r1) {
+            for (RoomModel r2Model : r2) {
+                if (r1Model.id.equals(r2Model.id)) {
+                    r2Model.hide = r1Model.hide;
+                    r2Model.listPosition = r1Model.listPosition;
+                }
+            }
+        }
+
+        return r2;
+    }
+
     public static final Parcelable.Creator<RoomModel> CREATOR = new Parcelable.Creator<RoomModel>() {
         public RoomModel createFromParcel(Parcel source) {
             return new RoomModel(source);
@@ -76,10 +91,23 @@ public class RoomModel implements Parcelable {
         }
     };
 
-    public final static class TypeComparator implements Comparator<RoomModel> {
+    public final static class SortedByName implements Comparator<RoomModel> {
         @Override
         public int compare(RoomModel r1, RoomModel r2) {
             return r1.name.compareTo(r2.name);
+        }
+    }
+
+    public final static class SortedByPosition implements Comparator<RoomModel> {
+        @Override
+        public int compare(RoomModel r1, RoomModel r2) {
+            if (r1.listPosition > r2.listPosition) {
+                return 1;
+            } else if (r1.listPosition < r2.listPosition) {
+                return -1;
+            } else {
+                return 0;
+            }
         }
     }
 }
