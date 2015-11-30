@@ -10,10 +10,11 @@ import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import retrofit.RestAdapter;
 
-public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
+public class RoomAsyncLoader extends AsyncTaskLoader<List<RoomModel>> {
     public static final int FROM_SERVER = 0;
     public static final int FROM_DATABASE = 1;
 
@@ -24,7 +25,6 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
     private final int mFlag;
 
     private ClientDatabase mClientDatabase;
-    private ArrayList<RoomModel> mDBRooms;
     private ArrayList<RoomModel> mWriteRooms;
 
     public RoomAsyncLoader(Context context, int flag) {
@@ -52,32 +52,49 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
     }
 
     @Override
-    public ArrayList<RoomModel> loadInBackground() {
+    public List<RoomModel> loadInBackground() {
         ArrayList<RoomModel> rooms = null;
 
         if (mFlag == WRITE_TO_DATABASE) {
             mClientDatabase.insertRooms(mWriteRooms);
-            return null;
+
+            // Return fresh data
+            return mClientDatabase.getRooms();
         }
+
+        ArrayList<RoomModel> dbRooms = mClientDatabase.getRooms();
 
         if (mFlag == FROM_SERVER) {
             IApiMethods methods = mAdapter.create(IApiMethods.class);
             rooms = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
-            Collections.sort(rooms, new RoomModel.SortedByName());
+
+            if (rooms == null) {
+                return null;
+            }
+
+            // Restore position and hideRoom status from db
+            // And set correct position in list
+            for (int i = 0; i < rooms.size(); i++) {
+                RoomModel serverRoom = rooms.get(i);
+                for (RoomModel dbRoom : dbRooms) {
+                    if (serverRoom.id.equals(dbRoom.id)) {
+                        serverRoom.listPosition = dbRoom.listPosition;
+                        serverRoom.hide = dbRoom.hide;
+                        Collections.swap(rooms, i, serverRoom.listPosition);
+                    }
+                }
+            }
+
+            return rooms;
         }
 
-        mDBRooms = mClientDatabase.getRooms();
 
         if (mFlag == FROM_DATABASE) {
-            return mDBRooms;
-        }
-
-        if (rooms == null) {
-            return null;
+            return dbRooms;
         }
 
         // If it's first start of app
-        if (mDBRooms == null || mDBRooms.size() == 0) {
+        if (dbRooms.size() == 0) {
             ArrayList<RoomModel> multi = new ArrayList<>();
             ArrayList<RoomModel> one = new ArrayList<>();
             for (RoomModel room : rooms) {
@@ -96,19 +113,6 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
             return rooms;
         }
 
-        // Restore position and hideRoom status from db
-        // And set correct position in list
-        for (int i = 0; i < rooms.size(); i++) {
-            RoomModel serverRoom = rooms.get(i);
-            for (RoomModel dbRoom : mDBRooms) {
-                if (serverRoom.id.equals(dbRoom.id)) {
-                    serverRoom.listPosition = dbRoom.listPosition;
-                    serverRoom.hide = dbRoom.hide;
-                    Collections.swap(rooms, i, serverRoom.listPosition);
-                }
-            }
-        }
-
-        return rooms;
+        return Collections.emptyList();
     }
 }
