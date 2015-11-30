@@ -10,11 +10,10 @@ import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import retrofit.RestAdapter;
 
-public class RoomAsyncLoader extends AsyncTaskLoader<List<RoomModel>> {
+public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
     public static final int FROM_SERVER = 0;
     public static final int FROM_DATABASE = 1;
 
@@ -52,7 +51,7 @@ public class RoomAsyncLoader extends AsyncTaskLoader<List<RoomModel>> {
     }
 
     @Override
-    public List<RoomModel> loadInBackground() {
+    public ArrayList<RoomModel> loadInBackground() {
         ArrayList<RoomModel> rooms = null;
 
         if (mFlag == WRITE_TO_DATABASE) {
@@ -88,7 +87,6 @@ public class RoomAsyncLoader extends AsyncTaskLoader<List<RoomModel>> {
             return rooms;
         }
 
-
         if (mFlag == FROM_DATABASE) {
             return dbRooms;
         }
@@ -113,6 +111,6 @@ public class RoomAsyncLoader extends AsyncTaskLoader<List<RoomModel>> {
             return rooms;
         }
 
-        return Collections.emptyList();
+        return new ArrayList<>();
     }
 }
