@@ -6,6 +6,6 @@
     <color name="bgItemMessage">#FFFFFF</color>
     <color name="unreadMessage">#00b100</color>
     <color name="bgHeader">#34495e</color>
-    <color name="hide_color">#c8494949</color>
-    <color name="hide_press_color">#c8292929</color>
+    <color name="hide_color">#32494949</color>
+    <color name="hide_press_color">#3c292929</color>
 </resources>
