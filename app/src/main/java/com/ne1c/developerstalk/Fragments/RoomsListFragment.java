@@ -64,13 +64,12 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mRoomsList.setLayoutManager(manager);
         mRoomsList.setItemAnimator(new DefaultItemAnimator());
         mAdapter = new RoomsAdapter(mRooms, getActivity(), this);
-        mAdapter.setEditRoomsCallback(this);
         mRoomsList.setAdapter(mAdapter);
 
         mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if (!mAdapter.isEdit()) {
+                if (!isEdit()) {
                     refreshRooms();
                 } else {
                     mRefreshLayout.setRefreshing(false);
@@ -95,13 +94,14 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
             ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(editableAdapter);
             mItemTouchHelper = new ItemTouchHelper(callback);
 
-            mRoomsList.swapAdapter(editableAdapter, true);
+            mRoomsList.setAdapter(editableAdapter);
 
             mItemTouchHelper.attachToRecyclerView(mRoomsList);
         } else {
             mItemTouchHelper.attachToRecyclerView(null);
+            mRoomsList.setAdapter(mAdapter);
+            mAdapter.notifyDataSetChanged();
             getLoaderManager().initLoader(RoomAsyncLoader.WRITE_TO_DATABASE, null, this).forceLoad();
-            mRoomsList.swapAdapter(mAdapter, true);
         }
     }
 
@@ -121,10 +121,6 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
-        if (loader.getId() == RoomAsyncLoader.WRITE_TO_DATABASE) {
-            return;
-        }
-
         if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
             getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
         } else if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
@@ -162,7 +158,7 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void hideRoom(int position) {
-        //mRooms.get(position).hide = true;
+        mAllRooms.get(position).hide = true;
     }
 
     @Override
