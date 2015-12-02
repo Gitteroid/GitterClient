@@ -2,8 +2,12 @@ package com.ne1c.developerstalk.Adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.TypedArray;
+import android.graphics.drawable.Drawable;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -12,6 +16,7 @@ import android.widget.TextView;
 
 import com.ne1c.developerstalk.Activities.MainActivity;
 import com.ne1c.developerstalk.Adapters.helper.ItemTouchHelperAdapter;
+import com.ne1c.developerstalk.Adapters.helper.OnStartDragListener;
 import com.ne1c.developerstalk.Models.RoomModel;
 import com.ne1c.developerstalk.R;
 
@@ -23,9 +28,14 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
     private Context mContext;
     private boolean mIsEdit = false;
 
-    public RoomsAdapter(ArrayList<RoomModel> rooms, Context context) {
+    private final OnStartDragListener mDragStartListener;
+    private EditRoomsCallback mEditRoomsCallback;
+
+    public RoomsAdapter(ArrayList<RoomModel> rooms, Context context, OnStartDragListener dragStartListener) {
         this.mRooms = rooms;
         this.mContext = context;
+
+        mDragStartListener = dragStartListener;
     }
 
     @Override
@@ -34,8 +44,18 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(final ViewHolder holder, int position) {
         final RoomModel room = mRooms.get(position);
+
+        if (mRooms.get(position).hide) {
+            holder.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
+        } else {
+            int[] attrs = new int[] { android.R.attr.selectableItemBackground };
+            TypedArray ta = mContext.obtainStyledAttributes(attrs);
+            Drawable selectable = ta.getDrawable(0);
+            ta.recycle();
+            holder.parentLayout.setBackground(selectable);
+        }
 
         holder.roomName.setText(room.name);
         if (room.mentions > 0) {
@@ -58,15 +78,30 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             holder.editRoom.setVisibility(View.GONE);
         }
 
-        if (room.oneToOne) holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
-        else holder.roomImage.setImageResource(R.mipmap.ic_room_item);
+        if (room.oneToOne) {
+            holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
+        } else {
+            holder.roomImage.setImageResource(R.mipmap.ic_room_item);
+        }
 
         holder.parentLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("roomId", room.id);
-                mContext.startActivity(intent);
+                if (!isEdit()) {
+                    Intent intent = new Intent(mContext, MainActivity.class);
+                    intent.putExtra("roomId", room.id);
+                    mContext.startActivity(intent);
+                }
+            }
+        });
+
+        holder.editRoom.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                    mDragStartListener.onStartDrag(holder);
+                }
+                return false;
             }
         });
     }
@@ -78,15 +113,25 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
+        mRooms.get(fromPosition).listPosition = toPosition;
+        mRooms.get(toPosition).listPosition = fromPosition;
         Collections.swap(mRooms, fromPosition, toPosition);
         notifyItemMoved(fromPosition, toPosition);
+
+        if (mEditRoomsCallback != null) {
+            mEditRoomsCallback.changeRoomPosition(fromPosition, toPosition);
+        }
         return true;
     }
 
     @Override
     public void onItemDismiss(int position) {
-        mRooms.remove(position);
-        notifyItemRemoved(position);
+        mRooms.get(position).hide = !mRooms.get(position).hide;
+        notifyItemChanged(position);
+
+        if (mEditRoomsCallback != null) {
+            mEditRoomsCallback.hideRoom(position);
+        }
     }
 
     public void setEdit(boolean edit) {
@@ -94,11 +139,20 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         notifyDataSetChanged();
     }
 
+    public void setEditRoomsCallback(EditRoomsCallback callback) {
+        mEditRoomsCallback = callback;
+    }
+
     public boolean isEdit() {
         return mIsEdit;
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public interface EditRoomsCallback {
+        void hideRoom(int position);
+        void changeRoomPosition(int oldPos, int newPos);
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder {
         public TextView roomName;
         public ImageView roomImage;
         public ImageView editRoom;
@@ -113,6 +167,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             editRoom = (ImageView) itemView.findViewById(R.id.edit_room);
             counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
+
         }
     }
 }
