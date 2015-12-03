@@ -104,6 +104,8 @@ public class ClientDatabase {
             cursor.close();
         }
 
+        Collections.sort(list, new RoomModel.SortedByPosition());
+
         return list;
     }
 
@@ -269,8 +271,6 @@ public class ClientDatabase {
                 list.get(i).listPosition = i;
             }
         }
-
-        Collections.sort(list, new RoomModel.SortedByPosition());
 
         for (RoomModel model : list) {
             ContentValues cv = new ContentValues();

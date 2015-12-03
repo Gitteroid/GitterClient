@@ -79,11 +79,11 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
                     if (serverRoom.id.equals(dbRoom.id)) {
                         serverRoom.listPosition = dbRoom.listPosition;
                         serverRoom.hide = dbRoom.hide;
-                        Collections.swap(rooms, i, serverRoom.listPosition);
                     }
                 }
             }
 
+            Collections.sort(rooms, new RoomModel.SortedByPosition());
             return rooms;
         }
 
