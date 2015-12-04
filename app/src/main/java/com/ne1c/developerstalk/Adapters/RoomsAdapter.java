@@ -28,8 +28,12 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
     private Context mContext;
     private boolean mIsEdit = false;
 
-    private final OnStartDragListener mDragStartListener;
-    private EditRoomsCallback mEditRoomsCallback;
+    private OnStartDragListener mDragStartListener;
+
+    public RoomsAdapter(ArrayList<RoomModel> rooms, Context context) {
+        this.mRooms = rooms;
+        this.mContext = context;
+    }
 
     public RoomsAdapter(ArrayList<RoomModel> rooms, Context context, OnStartDragListener dragStartListener) {
         this.mRooms = rooms;
@@ -99,7 +103,9 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
-                    mDragStartListener.onStartDrag(holder);
+                    if (isEdit()) {
+                        mDragStartListener.onStartDrag(holder);
+                    }
                 }
                 return false;
             }
@@ -118,9 +124,6 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         Collections.swap(mRooms, fromPosition, toPosition);
         notifyItemMoved(fromPosition, toPosition);
 
-        if (mEditRoomsCallback != null) {
-            mEditRoomsCallback.changeRoomPosition(fromPosition, toPosition);
-        }
         return true;
     }
 
@@ -128,10 +131,6 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
     public void onItemDismiss(int position) {
         mRooms.get(position).hide = !mRooms.get(position).hide;
         notifyItemChanged(position);
-
-        if (mEditRoomsCallback != null) {
-            mEditRoomsCallback.hideRoom(position);
-        }
     }
 
     public void setEdit(boolean edit) {
@@ -139,17 +138,8 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         notifyDataSetChanged();
     }
 
-    public void setEditRoomsCallback(EditRoomsCallback callback) {
-        mEditRoomsCallback = callback;
-    }
-
     public boolean isEdit() {
         return mIsEdit;
-    }
-
-    public interface EditRoomsCallback {
-        void hideRoom(int position);
-        void changeRoomPosition(int oldPos, int newPos);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

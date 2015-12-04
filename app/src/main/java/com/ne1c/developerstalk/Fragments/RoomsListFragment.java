@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.Fragments;
 
 import android.app.Fragment;
 import android.app.LoaderManager;
+import android.app.ProgressDialog;
 import android.content.Loader;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -23,21 +24,21 @@ import com.ne1c.developerstalk.RoomAsyncLoader;
 import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class RoomsListFragment extends Fragment implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>>,
-        OnStartDragListener, RoomsAdapter.EditRoomsCallback {
+        OnStartDragListener {
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
     private SwipeRefreshLayout mRefreshLayout;
     private ItemTouchHelper mItemTouchHelper;
+    private ProgressDialog mProgressDialog;
 
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
 
     // All rooms for edit
     // Set this list to adapter if user will edit
     private ArrayList<RoomModel> mAllRooms = new ArrayList<>();
-    private boolean mIsEditing = false;
+    private boolean mIsEdit = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -49,7 +50,7 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
     public void onStart() {
         super.onStart();
 
-        refreshRooms();
+        refreshRooms(false);
     }
 
     @Override
@@ -66,11 +67,15 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mAdapter = new RoomsAdapter(mRooms, getActivity(), this);
         mRoomsList.setAdapter(mAdapter);
 
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
+        mItemTouchHelper = new ItemTouchHelper(callback);
+        mItemTouchHelper.attachToRecyclerView(mRoomsList);
+
         mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 if (!isEdit()) {
-                    refreshRooms();
+                    refreshRooms(false);
                 } else {
                     mRefreshLayout.setRefreshing(false);
                 }
@@ -81,39 +86,36 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
     }
 
     public boolean isEdit() {
-        return mIsEditing;
+        return mIsEdit;
     }
 
     public void setEdit(boolean edit) {
-        mIsEditing = edit;
+        mIsEdit = edit;
         if (edit) {
-            RoomsAdapter editableAdapter = new RoomsAdapter(mAllRooms, getActivity(), this);
-            editableAdapter.setEditRoomsCallback(this);
-            editableAdapter.setEdit(edit);
-
-            ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(editableAdapter);
-            mItemTouchHelper = new ItemTouchHelper(callback);
-
-            mRoomsList.setAdapter(editableAdapter);
-
-            mItemTouchHelper.attachToRecyclerView(mRoomsList);
+            mRooms.clear();
+            mRooms.addAll(mAllRooms);
+            mAdapter.setEdit(true);
         } else {
-            mItemTouchHelper.attachToRecyclerView(null);
-            mRoomsList.setAdapter(mAdapter);
-            mAdapter.notifyDataSetChanged();
+            mAdapter.setEdit(false);
+            showDialog(true);
             getLoaderManager().initLoader(RoomAsyncLoader.WRITE_TO_DATABASE, null, this).forceLoad();
         }
     }
 
-    private void refreshRooms() {
+    private void refreshRooms(boolean network) {
         mRefreshLayout.setRefreshing(true);
-        getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
+
+        if (network) {
+            getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
+        } else {
+            getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
+        }
     }
 
     @Override
     public Loader<ArrayList<RoomModel>> onCreateLoader(int id, Bundle args) {
         if (id == RoomAsyncLoader.WRITE_TO_DATABASE) {
-            return new RoomAsyncLoader(getActivity().getApplicationContext(), id, mAllRooms);
+            return new RoomAsyncLoader(getActivity().getApplicationContext(), id, mRooms);
         } else {
             return new RoomAsyncLoader(getActivity().getApplicationContext(), id);
         }
@@ -144,6 +146,10 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
             mAdapter.notifyDataSetChanged();
         }
+
+        if (loader.getId() == RoomAsyncLoader.WRITE_TO_DATABASE) {
+            showDialog(false);
+        }
     }
 
     @Override
@@ -156,15 +162,18 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         mItemTouchHelper.startDrag(viewHolder);
     }
 
-    @Override
-    public void hideRoom(int position) {
-        mAllRooms.get(position).hide = true;
-    }
-
-    @Override
-    public void changeRoomPosition(int oldPos, int newPos) {
-        if (isEdit()) {
-            Collections.swap(mAllRooms, oldPos, newPos);
+    private void showDialog(boolean show) {
+        if (mProgressDialog == null) {
+            mProgressDialog = new ProgressDialog(getActivity());
+            mProgressDialog.setIndeterminate(true);
+            mProgressDialog.setMessage(getString(R.string.loading));
         }
+
+        if (show) {
+            mProgressDialog.show();
+        } else if (mProgressDialog.isShowing()){
+            mProgressDialog.dismiss();
+        }
+
     }
 }
