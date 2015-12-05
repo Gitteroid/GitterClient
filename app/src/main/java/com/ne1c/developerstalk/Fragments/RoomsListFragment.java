@@ -69,7 +69,6 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
-        mItemTouchHelper.attachToRecyclerView(mRoomsList);
 
         mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -95,6 +94,7 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
             mRooms.clear();
             mRooms.addAll(mAllRooms);
             mAdapter.setEdit(true);
+            mItemTouchHelper.attachToRecyclerView(mRoomsList);
         } else {
             mAdapter.setEdit(false);
             showDialog(true);
@@ -123,9 +123,7 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
     @Override
     public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
-        if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
-            getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
-        } else if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
+        if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
             ClientDatabase client = new ClientDatabase(getActivity());
             client.insertRooms(RoomModel.margeRooms(mRooms, data));
             mRefreshLayout.setRefreshing(false);
@@ -145,6 +143,14 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
             }
 
             mAdapter.notifyDataSetChanged();
+        }
+
+        if (mIsEdit) {
+            mItemTouchHelper.attachToRecyclerView(null);
+        }
+
+        if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
+            getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
         }
 
         if (loader.getId() == RoomAsyncLoader.WRITE_TO_DATABASE) {

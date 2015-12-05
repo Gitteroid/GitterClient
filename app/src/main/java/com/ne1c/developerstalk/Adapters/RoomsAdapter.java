@@ -103,9 +103,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
-                    if (isEdit()) {
                         mDragStartListener.onStartDrag(holder);
-                    }
                 }
                 return false;
             }
