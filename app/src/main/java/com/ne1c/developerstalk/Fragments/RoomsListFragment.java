@@ -69,6 +69,9 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
+        mItemTouchHelper.attachToRecyclerView(mRoomsList);
+        mRoomsList.removeItemDecoration(mItemTouchHelper);
+        mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
         mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -94,9 +97,16 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
             mRooms.clear();
             mRooms.addAll(mAllRooms);
             mAdapter.setEdit(true);
-            mItemTouchHelper.attachToRecyclerView(mRoomsList);
+
+            mRoomsList.addItemDecoration(mItemTouchHelper);
+            mRoomsList.addOnChildAttachStateChangeListener(mItemTouchHelper);
+
         } else {
             mAdapter.setEdit(false);
+
+            mRoomsList.removeItemDecoration(mItemTouchHelper);
+            mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
+
             showDialog(true);
             getLoaderManager().initLoader(RoomAsyncLoader.WRITE_TO_DATABASE, null, this).forceLoad();
         }
@@ -151,9 +161,6 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
 
         if (loader.getId() == RoomAsyncLoader.WRITE_TO_DATABASE) {
             showDialog(false);
-
-            mRoomsList.removeItemDecoration(mItemTouchHelper);
-            mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
         }
 
     }
