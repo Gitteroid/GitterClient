@@ -137,8 +137,10 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
             ClientDatabase client = new ClientDatabase(getActivity());
             client.insertRooms(RoomModel.margeRooms(mRooms, data));
             mRefreshLayout.setRefreshing(false);
+            getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_SERVER);
         } else if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && !Utils.getInstance().isNetworkConnected()) {
             mRefreshLayout.setRefreshing(false);
+            getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_DATABASE);
         }
 
         if (data != null && data.size() > 0) {
@@ -156,11 +158,13 @@ public class RoomsListFragment extends Fragment implements LoaderManager.LoaderC
         }
 
         if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
+            getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_DATABASE);
             getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
         }
 
         if (loader.getId() == RoomAsyncLoader.WRITE_TO_DATABASE) {
             showDialog(false);
+            getLoaderManager().destroyLoader(RoomAsyncLoader.WRITE_TO_DATABASE);
         }
 
     }

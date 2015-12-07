@@ -10,11 +10,11 @@ import android.content.Loader;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -52,6 +52,7 @@ import com.ne1c.developerstalk.Util.UIUtils;
 import com.ne1c.developerstalk.Util.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import de.greenrobot.event.EventBus;
 import retrofit.Callback;
@@ -66,8 +67,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
-    private final int LOAD_ROOM_ID = 1;
-    private final int LOAD_ROOM_DATABASE_ID = 2;
 
     private ChatRoomFragment mChatRoomFragment;
 
@@ -79,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private AccountHeader mAccountHeader;
     private IProfile mMainProfile;
 
-    private ArrayList<RoomModel> mRoomsList;
+    private ArrayList<RoomModel> mRoomsList = new ArrayList<>();
     private RoomModel mActiveRoom;
 
     private RestAdapter mRestAdapter;
@@ -141,10 +140,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void initSavedInstanceState(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
-            getLoaderManager().initLoader(LOAD_ROOM_DATABASE_ID, null, this).forceLoad();
+            getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
 
             if (Utils.getInstance().isNetworkConnected()) {
-                getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+                getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
             }
 
             updateUserFromServer();
@@ -186,7 +185,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         selectedNavItem = i + 1;
                     }
                 }
-
 
                 mDrawer.setSelectionAtPosition(selectedNavItem + 1);
 
@@ -378,7 +376,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     mChatRoomFragment.onRefreshRoom();
 
                     if (Utils.getInstance().isNetworkConnected()) {
-                        getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
+                        getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
                     }
                 }
                 break;
@@ -421,10 +419,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public Loader<ArrayList<RoomModel>> onCreateLoader(int id, Bundle args) {
         Loader<ArrayList<RoomModel>> loader = null;
         switch (id) {
-            case LOAD_ROOM_ID:
+            case RoomAsyncLoader.FROM_SERVER:
                 loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_SERVER);
                 return loader;
-            case LOAD_ROOM_DATABASE_ID:
+            case RoomAsyncLoader.FROM_DATABASE:
                 loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_DATABASE);
                 return loader;
             default:
@@ -434,10 +432,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
-        if (loader.getId() == LOAD_ROOM_DATABASE_ID && Utils.getInstance().isNetworkConnected()) {
-            getLoaderManager().initLoader(LOAD_ROOM_ID, null, this).forceLoad();
-        } else if (loader.getId() == LOAD_ROOM_ID) {
-            mClientDatabase.insertRooms(data);
+        if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
+            getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
+        } else if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
+            mClientDatabase.insertRooms(RoomModel.margeRooms(mRoomsList, data));
         }
 
         setItemsDrawer(data);
@@ -449,7 +447,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void setItemsDrawer(ArrayList<RoomModel> data) {
-        mRoomsList = data;
+        mRoomsList.clear();
+
+        for (RoomModel model : data) {
+            if (!model.hide) {
+                mRoomsList.add(model);
+            }
+        }
+
+        Collections.sort(mRoomsList, new RoomModel.SortedByPosition());
 
         // Remove old items
         // 4 but items: "Home", "Divider", "Settings", "Sign Out".
@@ -461,7 +467,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 getResources().getColor(R.color.md_green_700));
         badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
-        for (RoomModel room : data) {
+        for (RoomModel room : mRoomsList) {
             if (room.unreadItems > 0) {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                 mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
@@ -478,7 +484,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
         }
 
-        if (data.size() > 0) {
+        if (mRoomsList.size() > 0) {
             RoomModel room = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
             String roomId = room != null ? room.id : null;
 
@@ -490,8 +496,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             }
 
             if (roomId != null) {
-                for (int i = 0; i < data.size(); i++) {
-                    if (roomId.equals(data.get(i).id)) {
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (roomId.equals(mRoomsList.get(i).id)) {
                         selectedNavItem = i + 1;
                     }
                 }
@@ -506,8 +512,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     protected void onDestroy() {
-        getLoaderManager().destroyLoader(LOAD_ROOM_ID);
-        getLoaderManager().destroyLoader(LOAD_ROOM_DATABASE_ID);
+        getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_SERVER);
+        getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_DATABASE);
 
         try {
             unregisterReceiver(newMessageReceiver);
