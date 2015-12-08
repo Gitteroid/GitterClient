@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/background_light"
-    tools:context="com.ne1c.developerstalk.Activities.LoginActivity">
+    tools:context=".ui.activities.LoginActivity">
 
-    <com.ne1c.developerstalk.DrawShadowFrameLayout
+    <com.ne1c.developerstalk.ui.DrawShadowFrameLayout
         android:id="@+id/shadow_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -43,5 +43,5 @@
         </LinearLayout>
 
         <include layout="@layout/toolbar" />
-    </com.ne1c.developerstalk.DrawShadowFrameLayout>
+    </com.ne1c.developerstalk.ui.DrawShadowFrameLayout>
 </LinearLayout>
