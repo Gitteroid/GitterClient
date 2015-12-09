@@ -1,6 +1,6 @@
 package com.ne1c.developerstalk.presenters;
 
-import com.ne1c.developerstalk.RetrofitServices.GitterApi;
+import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.ui.views.BaseView;
 import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.Utils;

@@ -59,7 +59,7 @@
         </receiver>
 
         <service
-            android:name="com.ne1c.developerstalk.Services.NewMessagesService"
+            android:name="com.ne1c.developerstalk.services.NewMessagesService"
             android:enabled="true"
             android:process=":NewMessagesService">
         </service>

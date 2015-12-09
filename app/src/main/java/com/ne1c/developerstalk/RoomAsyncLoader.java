@@ -3,10 +3,10 @@ package com.ne1c.developerstalk;
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 
-import com.ne1c.developerstalk.Database.ClientDatabase;
-import com.ne1c.developerstalk.Models.RoomModel;
-import com.ne1c.developerstalk.RetrofitServices.IApiMethods;
-import com.ne1c.developerstalk.Util.Utils;
+import com.ne1c.developerstalk.database.ClientDatabase;
+import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,7 +64,7 @@ public class RoomAsyncLoader extends AsyncTaskLoader<ArrayList<RoomModel>> {
         ArrayList<RoomModel> dbRooms = mClientDatabase.getRooms();
 
         if (mFlag == FROM_SERVER) {
-            IApiMethods methods = mAdapter.create(IApiMethods.class);
+            GitterApi methods = mAdapter.create(GitterApi.class);
             rooms = methods.getCurrentUserRooms(Utils.getInstance().getBearer());
 
             if (rooms == null) {
