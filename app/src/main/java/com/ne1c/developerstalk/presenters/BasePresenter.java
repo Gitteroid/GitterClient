@@ -1,8 +1,7 @@
 package com.ne1c.developerstalk.presenters;
 
-import com.ne1c.developerstalk.ui.views.BaseView;
+public abstract class BasePresenter<T> {
+    public abstract void bindView(T view);
 
-public interface BasePresenter {
-    void bindView(BaseView view);
-    void unbindView();
+    public abstract void unbindView();
 }

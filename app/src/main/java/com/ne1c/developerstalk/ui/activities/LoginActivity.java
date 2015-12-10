@@ -1,6 +1,7 @@
 package com.ne1c.developerstalk.ui.activities;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -123,6 +124,11 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
 
             mAuthWebView.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public Context getAppContext() {
+        return getApplicationContext();
     }
 
     private class MyWebViewClient extends WebViewClient {

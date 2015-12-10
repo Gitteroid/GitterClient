@@ -1,7 +1,6 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.ui.views.BaseView;
 import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -9,7 +8,7 @@ import retrofit.RestAdapter;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class LoginPresenter implements BasePresenter {
+public class LoginPresenter extends BasePresenter<LoginView> {
     private final String CLIENT_ID = "247736d87aa0134a33f73b00cc47b18165296e9e";
     private final String CLIENT_SECRET = "238ca926e7e59121ceb7c46c3a2c91eafe51b6c5";
     private final String GRANT_TYPE = "authorization_code";
@@ -22,8 +21,8 @@ public class LoginPresenter implements BasePresenter {
     private LoginView mView;
 
     @Override
-    public void bindView(BaseView view) {
-        mView = (LoginView) view;
+    public void bindView(LoginView view) {
+        mView = view;
     }
 
     @Override
@@ -59,5 +58,4 @@ public class LoginPresenter implements BasePresenter {
                     mView.errorAuth(error.getMessage());
                 });
     }
-
 }

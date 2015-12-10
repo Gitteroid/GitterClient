@@ -7,15 +7,13 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.RoomsListFragment;
-import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
 public class RoomsActivity extends AppCompatActivity {
-    private Toolbar mToolbar;
     private RoomsListFragment mRoomsListFragment;
 
     @Override
@@ -32,13 +30,8 @@ public class RoomsActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_rooms);
 
-        // User data already exist
-        if (!Utils.getInstance().getUserPref().id.isEmpty()) {
-            startService(new Intent(getApplicationContext(), NewMessagesService.class));
-        }
-
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(mToolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         mRoomsListFragment = (RoomsListFragment) getFragmentManager().findFragmentByTag("roomsList");
 

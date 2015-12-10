@@ -6,6 +6,7 @@ import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import retrofit.Callback;
 import retrofit.client.Response;
@@ -14,7 +15,6 @@ import retrofit.http.Field;
 import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
-import retrofit.http.Headers;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
@@ -24,17 +24,9 @@ import rx.Observable;
 
 public interface GitterApi {
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
     @GET("/v1/rooms")
-    ArrayList<RoomModel> getCurrentUserRooms(@Header("Authorization") String access_token);
+    Observable<List<RoomModel>> getCurrentUserRooms(@Header("Authorization") String access_token);
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
     @GET("/v1/rooms/{roomId}/chatMessages")
     void getMessagesRoom(@Header("Authorization") String access_token,
                          @Path("roomId") String roomId,
@@ -55,18 +47,10 @@ public interface GitterApi {
                        @Field("text") String messageText,
                        Callback<MessageModel> callback);
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json",
-    })
     @GET("/v1/user")
     void getCurrentUser(@Header("Authorization") String access_token,
                         Callback<ArrayList<UserModel>> callback);
 
-    @Headers({
-            "Content-Type: application/json",
-            "Accept: application/json"
-    })
     @GET("/v1/rooms/{roomId}/chatMessages")
     void getMessagesBeforeId(@Header("Authorization") String access_token,
                              @Path("roomId") String roomId,
@@ -77,10 +61,10 @@ public interface GitterApi {
     @FormUrlEncoded
     @POST("/login/oauth/token")
     Observable<AuthResponseModel> authorization(@Field("client_id") String client_id,
-                       @Field("client_secret") String client_secret,
-                       @Field("code") String code,
-                       @Field("grant_type") String grant_type,
-                       @Field("redirect_uri") String redirect_uri);
+                                                @Field("client_secret") String client_secret,
+                                                @Field("code") String code,
+                                                @Field("grant_type") String grant_type,
+                                                @Field("redirect_uri") String redirect_uri);
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")

@@ -18,7 +18,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.ne1c.developerstalk.R;
@@ -55,7 +54,7 @@ public class NewMessagesService extends Service {
     public static final String TO_ROOM_MESSAGE_EXTRA_KEY = "toRoom";
     public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
-    private List<RoomModel> mRoomsList;
+    private List<RoomModel> mRooms;
     private CompositeSubscription mMessagesSubscrptions;
 
     private GitterApi mApiMethods;
@@ -102,8 +101,12 @@ public class NewMessagesService extends Service {
         mVibro = prefs.getBoolean("notif_vibro", true);
         mWithUserName = prefs.getBoolean("notif_username", false);
 
-        mRoomsList = new ClientDatabase(getApplicationContext()).getRooms();
-        createSubscribers();
+        new ClientDatabase(getApplicationContext()).getRooms()
+                .subscribe(roomModels -> {
+                    mRooms = roomModels;
+
+                    createSubscribers();
+                });
 
         return START_STICKY;
     }
@@ -111,7 +114,7 @@ public class NewMessagesService extends Service {
     private void createSubscribers() {
         mMessagesSubscrptions = new CompositeSubscription();
 
-        for (final RoomModel room : mRoomsList) {
+        for (final RoomModel room : mRooms) {
             Subscription sub = getMessageStream(room.id).subscribe(message -> {
                 Intent intent = new Intent();
                 intent.setAction(MainActivity.BROADCAST_NEW_MESSAGE);
@@ -276,7 +279,7 @@ public class NewMessagesService extends Service {
                 try {
                     state.close();
                 } catch (IOException e) {
-                // Ignore this exception
+                    // Ignore this exception
                 }
             }
         }
