@@ -12,6 +12,7 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -31,7 +32,7 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
     private ItemTouchHelper mItemTouchHelper;
     private ProgressDialog mProgressDialog;
 
-    private List<RoomModel> mRooms = new ArrayList<>();
+    private ArrayList<RoomModel> mRooms = new ArrayList<>();
 
     private boolean mIsEdit = false;
 
@@ -66,7 +67,7 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
         mRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.refresh_rooms_layout);
         mRefreshLayout.setOnRefreshListener(() -> {
             if (!mIsEdit) {
-                mPresenter.refreshRooms();
+                mPresenter.loadRooms();
             }
         });
 
@@ -79,7 +80,7 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
     public void onStart() {
         super.onStart();
 
-        mPresenter.loadCachedRooms();
+        mPresenter.loadRooms();
     }
 
     public boolean isEdit() {
@@ -102,6 +103,9 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
             mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
             mPresenter.saveRooms(mRooms);
+            ArrayList<RoomModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
+            mRooms.clear();
+            mRooms.addAll(visible);
         }
     }
 
@@ -119,6 +123,15 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
         mRooms.clear();
         mRooms.addAll(rooms);
         mAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void showError(String text) {
+        if (mRefreshLayout.isRefreshing()) {
+            mRefreshLayout.setRefreshing(false);
+        }
+
+        Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT).show();
     }
 
     @Override

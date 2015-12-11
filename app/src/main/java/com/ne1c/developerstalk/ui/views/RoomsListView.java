@@ -7,6 +7,8 @@ import java.util.List;
 public interface RoomsListView extends BaseView {
     void showRooms(List<RoomModel> rooms);
 
+    void showError(String text);
+
     void showDialog();
 
     void dismissDialog();
