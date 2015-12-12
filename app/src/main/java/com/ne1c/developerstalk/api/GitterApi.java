@@ -7,7 +7,6 @@ import com.ne1c.developerstalk.models.UserModel;
 
 import java.util.ArrayList;
 
-import retrofit.Callback;
 import retrofit.client.Response;
 import retrofit.http.DELETE;
 import retrofit.http.Field;
@@ -27,34 +26,31 @@ public interface GitterApi {
     Observable<ArrayList<RoomModel>> getCurrentUserRooms(@Header("Authorization") String access_token);
 
     @GET("/v1/rooms/{roomId}/chatMessages")
-    void getMessagesRoom(@Header("Authorization") String access_token,
-                         @Path("roomId") String roomId,
-                         @Query("limit") int limit,
-                         Callback<ArrayList<MessageModel>> callback);
+    Observable<ArrayList<MessageModel>> getMessagesRoom(@Header("Authorization") String access_token,
+                                                        @Path("roomId") String roomId,
+                                                        @Query("limit") int limit);
 
     @FormUrlEncoded
     @POST("/v1/rooms/{roomId}/chatMessages")
-    MessageModel sendMessage(@Header("Authorization") String access_token,
-                             @Path("roomId") String roomId,
-                             @Field("text") String text);
+    Observable<MessageModel> sendMessage(@Header("Authorization") String access_token,
+                                         @Path("roomId") String roomId,
+                                         @Field("text") String text);
 
     @FormUrlEncoded
     @PUT("/v1/rooms/{roomId}/chatMessages/{chatMessageId}")
-    void updateMessage(@Header("Authorization") String access_token,
-                       @Path("roomId") String roomId,
-                       @Path("chatMessageId") String chatMessageId,
-                       @Field("text") String messageText,
-                       Callback<MessageModel> callback);
+    Observable<MessageModel> updateMessage(@Header("Authorization") String access_token,
+                                           @Path("roomId") String roomId,
+                                           @Path("chatMessageId") String chatMessageId,
+                                           @Field("text") String messageText);
 
     @GET("/v1/user")
     Observable<ArrayList<UserModel>> getCurrentUser(@Header("Authorization") String access_token);
 
     @GET("/v1/rooms/{roomId}/chatMessages")
-    void getMessagesBeforeId(@Header("Authorization") String access_token,
-                             @Path("roomId") String roomId,
-                             @Query("limit") int limit,
-                             @Query("beforeId") String beforeId,
-                             Callback<ArrayList<MessageModel>> callback);
+    Observable<ArrayList<MessageModel>> getMessagesBeforeId(@Header("Authorization") String access_token,
+                                                            @Path("roomId") String roomId,
+                                                            @Query("limit") int limit,
+                                                            @Query("beforeId") String beforeId);
 
     @FormUrlEncoded
     @POST("/login/oauth/token")
@@ -66,35 +62,31 @@ public interface GitterApi {
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
-    void readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
-                      @Path("roomId") String roomId, @Field("chat") String[] chat, Callback<Response> callback);
+    Observable<Response> readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
+                                      @Path("roomId") String roomId, @Field("chat") String[] chat);
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
     Observable<Response> leaveRoom(@Header("Authorization") String access_token,
-                   @Path("roomId") String roomId,
+                                   @Path("roomId") String roomId,
                                    @Path("userId") String userId);
 
     @POST("/v1/rooms")
     @FormUrlEncoded
-    void joinRoom(@Header("Authorization") String access_token,
-                  @Field("uri") String roomUri,
-                  Callback<RoomModel> callback);
+    Observable<RoomModel> joinRoom(@Header("Authorization") String access_token,
+                                   @Field("uri") String roomUri);
 
     @GET("/v1/rooms")
-    void searchRooms(@Header("Authorization") String access_token,
-                     @Query("q") String searchTerm,
-                     Callback<Response> callback);
+    Observable<Response> searchRooms(@Header("Authorization") String access_token,
+                                     @Query("q") String searchTerm);
 
     @GET("/v1/rooms")
-    void searchRooms(@Header("Authorization") String access_token,
-                     @Query("q") String searchTerm,
-                     @Query("limit") int limit,
-                     Callback<Response> callback);
+    Observable<Response> searchRooms(@Header("Authorization") String access_token,
+                                     @Query("q") String searchTerm,
+                                     @Query("limit") int limit);
 
     @GET("/v1/user")
-    void searchUsers(@Header("Authorization") String access_token,
-                     @Query("q") String searchTerm,
-                     Callback<Response> callback);
+    Observable<Response> searchUsers(@Header("Authorization") String access_token,
+                                     @Query("q") String searchTerm);
 
     @Streaming
     @GET("/v1/rooms/{roomId}/chatMessages")
