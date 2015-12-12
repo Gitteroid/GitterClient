@@ -95,8 +95,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
         EventBus.getDefault().register(this);
         init();
         initSavedInstanceState(savedInstanceState);
-
-
     }
 
     private void init() {
@@ -461,32 +459,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
         });
     }
 
-//    private void updateUserFromServer() {
-//        mApi.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
-//            @Override
-//            public void success(final ArrayList<UserModel> userModel, Response response) {
-//                // If this is the first launch of the application
-//                if (Utils.getInstance().getUserPref().id.isEmpty()) {
-//                    Utils.getInstance().writeUserToPref(userModel.get(0));
-//                    startService(new Intent(getApplicationContext(), NewMessagesService.class));
-//                } else {
-//                    Utils.getInstance().writeUserToPref(userModel.get(0));
-//                }
-//
-//
-//
-//            }
-//
-//            @Override
-//            public void failure(RetrofitError error) {
-//                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-//                if (error.getMessage().contains("401")) {
-//                    mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
-//                }
-//            }
-//        });
-//    }
-
     private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -528,7 +500,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
             mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
         }
     };
-
 
     // Update Badge in navigation item, if message was read
     public void onEvent(ReadMessagesEventBus count) {

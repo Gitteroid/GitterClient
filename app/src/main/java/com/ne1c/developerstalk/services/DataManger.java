@@ -5,6 +5,7 @@ import android.content.Context;
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.database.ClientDatabase;
 import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 import retrofit.RestAdapter;
+import retrofit.client.Response;
 import rx.Observable;
 
 public class DataManger {
@@ -30,10 +32,12 @@ public class DataManger {
     }
 
     public Observable<ArrayList<RoomModel>> getRooms() {
-        Observable<ArrayList<RoomModel>> serverRooms = mApi.getCurrentUserRooms(Utils.getInstance().getBearer());
+        Observable<ArrayList<RoomModel>> serverRooms = mApi.getCurrentUserRooms(Utils.getInstance().getBearer())
+                .onErrorResumeNext(Observable.just(new ArrayList<>()));
+
         Observable<ArrayList<RoomModel>> dbRooms = mClientDatabase.getRooms();
 
-        return Observable.zip(serverRooms, dbRooms, (server, db) -> {
+        return Observable.combineLatest(serverRooms, dbRooms, (server, db) -> {
             ArrayList<RoomModel> result = new ArrayList<>();
 
             // Data exist in db ang get from server
@@ -64,12 +68,6 @@ public class DataManger {
 
             return result;
         });
-
-//        return Observable.merge((serverRooms, dbRooms) -> {
-//
-//                }
-//
-//        );
     }
 
     public Observable<ArrayList<RoomModel>> getDbRooms() {
@@ -78,6 +76,14 @@ public class DataManger {
 
     public void writeRoomsToDb(List<RoomModel> rooms) {
         mClientDatabase.insertRooms(rooms);
+    }
+
+    public Observable<Response> leaveFromRoom(String roomId) {
+        return mApi.leaveRoom(Utils.getInstance().getAccessToken(), roomId, Utils.getInstance().getUserPref().id);
+    }
+
+    public Observable<ArrayList<UserModel>> getProfile() {
+        return mApi.getCurrentUser(Utils.getInstance().getBearer());
     }
 
     private void sortByName(List<RoomModel> rooms) {
