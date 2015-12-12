@@ -1,8 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
+import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,11 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadRooms() {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(mView.getAppContext().getString(R.string.no_network));
+        }
+
+        @SuppressWarnings("unchecked")
         Subscription sub = mDataManger.getRooms().subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .map(roomModels -> {
@@ -76,5 +83,21 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         }
 
         return visibleList;
+    }
+
+    public void loadCachedRooms() {
+        mDataManger.getDbRooms().subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .map(roomModels -> {
+                    ArrayList<RoomModel> visibleList = new ArrayList<>();
+                    for (RoomModel room : roomModels) {
+                        if (!room.hide) {
+                            visibleList.add(room);
+                        }
+                    }
+
+                    return visibleList;
+                })
+                .subscribe(mView::showRooms);
     }
 }

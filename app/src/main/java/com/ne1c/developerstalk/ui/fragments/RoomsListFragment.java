@@ -80,6 +80,7 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
     public void onStart() {
         super.onStart();
 
+        mPresenter.loadCachedRooms();
         mPresenter.loadRooms();
     }
 
