@@ -1,12 +1,10 @@
 package com.ne1c.developerstalk.ui.activities;
 
 
-import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.Loader;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -18,7 +16,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -37,30 +34,24 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
-import com.ne1c.developerstalk.database.ClientDatabase;
-import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
-import com.ne1c.developerstalk.models.eventBusModels.ReadMessagesEventBus;
-import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.RoomAsyncLoader;
+import com.ne1c.developerstalk.models.eventBusModels.ReadMessagesEventBus;
+import com.ne1c.developerstalk.presenters.MainPresenter;
 import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
+import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
+import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import de.greenrobot.event.EventBus;
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<RoomModel>> {
+public class MainActivity extends AppCompatActivity implements MainView {
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_MESSAGE_DELIVERED = "com.ne1c.gitterclient.MessageDeliveredReceiver";
     public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
@@ -71,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ChatRoomFragment mChatRoomFragment;
 
     private ActionBarDrawerToggle mDrawerToggle;
-    private Toolbar mToolbar;
 
     private Drawer mDrawer;
     private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
@@ -81,12 +71,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ArrayList<RoomModel> mRoomsList = new ArrayList<>();
     private RoomModel mActiveRoom;
 
-    private RestAdapter mRestAdapter;
-    private GitterApi mApi;
-    private ClientDatabase mClientDatabase;
-
     private int selectedNavItem = -1; // Default, item not selected
     private boolean loadAvatarFromNetworkFlag;
+
+    private MainPresenter mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,9 +89,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setContentView(R.layout.activity_main);
 
+        mPresenter = new MainPresenter();
+        mPresenter.bindView(this);
+
         EventBus.getDefault().register(this);
         init();
         initSavedInstanceState(savedInstanceState);
+
+
     }
 
     private void init() {
@@ -111,21 +104,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
 
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(mToolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
-
-        mRestAdapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
-                .build();
-
-        mApi = mRestAdapter.create(GitterApi.class);
-
-        mClientDatabase = new ClientDatabase(getApplicationContext());
 
         mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
 
@@ -140,13 +125,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void initSavedInstanceState(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
-            getLoaderManager().initLoader(RoomAsyncLoader.FROM_DATABASE, null, this).forceLoad();
 
-            if (Utils.getInstance().isNetworkConnected()) {
-                getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
-            }
+            mPresenter.loadCachedRooms();
+            mPresenter.loadRooms();
 
-            updateUserFromServer();
+            mPresenter.loadProfile();
         } else {
             selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
@@ -238,13 +221,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .withProfileImagesClickable(true)
                 .withSelectionListEnabledForSingleProfile(false)
                 .addProfiles(mMainProfile)
-                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
-                    @Override
-                    public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
-                        startActivity(new Intent(Intent.ACTION_VIEW,
-                                Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
-                        return false;
-                    }
+                .withOnAccountHeaderListener((view, iProfile, b) -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
+                    return false;
                 })
                 .build();
 
@@ -266,44 +246,41 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 .withActionBarDrawerToggle(true)
                 .withActionBarDrawerToggleAnimated(true)
                 .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
-                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
-                    @Override
-                    public boolean onItemClick(View view, int position, IDrawerItem iDrawerItem) {
-                        if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
-                            return false;
-                        }
+                .withOnDrawerItemClickListener((view, position, iDrawerItem) -> {
+                    if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
+                        return false;
+                    }
 
-                        PrimaryDrawerItem item = (PrimaryDrawerItem) iDrawerItem;
+                    PrimaryDrawerItem item = (PrimaryDrawerItem) iDrawerItem;
 
-                        if (item.getName().toString().equals(getString(R.string.home))) {
-                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
-                        } else if (item.getName().toString().equals(getString(R.string.action_settings))) {
-                            startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
-                        } else if (item.getName().toString().equals(getString(R.string.signout))) {
-                            getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE).edit().clear().apply();
+                    if (item.getName().toString().equals(getString(R.string.home))) {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
+                    } else if (item.getName().toString().equals(getString(R.string.action_settings))) {
+                        startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
+                    } else if (item.getName().toString().equals(getString(R.string.signout))) {
+                        getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE).edit().clear().apply();
 
-                            startActivity(new Intent(getApplicationContext(), LoginActivity.class)
-                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
-                            stopService(new Intent(getApplicationContext(), NewMessagesService.class));
-                            finish();
-                        } else if (mRoomsList != null && mRoomsList.size() > 0) {
-                            if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
-                                for (int i = 0; i < mRoomsList.size(); i++) {
-                                    if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
-                                        selectedNavItem = i + 1; // Because item "Home" in navigation menu
-                                        mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                        startActivity(new Intent(getApplicationContext(), LoginActivity.class)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+                        stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+                        finish();
+                    } else if (mRoomsList != null && mRoomsList.size() > 0) {
+                        if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
+                            for (int i = 0; i < mRoomsList.size(); i++) {
+                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
+                                    selectedNavItem = i + 1; // Because item "Home" in navigation menu
+                                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
-                                        setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-                                        EventBus.getDefault().post(mRoomsList.get(i));
-                                    }
+                                    setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                                    EventBus.getDefault().post(mRoomsList.get(i));
                                 }
                             }
                         }
-
-                        mDrawer.closeDrawer();
-                        return true;
                     }
+
+                    mDrawer.closeDrawer();
+                    return true;
                 })
                 .build();
     }
@@ -375,33 +352,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 if (mActiveRoom != null) {
                     mChatRoomFragment.onRefreshRoom();
 
-                    if (Utils.getInstance().isNetworkConnected()) {
-                        getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
-                    }
+                    mPresenter.loadRooms();
                 }
                 break;
             case R.id.action_leave:
                 if (mActiveRoom.oneToOne) {
                     Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
-
                     break;
                 }
 
-                mApi.leaveRoom(Utils.getInstance().getBearer(),
-                        mActiveRoom.id,
-                        Utils.getInstance().getUserPref().id,
-                        new Callback<Response>() {
-                            @Override
-                            public void success(Response response, Response response2) {
-                                finish();
-                            }
-
-                            @Override
-                            public void failure(RetrofitError error) {
-                                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-
+                mPresenter.leaveFromRoom(mActiveRoom.id);
 
                 break;
         }
@@ -415,47 +375,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onCreateOptionsMenu(menu);
     }
 
-    @Override
-    public Loader<ArrayList<RoomModel>> onCreateLoader(int id, Bundle args) {
-        Loader<ArrayList<RoomModel>> loader = null;
-        switch (id) {
-            case RoomAsyncLoader.FROM_SERVER:
-                loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_SERVER);
-                return loader;
-            case RoomAsyncLoader.FROM_DATABASE:
-                loader = new RoomAsyncLoader(this, RoomAsyncLoader.FROM_DATABASE);
-                return loader;
-            default:
-                return loader;
-        }
-    }
-
-    @Override
-    public void onLoadFinished(Loader<ArrayList<RoomModel>> loader, ArrayList<RoomModel> data) {
-        if (loader.getId() == RoomAsyncLoader.FROM_DATABASE && Utils.getInstance().isNetworkConnected()) {
-            getLoaderManager().initLoader(RoomAsyncLoader.FROM_SERVER, null, this).forceLoad();
-        } else if (loader.getId() == RoomAsyncLoader.FROM_SERVER) {
-            mClientDatabase.insertRooms(RoomModel.margeRooms(mRoomsList, data));
-        }
-
-        setItemsDrawer(data);
-    }
-
-    @Override
-    public void onLoaderReset(Loader<ArrayList<RoomModel>> loader) {
-
-    }
-
     private void setItemsDrawer(ArrayList<RoomModel> data) {
         mRoomsList.clear();
-
-        for (RoomModel model : data) {
-            if (!model.hide) {
-                mRoomsList.add(model);
-            }
-        }
-
-        Collections.sort(mRoomsList, new RoomModel.SortedByPosition());
+        mRoomsList.addAll(data);
 
         // Remove old items
         // 4 but items: "Home", "Divider", "Settings", "Sign Out".
@@ -512,9 +434,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     protected void onDestroy() {
-        getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_SERVER);
-        getLoaderManager().destroyLoader(RoomAsyncLoader.FROM_DATABASE);
-
         try {
             unregisterReceiver(newMessageReceiver);
             unregisterReceiver(messageDeliveredReceiver);
@@ -523,9 +442,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             e.printStackTrace();
         }
 
-        if (mClientDatabase != null) {
-            mClientDatabase.close();
-        }
+        mPresenter.unbindView();
 
         EventBus.getDefault().unregister(this);
         super.onDestroy();
@@ -544,46 +461,31 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         });
     }
 
-    private void updateUserFromServer() {
-        mApi.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
-            @Override
-            public void success(final ArrayList<UserModel> userModel, Response response) {
-                // If this is the first launch of the application
-                if (Utils.getInstance().getUserPref().id.isEmpty()) {
-                    Utils.getInstance().writeUserToPref(userModel.get(0));
-                    startService(new Intent(getApplicationContext(), NewMessagesService.class));
-                } else {
-                    Utils.getInstance().writeUserToPref(userModel.get(0));
-                }
-
-                // Update profile
-                // updateProfileByIdentifier() not working
-                mAccountHeader.removeProfile(mMainProfile);
-                mMainProfile.withName(userModel.get(0).username);
-                mAccountHeader.addProfiles(mMainProfile);
-
-                // Update profile
-                Glide.with(MainActivity.this).load(userModel.get(0).avatarUrlMedium).asBitmap()
-                        .into(new SimpleTarget<Bitmap>() {
-                            @Override
-                            public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                mAccountHeader.removeProfile(mMainProfile);
-                                mMainProfile.withIcon(resource);
-                                mAccountHeader.addProfiles(mMainProfile);
-                                loadAvatarFromNetworkFlag = true;
-                            }
-                        });
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
-                if (error.getMessage().contains("401")) {
-                    mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
-                }
-            }
-        });
-    }
+//    private void updateUserFromServer() {
+//        mApi.getCurrentUser(Utils.getInstance().getBearer(), new Callback<ArrayList<UserModel>>() {
+//            @Override
+//            public void success(final ArrayList<UserModel> userModel, Response response) {
+//                // If this is the first launch of the application
+//                if (Utils.getInstance().getUserPref().id.isEmpty()) {
+//                    Utils.getInstance().writeUserToPref(userModel.get(0));
+//                    startService(new Intent(getApplicationContext(), NewMessagesService.class));
+//                } else {
+//                    Utils.getInstance().writeUserToPref(userModel.get(0));
+//                }
+//
+//
+//
+//            }
+//
+//            @Override
+//            public void failure(RetrofitError error) {
+//                Toast.makeText(getApplicationContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+//                if (error.getMessage().contains("401")) {
+//                    mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+//                }
+//            }
+//        });
+//    }
 
     private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
         @Override
@@ -651,6 +553,46 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 mDrawer.getAdapter().notifyDataSetChanged();
             }
         }
+    }
+
+    @Override
+    public void showRooms(ArrayList<RoomModel> rooms) {
+        setItemsDrawer(rooms);
+    }
+
+    @Override
+    public void showProfile(UserModel user) {
+        // Update profile
+        // updateProfileByIdentifier() not working
+        mAccountHeader.removeProfile(mMainProfile);
+        mMainProfile.withName(user.username);
+        mAccountHeader.addProfiles(mMainProfile);
+    }
+
+    @Override
+    public void showError(String text) {
+        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+        if (text.contains("401")) {
+            mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+        }
+    }
+
+    @Override
+    public void leavedFromRoom() {
+        finish();
+    }
+
+    @Override
+    public void updatePhoto(Bitmap photo) {
+        mAccountHeader.removeProfile(mMainProfile);
+        mMainProfile.withIcon(photo);
+        mAccountHeader.addProfiles(mMainProfile);
+        loadAvatarFromNetworkFlag = true;
+    }
+
+    @Override
+    public Context getAppContext() {
+        return getApplicationContext();
     }
 
     public interface NewMessageFragmentCallback {
