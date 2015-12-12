@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import rx.Observable;
+
 public class ClientDatabase {
 
     public static final int DB_VERSION = 2;
@@ -61,52 +63,55 @@ public class ClientDatabase {
         mDatabase = mDBWorker.getWritableDatabase();
     }
 
-    public ArrayList<RoomModel> getRooms() {
-        ArrayList<RoomModel> list = new ArrayList<>();
-        Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
+    public Observable<ArrayList<RoomModel>> getRooms() {
+        return Observable.create(subscriber -> {
+            ArrayList<RoomModel> list = new ArrayList<>();
 
-        try {
-            if (cursor.moveToFirst()) {
-                int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
-                int columnName = cursor.getColumnIndex(COLUMN_NAME);
-                int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
-                int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
-                int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
-                int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
-                int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
-                int columnUrl = cursor.getColumnIndex(COLUMN_URL);
-                int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
-                int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
-                int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
+            Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
+            try {
+                if (cursor.moveToFirst()) {
+                    int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
+                    int columnName = cursor.getColumnIndex(COLUMN_NAME);
+                    int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
+                    int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
+                    int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
+                    int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
+                    int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
+                    int columnUrl = cursor.getColumnIndex(COLUMN_URL);
+                    int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+                    int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
+                    int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
 
-                do {
-                    RoomModel model = new RoomModel();
-                    model.id = cursor.getString(columnId);
-                    model.name = cursor.getString(columnName);
-                    model.topic = cursor.getString(columnTopic);
-                    model.oneToOne = cursor.getInt(columnOneToOne) == 1;
-                    model.userCount = cursor.getInt(columnUsersCount);
-                    model.unreadItems = cursor.getInt(columnUnreadItems);
-                    model.url = cursor.getString(columnUrl);
-                    model.v = cursor.getInt(columnVersion);
-                    model.hide = cursor.getInt(columnHide) == 1;
-                    model.listPosition = cursor.getInt(columnListPos);
+                    do {
+                        RoomModel model = new RoomModel();
+                        model.id = cursor.getString(columnId);
+                        model.name = cursor.getString(columnName);
+                        model.topic = cursor.getString(columnTopic);
+                        model.oneToOne = cursor.getInt(columnOneToOne) == 1;
+                        model.userCount = cursor.getInt(columnUsersCount);
+                        model.unreadItems = cursor.getInt(columnUnreadItems);
+                        model.url = cursor.getString(columnUrl);
+                        model.v = cursor.getInt(columnVersion);
+                        model.hide = cursor.getInt(columnHide) == 1;
+                        model.listPosition = cursor.getInt(columnListPos);
 
-                    String idsStr = cursor.getString(columnUsersIds);
-                    String[] idsArr = getUsersIds(idsStr);
-                    model.users = getUsers(idsArr);
+                        String idsStr = cursor.getString(columnUsersIds);
+                        String[] idsArr = getUsersIds(idsStr);
+                        model.users = getUsers(idsArr);
 
-                    list.add(model);
-                } while (cursor.moveToNext());
+                        list.add(model);
+                    } while (cursor.moveToNext());
 
+                }
+            } finally {
+                cursor.close();
             }
-        } finally {
-            cursor.close();
-        }
 
-        Collections.sort(list, new RoomModel.SortedByPosition());
+            Collections.sort(list, new RoomModel.SortedByPosition());
 
-        return list;
+            subscriber.onNext(list);
+            subscriber.onCompleted();
+        });
     }
 
     public UserModel getUser(String userId) {
@@ -260,7 +265,7 @@ public class ClientDatabase {
         mDatabase.endTransaction();
     }
 
-    public void insertRooms(ArrayList<RoomModel> list) {
+    public void insertRooms(List<RoomModel> list) {
         mDatabase.beginTransaction();
 
         removeOldRooms(list);
@@ -340,19 +345,19 @@ public class ClientDatabase {
     }
 
     // Remove old rooms, which not exist in new list of rooms
-    public void removeOldRooms(ArrayList<RoomModel> newList) {
-        ArrayList<RoomModel> olderList = getRooms();
+    public void removeOldRooms(List<RoomModel> newList) {
+        getRooms().subscribe(roomModels -> {
+            mDatabase.beginTransaction();
 
-        mDatabase.beginTransaction();
-
-        for (RoomModel model : olderList) {
-            if (!newList.contains(model)) {
-                mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[]{model.id});
+            for (RoomModel model : roomModels) {
+                if (!newList.contains(model)) {
+                    mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[]{model.id});
+                }
             }
-        }
 
-        mDatabase.setTransactionSuccessful();
-        mDatabase.endTransaction();
+            mDatabase.setTransactionSuccessful();
+            mDatabase.endTransaction();
+        });
     }
 
     private class DBWorker extends SQLiteOpenHelper {
@@ -402,18 +407,20 @@ public class ClientDatabase {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if (oldVersion == 1 && newVersion == 2) {
-                db.beginTransaction();
+            switch (oldVersion) {
+                case 1:
+                    db.beginTransaction();
 
-                try {
-                    db.execSQL("ALTER TABLE " + ROOM_TABLE
-                            + " ADD (" + COLUMN_HIDE + " integer," +
-                            COLUMN_LIST_POSITION + " integer);");
+                    try {
+                        db.execSQL("ALTER TABLE " + ROOM_TABLE
+                                + " ADD COLUMN " + COLUMN_HIDE + " integer," +
+                                COLUMN_LIST_POSITION + " integer");
 
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
+                        db.setTransactionSuccessful();
+                    } finally {
+                        db.endTransaction();
+                    }
+                    break;
             }
         }
     }

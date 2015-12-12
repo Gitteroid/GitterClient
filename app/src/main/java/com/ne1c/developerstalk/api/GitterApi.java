@@ -6,7 +6,6 @@ import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import retrofit.Callback;
 import retrofit.client.Response;
@@ -25,7 +24,7 @@ import rx.Observable;
 public interface GitterApi {
 
     @GET("/v1/rooms")
-    Observable<List<RoomModel>> getCurrentUserRooms(@Header("Authorization") String access_token);
+    Observable<ArrayList<RoomModel>> getCurrentUserRooms(@Header("Authorization") String access_token);
 
     @GET("/v1/rooms/{roomId}/chatMessages")
     void getMessagesRoom(@Header("Authorization") String access_token,
@@ -48,8 +47,7 @@ public interface GitterApi {
                        Callback<MessageModel> callback);
 
     @GET("/v1/user")
-    void getCurrentUser(@Header("Authorization") String access_token,
-                        Callback<ArrayList<UserModel>> callback);
+    Observable<ArrayList<UserModel>> getCurrentUser(@Header("Authorization") String access_token);
 
     @GET("/v1/rooms/{roomId}/chatMessages")
     void getMessagesBeforeId(@Header("Authorization") String access_token,
@@ -72,10 +70,9 @@ public interface GitterApi {
                       @Path("roomId") String roomId, @Field("chat") String[] chat, Callback<Response> callback);
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
-    void leaveRoom(@Header("Authorization") String access_token,
+    Observable<Response> leaveRoom(@Header("Authorization") String access_token,
                    @Path("roomId") String roomId,
-                   @Path("userId") String userId,
-                   Callback<Response> callback);
+                                   @Path("userId") String userId);
 
     @POST("/v1/rooms")
     @FormUrlEncoded
