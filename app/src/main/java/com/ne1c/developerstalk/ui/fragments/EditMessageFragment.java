@@ -1,6 +1,7 @@
 package com.ne1c.developerstalk.ui.fragments;
 
 
+import android.app.Dialog;
 import android.app.DialogFragment;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -32,29 +33,30 @@ public class EditMessageFragment extends DialogFragment {
 
         mEditText.setText(model.text);
 
-         v.findViewById(R.id.cancel_button).setOnClickListener(new View.OnClickListener() {
-             @Override
-             public void onClick(View v) {
-                 getDialog().dismiss();
-             }
-         });
+        v.findViewById(R.id.cancel_button).setOnClickListener(v1 -> getDialog().dismiss());
 
-        v.findViewById(R.id.ok_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!TextUtils.isEmpty(mEditText.getText().toString())) {
-                    UpdateMessageEvent message = new UpdateMessageEvent();
-                    model.text = mEditText.getText().toString();
-                    message.setMessageModel(model);
-                    EventBus.getDefault().post(message);
+        v.findViewById(R.id.ok_button).setOnClickListener(v1 -> {
+            if (!TextUtils.isEmpty(mEditText.getText().toString())) {
+                UpdateMessageEvent message = new UpdateMessageEvent();
+                model.text = mEditText.getText().toString();
+                message.setMessageModel(model);
+                EventBus.getDefault().post(message);
 
-                    getDialog().dismiss();
-                } else {
-                    Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
-                }
+                getDialog().dismiss();
+            } else {
+                Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
             }
         });
 
         return v;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Dialog dialog = getDialog();
+        if (dialog != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 }
