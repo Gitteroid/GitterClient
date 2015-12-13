@@ -1,8 +1,8 @@
-package com.ne1c.developerstalk.models.eventBusModels;
+package com.ne1c.developerstalk.events;
 
 // Class for send event via EventBus
 // This class contains count messages was read by user
-public class ReadMessagesEventBus {
+public class ReadMessagesEvent {
     private int mCountRead;
 
     public int getCountRead() {

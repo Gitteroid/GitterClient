@@ -175,44 +175,47 @@ public class ClientDatabase {
         insertMessages(list, roomId);
     }
 
-    public ArrayList<MessageModel> getMessages(String roomId) {
-        ArrayList<MessageModel> list = new ArrayList<>();
-        Cursor cursor = mDatabase.rawQuery(String.format("SELECT * FROM %s WHERE %s = \'%s\' ORDER BY %s DESC LIMIT 10;",
-                MESSAGES_TABLE, COLUMN_ROOM_ID, roomId, COLUMN_ID), null);//mDatabase.query(MESSAGES_TABLE, null, COLUMN_ROOM_ID + " = ?", new String[]{roomId}, null, null, COLUMN_ID + " DESC", "10");
+    public Observable<ArrayList<MessageModel>> getMessages(String roomId) {
+        return Observable.create(subscriber -> {
+            ArrayList<MessageModel> list = new ArrayList<>();
+            Cursor cursor = mDatabase.rawQuery(String.format("SELECT * FROM %s WHERE %s = \'%s\' ORDER BY %s DESC LIMIT 10;",
+                    MESSAGES_TABLE, COLUMN_ROOM_ID, roomId, COLUMN_ID), null);
 
-        int difference = 1;
-        if (cursor.moveToPosition(cursor.getCount() - difference)) {
-            int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
-            int columnText = cursor.getColumnIndex(COLUMN_TEXT);
-            int columnHtml = cursor.getColumnIndex(COLUMN_HTML);
-            int columnSent = cursor.getColumnIndex(COLUMN_SENT);
-            int columnEditedAt = cursor.getColumnIndex(COLUMN_EDITED_AT);
-            int columnFromUserId = cursor.getColumnIndex(COLUMN_FROM_USER_ID);
-            int columnUnread = cursor.getColumnIndex(COLUMN_UNREAD);
-            int columnReadBy = cursor.getColumnIndex(COLUMN_READ_BY);
-            int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
-            int columnUrls = cursor.getColumnIndex(COLUMN_URLS);
+            int difference = 1;
+            if (cursor.moveToPosition(cursor.getCount() - difference)) {
+                int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
+                int columnText = cursor.getColumnIndex(COLUMN_TEXT);
+                int columnHtml = cursor.getColumnIndex(COLUMN_HTML);
+                int columnSent = cursor.getColumnIndex(COLUMN_SENT);
+                int columnEditedAt = cursor.getColumnIndex(COLUMN_EDITED_AT);
+                int columnFromUserId = cursor.getColumnIndex(COLUMN_FROM_USER_ID);
+                int columnUnread = cursor.getColumnIndex(COLUMN_UNREAD);
+                int columnReadBy = cursor.getColumnIndex(COLUMN_READ_BY);
+                int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+                int columnUrls = cursor.getColumnIndex(COLUMN_URLS);
 
-            do {
-                MessageModel model = new MessageModel();
-                model.id = cursor.getString(columnMessageId);
-                model.text = cursor.getString(columnText);
-                model.html = cursor.getString(columnHtml);
-                model.sent = cursor.getString(columnSent);
-                model.editedAt = cursor.getString(columnEditedAt);
-                model.fromUser = getUser(cursor.getString(columnFromUserId));
-                model.unread = cursor.getInt(columnUnread) == 1;
-                model.readBy = cursor.getInt(columnReadBy);
-                model.v = cursor.getInt(columnVersion);
-                String url = cursor.getString(columnUrls);
-                model.urls = getUrls(url);
+                do {
+                    MessageModel model = new MessageModel();
+                    model.id = cursor.getString(columnMessageId);
+                    model.text = cursor.getString(columnText);
+                    model.html = cursor.getString(columnHtml);
+                    model.sent = cursor.getString(columnSent);
+                    model.editedAt = cursor.getString(columnEditedAt);
+                    model.fromUser = getUser(cursor.getString(columnFromUserId));
+                    model.unread = cursor.getInt(columnUnread) == 1;
+                    model.readBy = cursor.getInt(columnReadBy);
+                    model.v = cursor.getInt(columnVersion);
+                    String url = cursor.getString(columnUrls);
+                    model.urls = getUrls(url);
 
-                list.add(model);
-                difference += 1;
-            } while (cursor.moveToPosition(cursor.getCount() - difference));
-        }
+                    list.add(model);
+                    difference += 1;
+                } while (cursor.moveToPosition(cursor.getCount() - difference));
+            }
 
-        return list;
+            subscriber.onNext(list);
+            subscriber.onCompleted();
+        });
     }
 
     // Get users ids, from string

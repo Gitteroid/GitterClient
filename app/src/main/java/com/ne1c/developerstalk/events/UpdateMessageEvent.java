@@ -1,8 +1,8 @@
-package com.ne1c.developerstalk.models.eventBusModels;
+package com.ne1c.developerstalk.events;
 
 import com.ne1c.developerstalk.models.MessageModel;
 
-public class UpdateMessageEventBus {
+public class UpdateMessageEvent {
     private MessageModel mMessageModel;
 
     public MessageModel getMessageModel() {
