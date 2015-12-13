@@ -14,17 +14,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.helper.ItemTouchHelperAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> implements ItemTouchHelperAdapter {
-    private ArrayList<RoomModel> mRooms;
+    private List<RoomModel> mRooms;
     private Context mContext;
     private boolean mIsEdit = false;
 
@@ -35,7 +36,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         this.mContext = context;
     }
 
-    public RoomsAdapter(ArrayList<RoomModel> rooms, Context context, OnStartDragListener dragStartListener) {
+    public RoomsAdapter(List<RoomModel> rooms, Context context, OnStartDragListener dragStartListener) {
         this.mRooms = rooms;
         this.mContext = context;
 

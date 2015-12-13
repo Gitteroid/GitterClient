@@ -1,10 +1,8 @@
-package com.ne1c.developerstalk;
+package com.ne1c.developerstalk.services;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-
-import com.ne1c.developerstalk.services.NewMessagesService;
 
 public class OnBootBroadcastReceiver extends BroadcastReceiver {
     @Override

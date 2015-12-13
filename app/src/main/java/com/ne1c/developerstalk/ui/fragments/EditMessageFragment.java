@@ -10,9 +10,9 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.eventBusModels.UpdateMessageEventBus;
+import com.ne1c.developerstalk.events.UpdateMessageEvent;
+import com.ne1c.developerstalk.models.MessageModel;
 
 import de.greenrobot.event.EventBus;
 
@@ -43,7 +43,7 @@ public class EditMessageFragment extends DialogFragment {
             @Override
             public void onClick(View v) {
                 if (!TextUtils.isEmpty(mEditText.getText().toString())) {
-                    UpdateMessageEventBus message = new UpdateMessageEventBus();
+                    UpdateMessageEvent message = new UpdateMessageEvent();
                     model.text = mEditText.getText().toString();
                     message.setMessageModel(model);
                     EventBus.getDefault().post(message);

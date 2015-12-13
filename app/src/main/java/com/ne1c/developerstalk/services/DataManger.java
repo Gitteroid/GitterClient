@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.database.ClientDatabase;
+import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.utils.Utils;
@@ -86,6 +87,19 @@ public class DataManger {
         return mApi.getCurrentUser(Utils.getInstance().getBearer());
     }
 
+    public Observable<ArrayList<MessageModel>> getMessagesBeforeId(String roomId, int limit, String beforeId) {
+        return mApi.getMessagesBeforeId(Utils.getInstance().getBearer(),
+                roomId, limit, beforeId);
+    }
+
+    public void insertMessageToDb(MessageModel model, String roomId) {
+        mClientDatabase.insertMessage(model, roomId);
+    }
+
+    public void insertMessagesToDb(ArrayList<MessageModel> messages, String roomId) {
+        mClientDatabase.insertMessages(messages, roomId);
+    }
+
     private void sortByName(List<RoomModel> rooms) {
         List<RoomModel> multi = new ArrayList<>();
         ArrayList<RoomModel> one = new ArrayList<>();
@@ -99,5 +113,28 @@ public class DataManger {
         rooms.clear();
         rooms.addAll(multi);
         rooms.addAll(one);
+    }
+
+    public Observable<MessageModel> updateMessage(String roomId, String messageId, String text) {
+        return mApi.updateMessage(Utils.getInstance().getBearer(), roomId, messageId, text);
+    }
+
+    public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit) {
+        return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit);
+    }
+
+    public Observable<Response> readMessages(String roomId, String[] ids) {
+        return mApi.readMessages(Utils.getInstance().getBearer(),
+                Utils.getInstance().getUserPref().id,
+                roomId,
+                ids);
+    }
+
+    public Observable<MessageModel> sendMessage(String roomId, String text) {
+        return mApi.sendMessage(Utils.getInstance().getBearer(), roomId, text);
+    }
+
+    public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
+        return mClientDatabase.getMessages(roomId);
     }
 }
