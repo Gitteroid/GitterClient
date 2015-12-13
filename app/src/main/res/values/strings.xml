@@ -19,6 +19,8 @@
     <string name="enable_notif">Enable notification</string>
     <string name="enable_notif_sound">Notification sound</string>
     <string name="enable_notif_vibro">Notification vibration</string>
+    <string name="enable_notif_my_name_desc">Get notification only with the mention of my name</string>
+    <string name="enable_notif_my_name_title">Only with the mention my name</string>
     <string name="edit_message">Edit message</string>
     <string name="delete_message">Delete message</string>
     <string name="ok">OK</string>

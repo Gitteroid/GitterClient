@@ -17,6 +17,12 @@
             android:dependency="enable_notif"
             android:key="notif_vibro"
             android:title="@string/enable_notif_vibro" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="enable_notif"
+            android:key="notif_username"
+            android:summary="@string/enable_notif_my_name_desc"
+            android:title="@string/enable_notif_my_name_title"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/load_mess">
         <EditTextPreference
