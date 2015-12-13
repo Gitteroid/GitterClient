@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import retrofit.RestAdapter;
-import retrofit.RetrofitError;
 import retrofit.client.OkClient;
 import rx.Observable;
 import rx.Subscriber;
@@ -77,10 +76,6 @@ public class NewMessagesService extends Service {
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
-
-        IntentFilter filterSendMessage = new IntentFilter();
-        filterSendMessage.addAction(BROADCAST_SEND_MESSAGE);
-        registerReceiver(sendMessageReceiver, filterSendMessage);
 
         OkHttpClient client = new OkHttpClient();
         client.setReadTimeout(7, TimeUnit.DAYS);
@@ -144,36 +139,8 @@ public class NewMessagesService extends Service {
     public void onDestroy() {
         mMessagesSubscrptions.unsubscribe();
         unregisterReceiver(networkChangeReceiver);
-        unregisterReceiver(sendMessageReceiver);
         super.onDestroy();
     }
-
-    private BroadcastReceiver sendMessageReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, final Intent intent) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    MessageModel message = new MessageModel();
-                    Intent sendIntent;
-                    try {
-                        message = mApiMethods.sendMessage(Utils.getInstance().getBearer(),
-                                intent.getStringExtra(TO_ROOM_MESSAGE_EXTRA_KEY),
-                                intent.getStringExtra(SEND_MESSAGE_EXTRA_KEY));
-                        sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
-                                .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
-                    } catch (RetrofitError e) {
-                        message.id = "";
-                        sendIntent = new Intent(MainActivity.BROADCAST_MESSAGE_DELIVERED)
-                                .putExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY, message);
-                    }
-
-                    sendBroadcast(sendIntent);
-
-                }
-            }).start();
-        }
-    };
 
     private BroadcastReceiver networkChangeReceiver = new BroadcastReceiver() {
         @Override

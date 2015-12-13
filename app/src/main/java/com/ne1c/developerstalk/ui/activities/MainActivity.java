@@ -35,10 +35,10 @@ import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.models.eventBusModels.ReadMessagesEventBus;
 import com.ne1c.developerstalk.presenters.MainPresenter;
 import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
@@ -53,7 +53,6 @@ import de.greenrobot.event.EventBus;
 
 public class MainActivity extends AppCompatActivity implements MainView {
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
-    public final static String BROADCAST_MESSAGE_DELIVERED = "com.ne1c.gitterclient.MessageDeliveredReceiver";
     public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
@@ -99,7 +98,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
 
     private void init() {
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
-        registerReceiver(messageDeliveredReceiver, new IntentFilter(BROADCAST_MESSAGE_DELIVERED));
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -434,7 +432,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
     protected void onDestroy() {
         try {
             unregisterReceiver(newMessageReceiver);
-            unregisterReceiver(messageDeliveredReceiver);
             unregisterReceiver(unauthorizedReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -480,19 +477,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
         }
     };
 
-    private BroadcastReceiver messageDeliveredReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            MessageModel model = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
-
-            if (!model.id.isEmpty()) {
-                mChatRoomFragment.messageDelivered(model);
-            } else {
-                mChatRoomFragment.messageErrorDelivered(model);
-            }
-        }
-    };
-
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -502,7 +486,7 @@ public class MainActivity extends AppCompatActivity implements MainView {
     };
 
     // Update Badge in navigation item, if message was read
-    public void onEvent(ReadMessagesEventBus count) {
+    public void onEvent(ReadMessagesEvent count) {
         for (int i = 0; i < mRoomsList.size(); i++) {
             if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
                 // Update mActiveRoom, fix it.
@@ -568,10 +552,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
 
     public interface NewMessageFragmentCallback {
         void newMessage(MessageModel model);
-
-        void messageDelivered(MessageModel model);
-
-        void messageErrorDelivered(MessageModel model);
     }
 
     public interface RefreshRoomCallback {
