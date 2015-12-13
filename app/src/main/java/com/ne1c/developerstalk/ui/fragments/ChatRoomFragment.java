@@ -1,15 +1,14 @@
 package com.ne1c.developerstalk.ui.fragments;
 
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,18 +18,17 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.ui.activities.MainActivity;
-import com.ne1c.developerstalk.ui.adapters.MessagesAdapter;
-import com.ne1c.developerstalk.database.ClientDatabase;
-import com.ne1c.developerstalk.models.eventBusModels.ReadMessagesEventBus;
-import com.ne1c.developerstalk.models.eventBusModels.UpdateMessageEventBus;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.events.ReadMessagesEvent;
+import com.ne1c.developerstalk.events.UpdateMessageEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.presenters.ChatRoomPresenter;
+import com.ne1c.developerstalk.ui.activities.MainActivity;
+import com.ne1c.developerstalk.ui.adapters.MessagesAdapter;
+import com.ne1c.developerstalk.ui.views.ChatView;
 import com.ne1c.developerstalk.utils.MarkdownUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -42,13 +40,9 @@ import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback,
-        MainActivity.RefreshRoomCallback {
+        MainActivity.RefreshRoomCallback, ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -61,14 +55,12 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
 
-    private RestAdapter mRestApiAdapter;
-    private GitterApi mApiMethods;
+    private ChatRoomPresenter mPresenter;
 
     private int startNumberLoadMessages = 10;
     private int countLoadMessages = 0;
     private boolean isRefreshing = false;
 
-    private ClientDatabase mClientDatabase;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,7 +68,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         setRetainInstance(true);
         EventBus.getDefault().register(this);
 
-        mClientDatabase = new ClientDatabase(getActivity());
+        mPresenter = new ChatRoomPresenter();
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         startNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
@@ -107,14 +99,14 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
         setDataToView(savedInstanceState);
 
-        v.findViewById(R.id.markdown_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DialogMarkdownFragment dialog = new DialogMarkdownFragment();
-                dialog.setTargetFragment(ChatRoomFragment.this, DialogMarkdownFragment.REQUEST_CODE);
-                dialog.show(getFragmentManager(), "MARKDOWN_DIALOG");
-            }
+        v.findViewById(R.id.markdown_button).setOnClickListener(v1 -> {
+            DialogMarkdownFragment dialog = new DialogMarkdownFragment();
+            dialog.setTargetFragment(ChatRoomFragment.this, DialogMarkdownFragment.REQUEST_CODE);
+            dialog.show(getFragmentManager(), "MARKDOWN_DIALOG");
         });
+
+        mPresenter.bindView(this);
+
         return v;
     }
 
@@ -203,43 +195,37 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
         mPtrFrameLayout.setSaveEnabled(true);
 
-        mRestApiAdapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
-                .build();
+        mSendButton.setOnClickListener(v -> {
+            if (!mMessageEditText.getText().toString().isEmpty()) {
+                if (Utils.getInstance().isNetworkConnected()) {
+                    MessageModel model = new MessageModel();
+                    UserModel user = Utils.getInstance().getUserPref();
+                    model.sent = StatusMessage.SENDING.name();
+                    model.fromUser = user;
+                    model.text = mMessageEditText.getText().toString();
+                    model.urls = Collections.EMPTY_LIST;
 
-        mSendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!mMessageEditText.getText().toString().isEmpty()) {
-                    if (Utils.getInstance().isNetworkConnected()) {
-                        MessageModel model = new MessageModel();
-                        UserModel user = Utils.getInstance().getUserPref();
-                        model.sent = StatusMessage.SENDING.name();
-                        model.fromUser = user;
-                        model.text = mMessageEditText.getText().toString();
-                        model.urls = Collections.EMPTY_LIST;
+                    mMessagesArr.add(model);
+                    mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
-                        mMessagesArr.add(model);
-                        mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
-
-                        if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
-                            mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
-                        }
-
-                        getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
-                                .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
-
-                        mMessageEditText.setText("");
-                    } else {
-                        if (getView() != null) {
-                            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-                        }
+                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+                        mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
                     }
+
+//                    getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+//                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
+//                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+
+                    mPresenter.sendMessage(mRoom.id, model.text);
+                    mMessageEditText.setText("");
                 } else {
                     if (getView() != null) {
-                        Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
                     }
+                }
+            } else {
+                if (getView() != null) {
+                    Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -254,40 +240,17 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             public void onRefreshBegin(PtrFrameLayout ptrFrameLayout) {
                 // Message not sent or sending, it hasn't id
                 if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
-                    mApiMethods.getMessagesBeforeId(Utils.getInstance().getBearer(),
-                            mRoom.id, 10, mMessagesArr.get(0).id,
-                            new Callback<ArrayList<MessageModel>>() {
-                                @Override
-                                public void success(ArrayList<MessageModel> messageModels, Response response) {
-                                    if (messageModels.size() > 0) {
-                                        mMessagesArr.addAll(0, messageModels);
-                                        mMessagesAdapter.notifyItemRangeInserted(0, messageModels.size());
-
-                                        countLoadMessages += messageModels.size();
-                                    }
-
-                                    mPtrFrameLayout.refreshComplete();
-                                }
-
-                                @Override
-                                public void failure(RetrofitError error) {
-                                    mPtrFrameLayout.refreshComplete();
-                                    Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                    mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
                 } else {
                     mPtrFrameLayout.refreshComplete();
                 }
             }
         });
 
-        mMessageEditText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int last = mListLayoutManager.findLastVisibleItemPosition();
-                if (last != mMessagesArr.size() - 1) {
-                    mListLayoutManager.scrollToPosition(mMessagesArr.size() - 1);
-                }
+        mMessageEditText.setOnClickListener(v -> {
+            int last = mListLayoutManager.findLastVisibleItemPosition();
+            if (last != mMessagesArr.size() - 1) {
+                mListLayoutManager.scrollToPosition(mMessagesArr.size() - 1);
             }
         });
     }
@@ -296,7 +259,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
 
-        mClientDatabase.close();
+        mPresenter.unbindView();
         super.onDestroy();
     }
 
@@ -319,45 +282,8 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
 
                 final String roomId = mRoom.id;
 
-                mApiMethods.readMessages(Utils.getInstance().getBearer(),
-                        Utils.getInstance().getUserPref().id,
-                        roomId,
-                        listUnreadIds.toArray(new String[listUnreadIds.size()]),
-                        new Callback<Response>() {
-                            @Override
-                            public void success(Response response, Response response2) {
-                                if (roomId.equals(mRoom.id)) {
-                                    for (int i = first; i <= last; i++) {
-                                        if (mMessagesAdapter.getItemViewType(i) == 0) {
-                                            MessagesAdapter.DynamicViewHolder holder = (MessagesAdapter.DynamicViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                            if (holder != null) {
-                                                mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                                mMessagesArr.get(i).unread = false;
-                                            }
-                                        } else {
-                                            MessagesAdapter.StaticViewHolder holder = (MessagesAdapter.StaticViewHolder) recyclerView.findViewHolderForAdapterPosition(i);
-                                            if (holder != null) {
-                                                mMessagesAdapter.read(holder.newMessageIndicator, i);
-                                                mMessagesArr.get(i).unread = false;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Send notification to MainActivity
-                                ReadMessagesEventBus readMessagesEventBus = new ReadMessagesEventBus();
-
-                                // -1 but last item equals to empty string
-                                readMessagesEventBus.setCountRead(listUnreadIds.size() - 1);
-                                EventBus.getDefault().post(readMessagesEventBus);
-                            }
-
-                            @Override
-                            public void failure(RetrofitError error) {
-                                Log.d("readmess", error.getMessage());
-                                // If error read messages
-                            }
-                        });
+                mPresenter.markMessageAsRead(first, last, roomId,
+                        listUnreadIds.toArray(new String[listUnreadIds.size()]));
             }
         }
     }
@@ -371,54 +297,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
             mProgressBar.setVisibility(View.VISIBLE);
         }
 
-        mApiMethods = mRestApiAdapter.create(GitterApi.class);
-        mApiMethods.getMessagesRoom(Utils.getInstance().getBearer(), roomModel.id, startNumberLoadMessages + countLoadMessages, new Callback<ArrayList<MessageModel>>() {
-            @Override
-            public void success(ArrayList<MessageModel> messageModels, Response response) {
-                mMessagesArr.clear();
-                mMessagesArr.addAll(messageModels);
-
-                mClientDatabase.insertMessages(messageModels, mRoom.id);
-
-                if (refresh) {
-                    mMessagesAdapter.notifyDataSetChanged();
-                    mPtrFrameLayout.refreshComplete();
-                } else {
-                    mMessagesAdapter.notifyDataSetChanged();
-
-                    // If room just was loaded
-                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
-                        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
-                    }
-                }
-
-                if (showProgressBar) {
-                    mPtrFrameLayout.setVisibility(View.VISIBLE);
-                    mProgressBar.setVisibility(View.GONE);
-                }
-
-                isRefreshing = false;
-
-                // Set this state for call process reading messages
-                //markMessagesAsRead(mMessagesList);
-            }
-
-            @Override
-            public void failure(RetrofitError error) {
-                if (showProgressBar) {
-                    mProgressBar.setVisibility(View.INVISIBLE);
-                } else if (mPtrFrameLayout.isRefreshing()) {
-                    mPtrFrameLayout.refreshComplete();
-                }
-                isRefreshing = false;
-                mPtrFrameLayout.setVisibility(View.VISIBLE);
-                Toast.makeText(getActivity(), error.getMessage(), Toast.LENGTH_SHORT).show();
-
-                if (error.getMessage().contains("401")) {
-                    getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
-                }
-            }
-        });
+        mPresenter.loadMessages(roomModel.id, startNumberLoadMessages + countLoadMessages, showProgressBar, refresh);
     }
 
     // Event from MainActivity or notification
@@ -432,17 +311,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         }
 
         mMessagesAdapter.setRoom(model);
-        new LoadMessageDatabaseAsync(model, new LoadCallback() {
-            @Override
-            public void finish() {
-                loadMessageRoomServer(mRoom, true, false);
-            }
-        }).execute();
+        mPresenter.loadCachedMessages(model.id);
+        loadMessageRoomServer(mRoom, false, false);
     }
 
     @Override
     public void newMessage(MessageModel model) {
-        mClientDatabase.insertMessage(model, mRoom.id);
+        mPresenter.insertMessageToDb(model, mRoom.id);
 
         if (mMessagesAdapter != null) {
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
@@ -458,9 +333,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 if (!item.sent.equals(StatusMessage.NO_SEND.name())
                         && !item.sent.equals(StatusMessage.SENDING.name())
                         && item.id.equals(model.id)) {
-                    mMessagesArr.set(i, model);
-                    mMessagesAdapter.setMessage(i, model);
-                    mMessagesAdapter.notifyItemChanged(i);
                     return;
                 }
             }
@@ -477,11 +349,146 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     @Override
-    public void messageDelivered(MessageModel model) {
+    public void onRefreshRoom() {
+        if (Utils.getInstance().isNetworkConnected()) {
+            loadMessageRoomServer(mRoom, true, true);
+        } else if (getView() != null && mMessagesArr.size() > 0) {
+            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Event from MainActivity
+    public void onEvent(UpdateMessageEvent message) {
+        MessageModel newMessage = message.getMessageModel();
+
+        if (newMessage != null) {
+            mPresenter.updateMessages(mRoom.id, newMessage.id, newMessage.text);
+        }
+    }
+
+    @Override
+    public void showMessages(ArrayList<MessageModel> messages, boolean showProgress, boolean showRefresh) {
+        mMessagesArr.clear();
+        mMessagesArr.addAll(messages);
+
+        if (mPtrFrameLayout.isRefreshing()) {
+            mPtrFrameLayout.refreshComplete();
+        }
+
+        if (mPtrFrameLayout.isRefreshing()) {
+            mMessagesAdapter.notifyDataSetChanged();
+            mPtrFrameLayout.refreshComplete();
+        } else {
+            mMessagesAdapter.notifyDataSetChanged();
+
+            // If room just was loaded
+            if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+                mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+            }
+        }
+
+        if (mProgressBar.getVisibility() == View.VISIBLE) {
+            mPtrFrameLayout.setVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.GONE);
+        }
+
+        isRefreshing = false;
+
+        // If from db
+        mMessagesAdapter.setRoom(mRoom);
+        mMessagesAdapter.notifyDataSetChanged();
+
+        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+
+        mPtrFrameLayout.setVisibility(View.VISIBLE);
+        mProgressBar.setVisibility(View.GONE);
+
+        // Set this state for call process reading messages
+        //markMessagesAsRead(mMessagesList);
+    }
+
+    @Override
+    public void showError(String error) {
+        if (mProgressBar.getVisibility() == View.VISIBLE) {
+            mProgressBar.setVisibility(View.INVISIBLE);
+        } else if (mPtrFrameLayout.isRefreshing()) {
+            mPtrFrameLayout.refreshComplete();
+        }
+        isRefreshing = false;
+        mPtrFrameLayout.setVisibility(View.VISIBLE);
+
+        if (error.contains("401")) {
+            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
+        }
+
+        Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void successUpdate(MessageModel message) {
+        for (int i = 0; i < mMessagesArr.size(); i++) {
+            MessageModel item = mMessagesArr.get(i);
+            // Update message
+            if (!item.sent.equals(StatusMessage.NO_SEND.name())
+                    && !item.sent.equals(StatusMessage.SENDING.name())
+                    && item.id.equals(message.id)) {
+                mMessagesArr.set(i, message);
+                mMessagesAdapter.setMessage(i, message);
+                mMessagesAdapter.notifyItemChanged(i);
+            }
+        }
+
+        Toast.makeText(getActivity(), R.string.updated, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void successRead(int first, int last, String roomId, int countRead) {
+        if (roomId.equals(mRoom.id)) {
+            for (int i = first; i <= last; i++) {
+                if (mMessagesAdapter.getItemViewType(i) == 0) {
+                    MessagesAdapter.DynamicViewHolder holder =
+                            (MessagesAdapter.DynamicViewHolder) mMessagesList.findViewHolderForAdapterPosition(i);
+                    if (holder != null) {
+                        mMessagesAdapter.read(holder.newMessageIndicator, i);
+                        mMessagesArr.get(i).unread = false;
+                    }
+                } else {
+                    MessagesAdapter.StaticViewHolder holder =
+                            (MessagesAdapter.StaticViewHolder) mMessagesList.findViewHolderForAdapterPosition(i);
+                    if (holder != null) {
+                        mMessagesAdapter.read(holder.newMessageIndicator, i);
+                        mMessagesArr.get(i).unread = false;
+                    }
+                }
+            }
+        }
+
+        // Send notification to MainActivity
+        ReadMessagesEvent readMessagesEventBus = new ReadMessagesEvent();
+
+        // -1 but last item equals to empty string
+        readMessagesEventBus.setCountRead(countRead);
+        EventBus.getDefault().post(readMessagesEventBus);
+    }
+
+    @Override
+    public void successLoadBeforeId(ArrayList<MessageModel> messages) {
+        if (messages.size() > 0) {
+            mMessagesArr.addAll(0, messages);
+            mMessagesAdapter.notifyItemRangeInserted(0, messages.size());
+
+            countLoadMessages += messages.size();
+        }
+
+        mPtrFrameLayout.refreshComplete();
+    }
+
+    @Override
+    public void deliveredMessage(MessageModel message) {
         for (int i = 0; i < mMessagesArr.size(); i++) {
             if (mMessagesArr.get(i).sent.equals(StatusMessage.SENDING.name()) &&
-                    mMessagesArr.get(i).text.equals(model.text)) {
-                mMessagesArr.set(i, model);
+                    mMessagesArr.get(i).text.equals(message.text)) {
+                mMessagesArr.set(i, message);
                 mMessagesAdapter.notifyItemChanged(i);
 
                 if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
@@ -492,7 +499,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     @Override
-    public void messageErrorDelivered(MessageModel model) {
+    public void errorDeliveredMessage() {
         Toast.makeText(getActivity(), R.string.error_send, Toast.LENGTH_SHORT).show();
 
         for (int i = 0; i < mMessagesArr.size(); i++) {
@@ -504,95 +511,14 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
     }
 
     @Override
-    public void onRefreshRoom() {
-        if (Utils.getInstance().isNetworkConnected()) {
-            loadMessageRoomServer(mRoom, true, true);
-        } else if (getView() != null && mMessagesArr.size() > 0) {
-            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-        }
+    public Context getAppContext() {
+        return getActivity();
     }
 
-    // Event from MainActivity
-    public void onEvent(UpdateMessageEventBus message) {
-        MessageModel newMessage = message.getMessageModel();
-
-        if (newMessage != null) {
-            mApiMethods.updateMessage(Utils.getInstance().getBearer(),
-                    mRoom.id, newMessage.id, newMessage.text,
-                    new Callback<MessageModel>() {
-                        @Override
-                        public void success(MessageModel model, Response response) {
-                            Toast.makeText(getActivity(), R.string.updated, Toast.LENGTH_SHORT).show();
-                            mClientDatabase.insertMessage(model, mRoom.id);
-                        }
-
-                        @Override
-                        public void failure(RetrofitError error) {
-                            Toast.makeText(getActivity(), R.string.updated_error, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        }
-    }
-//
-//    @Override
-//    public void retrySendNotif(MessageModel message, int position) {
-//        mMessagesArr.set(position, message);
-//        mMessagesAdapter.notifyItemChanged(position);
-//    }
-
-    private class LoadMessageDatabaseAsync extends AsyncTask<String, Void, ArrayList<MessageModel>> {
-        private RoomModel mRoom;
-        private ClientDatabase mClientDatabase;
-        private LoadCallback mCallback;
-
-        private LoadMessageDatabaseAsync(RoomModel room, LoadCallback callback) {
-            mRoom = room;
-            mClientDatabase = new ClientDatabase(getActivity());
-            mCallback = callback;
-        }
-
-        private LoadMessageDatabaseAsync(RoomModel room) {
-            mRoom = room;
-            mClientDatabase = new ClientDatabase(getActivity());
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            mPtrFrameLayout.setVisibility(View.GONE);
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected ArrayList<MessageModel> doInBackground(String... params) {
-            return mClientDatabase.getMessages(mRoom.id);
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<MessageModel> messageModels) {
-            super.onPostExecute(messageModels);
-
-            mMessagesArr.clear();
-            mMessagesArr.addAll(messageModels);
-
-            mMessagesAdapter.setRoom(mRoom);
-            mMessagesAdapter.notifyDataSetChanged();
-
-            mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
-
-            mPtrFrameLayout.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(View.GONE);
-
-            if (mCallback != null) {
-                mCallback.finish();
-            }
-        }
-    }
-
-    // For load callback messages from database
-    private interface LoadCallback {
-        void finish();
+    @Override
+    public void onDestroyView() {
+        mPresenter.unbindView();
+        super.onDestroyView();
     }
 
     // Callback for adapter

@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk.ui.adapters;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -16,7 +17,6 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -28,15 +28,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
-import com.ne1c.developerstalk.ui.fragments.EditMessageFragment;
-import com.ne1c.developerstalk.ui.fragments.LinksDialogFragment;
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
-import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
+import com.ne1c.developerstalk.ui.fragments.EditMessageFragment;
+import com.ne1c.developerstalk.ui.fragments.LinksDialogFragment;
 import com.ne1c.developerstalk.utils.MarkdownUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -47,10 +47,8 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements
         ChatRoomFragment.ReadMessageCallback {
@@ -58,17 +56,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private ArrayList<MessageModel> mMessages;
     private Activity mActivity;
     private EditText mMessageEditText;
-    private GitterApi mApiMethods;
+    private DataManger mDataManager;
 
     public MessagesAdapter(Activity activity, ArrayList<MessageModel> messages, EditText editText) {
         mActivity = activity;
         mMessages = messages;
         mMessageEditText = editText;
-        mApiMethods = new RestAdapter
-                .Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
-                .build()
-                .create(GitterApi.class);
+        mDataManager = new DataManger(mActivity);
     }
 
     @Override
@@ -158,7 +152,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             for (int i = 0; i < markdown.getParsedString().size(); i++) {
                 switch (markdown.getParsedString().get(i)) {
                     case "{0}":
-                        FrameLayout singleline = views.getSignlelineCodeView();
+                        FrameLayout singleline = views.getSinglelineCodeView();
                         ((TextView) singleline.findViewById(R.id.singleline_textView)).setText(markdown.getSinglelineCode().get(++counterSingleline));
                         holder.messageLayout.addView(singleline);
 
@@ -238,12 +232,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
                         ImageView image = views.getLinkImage();
                         image.setScaleType(ImageView.ScaleType.FIT_XY);
-                        image.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl)));
-                            }
-                        });
+                        image.setOnClickListener(v -> mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))));
 
                         //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
                         Glide.with(mActivity).load(previewUrl).into(image);
@@ -299,6 +288,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private String getTimeMessage(MessageModel message) {
+        if (message.sent.equals(StatusMessage.SENDING.name()) ||
+                message.sent.equals(StatusMessage.NO_SEND.name())) {
+            return "";
+        }
+
         String time = "";
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         Calendar calendar = Calendar.getInstance();
@@ -362,100 +356,80 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private View.OnClickListener getParentLayoutClick(final MessageModel message) {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mMessageEditText.append("@" + message.fromUser.username + " ");
-            }
-        };
+        return v -> mMessageEditText.append("@" + message.fromUser.username + " ");
     }
 
     private View.OnClickListener getAvatarImageClick(final MessageModel message) {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
-                        Uri.parse(Utils.GITHUB_URL + "/" + message.fromUser.username))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            }
-        };
+        return v -> mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
+                Uri.parse(Utils.GITHUB_URL + "/" + message.fromUser.username))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
 
     private View.OnClickListener getMenuClick(final MessageModel message, final int position) {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final PopupMenu menu = new PopupMenu(mActivity, v);
-                if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
-                    menu.inflate(R.menu.menu_message_user);
-                    showMenuUser(menu, message, position);
-                } else {
-                    menu.inflate(R.menu.menu_message_all);
-                    showMenuAll(menu, message);
-                }
+        return v -> {
+            final PopupMenu menu = new PopupMenu(mActivity, v);
+            if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
+                menu.inflate(R.menu.menu_message_user);
+                showMenuUser(menu, message, position);
+            } else {
+                menu.inflate(R.menu.menu_message_all);
+                showMenuAll(menu, message);
             }
         };
     }
 
     private void showMenuUser(PopupMenu menu, final MessageModel message, final int position) {
-        menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.edit_message_menu:
-                        EditMessageFragment fragment = new EditMessageFragment();
-                        Bundle args = new Bundle();
-                        args.putParcelable("message", message);
-                        fragment.setArguments(args);
-                        fragment.show(mActivity.getFragmentManager(), "dialogEdit");
-                        return true;
-                    case R.id.delete_message_menu:
-                        mApiMethods.updateMessage(Utils.getInstance().getBearer(), mRoom.id, message.id, "",
-                                new Callback<MessageModel>() {
-                                    @Override
-                                    public void success(MessageModel model, Response response) {
-                                        Toast.makeText(mActivity, R.string.deleted, Toast.LENGTH_SHORT).show();
-                                    }
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.edit_message_menu:
+                    EditMessageFragment fragment = new EditMessageFragment();
+                    Bundle args = new Bundle();
+                    args.putParcelable("message", message);
+                    fragment.setArguments(args);
+                    fragment.show(mActivity.getFragmentManager(), "dialogEdit");
+                    return true;
+                case R.id.delete_message_menu:
+                    mDataManager.updateMessage(mRoom.id, message.id, "")
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(messageModel -> {
+                                Toast.makeText(mActivity, R.string.deleted, Toast.LENGTH_SHORT).show();
+                            }, throwable -> {
+                                Toast.makeText(mActivity, R.string.deleted_error, Toast.LENGTH_SHORT).show();
+                            });
+                    return true;
+                case R.id.copy_text_menu:
+                    Utils.getInstance().copyToClipboard(message.text);
+                    return true;
+                case R.id.retry_send_menu:
+                    if (Utils.getInstance().isNetworkConnected()) {
+                        if (mMessages.get(position).sent.equals(StatusMessage.NO_SEND.name()) &&
+                                mMessages.get(position).text.equals(message.text)) {
+                            // Update status message
+                            mMessages.get(position).sent = StatusMessage.SENDING.name();
 
-                                    @Override
-                                    public void failure(RetrofitError error) {
-                                        Toast.makeText(mActivity, R.string.deleted_error, Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                        return true;
-                    case R.id.copy_text_menu:
-                        Utils.getInstance().copyToClipboard(message.text);
-                        return true;
-                    case R.id.retry_send_menu:
-                        if (Utils.getInstance().isNetworkConnected()) {
-                            if (mMessages.get(position).sent.equals(StatusMessage.NO_SEND.name()) &&
-                                    mMessages.get(position).text.equals(message.text)) {
-                                // Update status message
-                                mMessages.get(position).sent = StatusMessage.SENDING.name();
+                            // Repeat send
+                            mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
+                                    .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, message.text)
+                                    .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
 
-                                // Repeat send
-                                mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                        .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, message.text)
-                                        .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
-
-                                notifyItemChanged(position);
-                            }
-                        } else {
-                            Toast.makeText(mActivity, R.string.no_network, Toast.LENGTH_SHORT).show();
+                            notifyItemChanged(position);
                         }
+                    } else {
+                        Toast.makeText(mActivity, R.string.no_network, Toast.LENGTH_SHORT).show();
+                    }
 
-                        return true;
-                    case R.id.links_menu:
-                        LinksDialogFragment links = new LinksDialogFragment();
-                        Bundle argsLinks = new Bundle();
-                        argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
-                        links.setArguments(argsLinks);
-                        links.show(mActivity.getFragmentManager(), "dialogLinks");
+                    return true;
+                case R.id.links_menu:
+                    LinksDialogFragment links = new LinksDialogFragment();
+                    Bundle argsLinks = new Bundle();
+                    argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
+                    links.setArguments(argsLinks);
+                    links.show(mActivity.getFragmentManager(), "dialogLinks");
 
-                        return true;
-                    default:
-                        return false;
-                }
+                    return true;
+                default:
+                    return false;
             }
         });
 
@@ -471,24 +445,21 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private void showMenuAll(final PopupMenu menu, final MessageModel message) {
-        menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.copy_text_menu:
-                        Utils.getInstance().copyToClipboard(message.text);
-                        return true;
-                    case R.id.links_menu:
-                        LinksDialogFragment links = new LinksDialogFragment();
-                        Bundle argsLinks = new Bundle();
-                        argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
-                        links.setArguments(argsLinks);
-                        links.show(mActivity.getFragmentManager(), "dialogLinks");
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.copy_text_menu:
+                    Utils.getInstance().copyToClipboard(message.text);
+                    return true;
+                case R.id.links_menu:
+                    LinksDialogFragment links = new LinksDialogFragment();
+                    Bundle argsLinks = new Bundle();
+                    argsLinks.putParcelableArrayList("links", new ArrayList<Parcelable>(message.urls));
+                    links.setArguments(argsLinks);
+                    links.show(mActivity.getFragmentManager(), "dialogLinks");
 
-                        return true;
-                    default:
-                        return false;
-                }
+                    return true;
+                default:
+                    return false;
             }
         });
 
@@ -569,7 +540,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private class MarkdownViews {
-        public FrameLayout getSignlelineCodeView() {
+        public FrameLayout getSinglelineCodeView() {
             return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
         }
 
@@ -625,6 +596,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             return span;
         }
 
+        @SuppressLint("PrivateResource")
         public TextView getTextView() {
             TextView view = new TextView(mActivity);
             view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
