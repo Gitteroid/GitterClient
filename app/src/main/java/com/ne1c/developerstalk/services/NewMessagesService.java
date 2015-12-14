@@ -19,28 +19,19 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
 
-import com.google.gson.Gson;
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.api.GitterStreaming;
 import com.ne1c.developerstalk.database.ClientDatabase;
+import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.utils.Utils;
-import com.squareup.okhttp.OkHttpClient;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import retrofit.RestAdapter;
-import retrofit.client.OkClient;
-import rx.Observable;
-import rx.Subscriber;
+import de.greenrobot.event.EventBus;
 import rx.Subscription;
-import rx.observables.AbstractOnSubscribe;
 import rx.subscriptions.CompositeSubscription;
 
 public class NewMessagesService extends Service {
@@ -49,14 +40,13 @@ public class NewMessagesService extends Service {
 
     public static final String BROADCAST_SEND_MESSAGE = "sendMessageBroadcast";
     public static final String FROM_ROOM_EXTRA_KEY = "fromRoom";
-    public static final String NEW_MESSAGE_EXTRA_KEY = "newMessage";
     public static final String TO_ROOM_MESSAGE_EXTRA_KEY = "toRoom";
     public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
     private List<RoomModel> mRooms;
     private CompositeSubscription mMessagesSubscrptions;
 
-    private GitterApi mApiMethods;
+    private GitterStreaming mStreaming;
 
     private boolean mEnableNotif;
     private boolean mSound;
@@ -77,15 +67,7 @@ public class NewMessagesService extends Service {
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
 
-        OkHttpClient client = new OkHttpClient();
-        client.setReadTimeout(7, TimeUnit.DAYS);
-        client.setConnectTimeout(7, TimeUnit.DAYS);
-
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setClient(new OkClient(client))
-                .setEndpoint("https://stream.gitter.im")
-                .build();
-        mApiMethods = adapter.create(GitterApi.class);
+        mStreaming = new GitterStreaming();
     }
 
     @Override
@@ -110,14 +92,9 @@ public class NewMessagesService extends Service {
         mMessagesSubscrptions = new CompositeSubscription();
 
         for (final RoomModel room : mRooms) {
-            Subscription sub = getMessageStream(room.id).subscribe(message -> {
-                Intent intent = new Intent();
-                intent.setAction(MainActivity.BROADCAST_NEW_MESSAGE);
-                intent.putExtra(FROM_ROOM_EXTRA_KEY, room);
-
-                intent.putExtra(NEW_MESSAGE_EXTRA_KEY, message);
+            Subscription sub = mStreaming.getMessageStream(room.id).subscribe(message -> {
                 if (message.text != null) {
-                    sendBroadcast(intent);
+                    EventBus.getDefault().post(new NewMessageEvent(message, room));
 
                     if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
                         final String username = Utils.getInstance().getUserPref().username;
@@ -196,59 +173,5 @@ public class NewMessagesService extends Service {
         notification.flags |= NotificationCompat.FLAG_AUTO_CANCEL;
 
         notifMgr.notify(NOTIF_CODE, notification);
-    }
-
-    private Observable<MessageModel> getMessageStream(String roomId) {
-        return mApiMethods.getRoomStream(Utils.getInstance().getBearer(), roomId)
-                .flatMap(response -> {
-                    try {
-                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody().in()));
-                        return Observable.create(new OnSubscribeBufferedReader(bufferedReader));
-                    } catch (IOException e) {
-                        return Observable.error(e);
-                    }
-                }).filter(s -> s != null && !s.trim().isEmpty())
-                .map(s -> new Gson().fromJson(s, MessageModel.class));
-    }
-
-    public class OnSubscribeBufferedReader extends AbstractOnSubscribe<String, BufferedReader> {
-        private final BufferedReader reader;
-
-        public OnSubscribeBufferedReader(BufferedReader reader) {
-            this.reader = reader;
-        }
-
-        @Override
-        protected BufferedReader onSubscribe(Subscriber<? super String> subscriber) {
-            return reader;
-        }
-
-        @Override
-        protected void next(SubscriptionState<String, BufferedReader> state) {
-            BufferedReader reader = state.state();
-            try {
-                String line = reader.readLine();
-                if (line == null) {
-                    state.onCompleted();
-                } else {
-                    state.onNext(line);
-                }
-            } catch (IOException e) {
-                state.onError(e);
-            }
-        }
-
-        @Override
-        protected void onTerminated(BufferedReader state) {
-            super.onTerminated(state);
-
-            if (state != null) {
-                try {
-                    state.close();
-                } catch (IOException e) {
-                    // Ignore this exception
-                }
-            }
-        }
     }
 }

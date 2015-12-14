@@ -19,12 +19,12 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
-import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.presenters.ChatRoomPresenter;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.MessagesAdapter;
@@ -33,7 +33,6 @@ import com.ne1c.developerstalk.utils.MarkdownUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import de.greenrobot.event.EventBus;
 import in.srain.cube.views.ptr.PtrClassicFrameLayout;
@@ -41,8 +40,7 @@ import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
 
-public class ChatRoomFragment extends Fragment implements MainActivity.NewMessageFragmentCallback,
-        MainActivity.RefreshRoomCallback, ChatView {
+public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRoomCallback, ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -198,12 +196,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         mSendButton.setOnClickListener(v -> {
             if (!mMessageEditText.getText().toString().isEmpty()) {
                 if (Utils.getInstance().isNetworkConnected()) {
-                    MessageModel model = new MessageModel();
-                    UserModel user = Utils.getInstance().getUserPref();
-                    model.sent = StatusMessage.SENDING.name();
-                    model.fromUser = user;
-                    model.text = mMessageEditText.getText().toString();
-                    model.urls = Collections.EMPTY_LIST;
+                    MessageModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
 
                     mMessagesArr.add(model);
                     mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
@@ -212,21 +205,13 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                         mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
                     }
 
-//                    getActivity().sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-//                            .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, mMessageEditText.getText().toString())
-//                            .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
-
                     mPresenter.sendMessage(mRoom.id, model.text);
                     mMessageEditText.setText("");
                 } else {
-                    if (getView() != null) {
-                        Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
                 }
             } else {
-                if (getView() != null) {
-                    Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -315,16 +300,23 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         loadMessageRoomServer(mRoom, false, false);
     }
 
-    @Override
-    public void newMessage(MessageModel model) {
-        mPresenter.insertMessageToDb(model, mRoom.id);
+    public void onEvent(UpdateMessageEvent message) {
+        MessageModel newMessage = message.getMessageModel();
+
+        if (newMessage != null) {
+            mPresenter.updateMessages(mRoom.id, newMessage.id, newMessage.text);
+        }
+    }
+
+    public void onEvent(NewMessageEvent message) {
+        mPresenter.insertMessageToDb(message.getMessage(), mRoom.id);
 
         if (mMessagesAdapter != null) {
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
                 MessageModel item = mMessagesArr.get(i);
 
                 // Send message
-                if (model.text.equals(item.text) &&
+                if (message.getMessage().text.equals(item.text) &&
                         item.sent.equals(StatusMessage.SENDING.name())) {
                     return;
                 }
@@ -332,12 +324,12 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
                 // Update message
                 if (!item.sent.equals(StatusMessage.NO_SEND.name())
                         && !item.sent.equals(StatusMessage.SENDING.name())
-                        && item.id.equals(model.id)) {
+                        && item.id.equals(message.getMessage().id)) {
                     return;
                 }
             }
 
-            mMessagesArr.add(model);
+            mMessagesArr.add(message.getMessage());
             mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
@@ -357,23 +349,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         }
     }
 
-    // Event from MainActivity
-    public void onEvent(UpdateMessageEvent message) {
-        MessageModel newMessage = message.getMessageModel();
-
-        if (newMessage != null) {
-            mPresenter.updateMessages(mRoom.id, newMessage.id, newMessage.text);
-        }
-    }
-
     @Override
     public void showMessages(ArrayList<MessageModel> messages, boolean showProgress, boolean showRefresh) {
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
-
-        if (mPtrFrameLayout.isRefreshing()) {
-            mPtrFrameLayout.refreshComplete();
-        }
 
         if (mPtrFrameLayout.isRefreshing()) {
             mMessagesAdapter.notifyDataSetChanged();
@@ -393,18 +372,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.NewMessag
         }
 
         isRefreshing = false;
-
-        // If from db
-        mMessagesAdapter.setRoom(mRoom);
-        mMessagesAdapter.notifyDataSetChanged();
-
-        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
-
-        mPtrFrameLayout.setVisibility(View.VISIBLE);
-        mProgressBar.setVisibility(View.GONE);
-
-        // Set this state for call process reading messages
-        //markMessagesAsRead(mMessagesList);
     }
 
     @Override

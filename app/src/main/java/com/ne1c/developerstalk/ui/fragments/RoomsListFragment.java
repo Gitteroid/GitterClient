@@ -72,16 +72,10 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
         });
 
         mPresenter.bindView(this);
-
-        return v;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-
         mPresenter.loadCachedRooms();
         mPresenter.loadRooms();
+
+        return v;
     }
 
     public boolean isEdit() {

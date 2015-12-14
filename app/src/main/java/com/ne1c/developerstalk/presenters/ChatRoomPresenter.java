@@ -2,8 +2,13 @@ package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.StatusMessage;
+import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
+import com.ne1c.developerstalk.utils.Utils;
+
+import java.util.ArrayList;
 
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -95,7 +100,15 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 });
     }
 
-    public void updateMessage(String roomId, String messageId, String text) {
+    public MessageModel createSendMessage(String text) {
+        UserModel user = Utils.getInstance().getUserPref();
+        MessageModel message = new MessageModel();
 
+        message.sent = StatusMessage.SENDING.name();
+        message.fromUser = user;
+        message.text = text;
+        message.urls = new ArrayList<>();
+
+        return message;
     }
 }

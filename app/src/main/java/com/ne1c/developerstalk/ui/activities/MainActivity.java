@@ -35,8 +35,8 @@ import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
-import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import de.greenrobot.event.EventBus;
 
 public class MainActivity extends AppCompatActivity implements MainView {
-    public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
@@ -97,7 +96,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
     }
 
     private void init() {
-        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -191,7 +189,9 @@ public class MainActivity extends AppCompatActivity implements MainView {
                 }
 
                 mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                if (mRoomsList.size() > 0) {
+                    EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                }
                 setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
             }
 
@@ -431,7 +431,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
     @Override
     protected void onDestroy() {
         try {
-            unregisterReceiver(newMessageReceiver);
             unregisterReceiver(unauthorizedReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -456,26 +455,16 @@ public class MainActivity extends AppCompatActivity implements MainView {
         });
     }
 
-    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            MessageModel message = intent.getParcelableExtra(NewMessagesService.NEW_MESSAGE_EXTRA_KEY);
-            RoomModel room = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-
-            if (room.id != null && room.id.equals(mActiveRoom.id)) {
-                mChatRoomFragment.newMessage(message);
-            } else if (room != null) {
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (mRoomsList.get(i).id.equals(room.id)) {
-                        mRoomsList.get(i).unreadItems += 1;
-                        final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
-                        mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-                        mDrawer.getAdapter().notifyDataSetChanged();
-                    }
-                }
+    public void onEvent(NewMessageEvent message) {
+        for (int i = 0; i < mRoomsList.size(); i++) {
+            if (mRoomsList.get(i).id.equals(message.getRoom().id)) {
+                mRoomsList.get(i).unreadItems += 1;
+                final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
+                mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+                mDrawer.getAdapter().notifyDataSetChanged();
             }
         }
-    };
+    }
 
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
         @Override
@@ -548,10 +537,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
     @Override
     public Context getAppContext() {
         return getApplicationContext();
-    }
-
-    public interface NewMessageFragmentCallback {
-        void newMessage(MessageModel model);
     }
 
     public interface RefreshRoomCallback {
