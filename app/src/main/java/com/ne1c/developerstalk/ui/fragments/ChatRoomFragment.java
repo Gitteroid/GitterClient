@@ -369,9 +369,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
         if (mProgressBar.getVisibility() == View.VISIBLE) {
             mPtrFrameLayout.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.GONE);
-        }
 
-        isRefreshing = false;
+            isRefreshing = false;
+        }
     }
 
     @Override
