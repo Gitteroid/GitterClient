@@ -39,8 +39,6 @@ public class DataManger {
         Observable<ArrayList<RoomModel>> dbRooms = mClientDatabase.getRooms();
 
         return Observable.combineLatest(serverRooms, dbRooms, (server, db) -> {
-            ArrayList<RoomModel> result = new ArrayList<>();
-
             // Data exist in db ang get from server
             if (db.size() > 0 && server.size() > 0) {
                 for (RoomModel r1 : db) {
@@ -55,19 +53,19 @@ public class DataManger {
                 Collections.sort(server, new RoomModel.SortedByPosition());
                 mClientDatabase.insertRooms(server);
 
-                result = server;
+                return server;
             } else if (db.size() > 0 && server.size() == 0) { // If data exist only in db
                 Collections.sort(db, new RoomModel.SortedByPosition());
 
-                result = db;
+                return db;
             } else if (db.size() == 0 && server.size() > 0) { // If data  not exist in db, only server
                 sortByName(server);
                 mClientDatabase.insertRooms(server);
 
-                result = db;
+                return server;
             }
 
-            return result;
+            return new ArrayList<>();
         });
     }
 

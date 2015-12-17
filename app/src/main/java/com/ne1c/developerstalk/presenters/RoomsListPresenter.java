@@ -50,11 +50,11 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
         @SuppressWarnings("unchecked")
         Subscription sub = mDataManger.getRooms().subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
 
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
+
                     for (RoomModel room : roomModels) {
                         if (!room.hide) {
                             visibleList.add(room);
@@ -63,6 +63,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(mView::showRooms, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
@@ -87,7 +88,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
     public void loadCachedRooms() {
         mDataManger.getDbRooms().subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
@@ -98,6 +98,9 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
-                .subscribe(mView::showRooms);
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(mView::showRooms, throwable -> {
+                    mView.showError(throwable.getMessage());
+                });
     }
 }
