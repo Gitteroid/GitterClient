@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.presenters;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 
 import com.bumptech.glide.Glide;
@@ -10,7 +9,6 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.services.DataManger;
-import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -63,7 +61,6 @@ public class MainPresenter extends BasePresenter<MainView> {
                     UserModel user = userModels.get(0);
                     if (Utils.getInstance().getUserPref().id.isEmpty()) {
                         Utils.getInstance().writeUserToPref(user);
-                        mView.getAppContext().startService(new Intent(mView.getAppContext(), NewMessagesService.class));
                     } else {
                         Utils.getInstance().writeUserToPref(user);
                     }

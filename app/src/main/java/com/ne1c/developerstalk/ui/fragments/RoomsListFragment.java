@@ -73,7 +73,6 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
 
         mPresenter.bindView(this);
         mPresenter.loadCachedRooms();
-        mPresenter.loadRooms();
 
         return v;
     }
@@ -86,6 +85,7 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
     public void onResume() {
         super.onResume();
 
+        mPresenter.loadRooms();
     }
 
     public void setEdit(boolean edit) {

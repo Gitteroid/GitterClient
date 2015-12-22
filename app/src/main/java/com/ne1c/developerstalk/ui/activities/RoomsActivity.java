@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.RoomsListFragment;
 import com.ne1c.developerstalk.utils.UIUtils;
@@ -43,6 +44,8 @@ public class RoomsActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
         }
+
+        startService(new Intent(this, NewMessagesService.class));
     }
 
     @Override
