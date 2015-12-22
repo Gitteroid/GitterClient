@@ -6,12 +6,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -39,6 +39,7 @@ import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
+import jp.wasabeef.recyclerview.animators.ScaleInBottomAnimator;
 
 public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRoomCallback, ChatView {
     private EditText mMessageEditText;
@@ -91,8 +92,9 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
         mMessagesList.setItemViewCacheSize(50);
 
         // Animation for add new item or change item
-        DefaultItemAnimator anim = new DefaultItemAnimator();
-        anim.setAddDuration(1000);
+        ScaleInBottomAnimator anim = new ScaleInBottomAnimator(new OvershootInterpolator(1f));
+        anim.setAddDuration(500);
+        anim.setChangeDuration(0);
         mMessagesList.setItemAnimator(anim);
 
         setDataToView(savedInstanceState);
@@ -201,7 +203,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
                     mMessagesArr.add(model);
                     mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
 
-                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 2) {
                         mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
                     }
 
