@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> implements ItemTouchHelperAdapter {
+public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
     private List<RoomModel> mRooms;
     private Context mContext;
     private boolean mIsEdit = false;
@@ -44,72 +44,135 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
     }
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_room, parent, false));
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == 0) {
+            return new ViewHolderConf(LayoutInflater.from(mContext).inflate(R.layout.item_room_conf, parent, false));
+        }
+
+        if (viewType == 1) {
+            return new ViewHolderOne(LayoutInflater.from(mContext).inflate(R.layout.item_room_one, parent, false));
+        }
+
+        return null;
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
+    public int getItemViewType(int position) {
+        if (!mRooms.get(position).oneToOne) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position) {
         final RoomModel room = mRooms.get(position);
 
-        if (mRooms.get(position).hide) {
-            holder.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
+        if (holder.getItemViewType() == 0) {
+            confHolderBehavior(holder, room);
         } else {
-            int[] attrs = new int[] { android.R.attr.selectableItemBackground };
+            oneHolderBehavior(holder, room);
+        }
+
+    }
+
+    private void confHolderBehavior(RecyclerView.ViewHolder holder, RoomModel room) {
+        ViewHolderConf holderConf = (ViewHolderConf) holder;
+        if (room.hide) {
+            holderConf.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
+        } else {
+            int[] attrs = new int[]{android.R.attr.selectableItemBackground};
             TypedArray ta = mContext.obtainStyledAttributes(attrs);
             Drawable selectable = ta.getDrawable(0);
             ta.recycle();
-            holder.parentLayout.setBackground(selectable);
+            holderConf.parentLayout.setBackground(selectable);
         }
 
-        holder.roomName.setText(room.name);
+        holderConf.roomName.setText(room.name);
         if (room.mentions > 0) {
-            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
-            holder.counterMess.setText("@");
+            holderConf.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
+            holderConf.counterMess.setText("@");
 
-            holder.counterMess.setVisibility(View.VISIBLE);
+            holderConf.counterMess.setVisibility(View.VISIBLE);
         } else if (room.unreadItems > 0) {
-            holder.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
-            holder.counterMess.setText(String.valueOf(room.unreadItems));
+            holderConf.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
 
-            holder.counterMess.setVisibility(View.VISIBLE);
+            String unreadItems = room.unreadItems > 99 ? "99+" : String.valueOf(room.unreadItems);
+            holderConf.counterMess.setText(unreadItems);
+
+            holderConf.counterMess.setVisibility(View.VISIBLE);
         } else {
-            holder.counterMess.setVisibility(View.GONE);
+            holderConf.counterMess.setVisibility(View.GONE);
         }
 
         if (mIsEdit) {
-            holder.editRoom.setVisibility(View.VISIBLE);
+            holderConf.editRoom.setVisibility(View.VISIBLE);
         } else {
-            holder.editRoom.setVisibility(View.GONE);
+            holderConf.editRoom.setVisibility(View.GONE);
         }
 
-        if (room.oneToOne) {
-            holder.roomImage.setImageResource(R.mipmap.ic_room_onetoone_item);
+        holderConf.totalPeopleRoom.setText(mContext.getString(R.string.total_people) + " " + room.userCount);
+
+        if (room.topic.isEmpty()) {
+            holderConf.descRoom.setVisibility(View.GONE);
         } else {
-            holder.roomImage.setImageResource(R.mipmap.ic_room_item);
+            holderConf.descRoom.setVisibility(View.VISIBLE);
+            holderConf.descRoom.setText(room.topic);
         }
 
-        holder.parentLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!isEdit()) {
-                    Intent intent = new Intent(mContext, MainActivity.class);
-                    intent.putExtra("roomId", room.id);
-                    mContext.startActivity(intent);
-                }
+        holderConf.editRoom.setOnTouchListener((v, event) -> {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                mDragStartListener.onStartDrag(holder);
             }
-        });
-
-        holder.editRoom.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
-                        mDragStartListener.onStartDrag(holder);
-                }
-                return false;
-            }
+            return false;
         });
     }
+
+    private void oneHolderBehavior(RecyclerView.ViewHolder holder, RoomModel room) {
+        ViewHolderOne holderOne = (ViewHolderOne) holder;
+        if (room.hide) {
+            holderOne.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
+        } else {
+            int[] attrs = new int[]{android.R.attr.selectableItemBackground};
+            TypedArray ta = mContext.obtainStyledAttributes(attrs);
+            Drawable selectable = ta.getDrawable(0);
+            ta.recycle();
+            holderOne.parentLayout.setBackground(selectable);
+        }
+
+        holderOne.roomName.setText(room.name);
+        if (room.mentions > 0) {
+            holderOne.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
+            holderOne.counterMess.setText("@");
+
+            holderOne.counterMess.setVisibility(View.VISIBLE);
+        } else if (room.unreadItems > 0) {
+            holderOne.counterMess.setBackgroundResource(R.drawable.rounded_counter_unread_mess);
+
+            String unreadItems = room.unreadItems > 99 ? "99+" : String.valueOf(room.unreadItems);
+            holderOne.counterMess.setText(unreadItems);
+
+            holderOne.counterMess.setVisibility(View.VISIBLE);
+        } else {
+            holderOne.counterMess.setVisibility(View.GONE);
+        }
+
+        if (mIsEdit) {
+            holderOne.editRoom.setVisibility(View.VISIBLE);
+        } else {
+            holderOne.editRoom.setVisibility(View.GONE);
+        }
+
+        holderOne.editRoom.setOnTouchListener((v, event) -> {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                mDragStartListener.onStartDrag(holder);
+            }
+            return false;
+        });
+
+    }
+
 
     @Override
     public int getItemCount() {
@@ -141,14 +204,44 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
         return mIsEdit;
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolderConf extends RecyclerView.ViewHolder {
+        public TextView roomName;
+        public TextView descRoom;
+        public TextView totalPeopleRoom;
+        public ImageView roomImage;
+        public ImageView editRoom;
+        public TextView counterMess;
+        public LinearLayout parentLayout;
+
+        public ViewHolderConf(View itemView) {
+            super(itemView);
+
+            roomName = (TextView) itemView.findViewById(R.id.room_name);
+            descRoom = (TextView) itemView.findViewById(R.id.desc_room);
+            totalPeopleRoom = (TextView) itemView.findViewById(R.id.total_people_room);
+            roomImage = (ImageView) itemView.findViewById(R.id.room_image);
+            editRoom = (ImageView) itemView.findViewById(R.id.edit_room);
+            counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
+            parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
+
+            itemView.setOnClickListener(v -> {
+                if (!isEdit()) {
+                    Intent intent = new Intent(mContext, MainActivity.class);
+                    intent.putExtra("roomId", mRooms.get(getAdapterPosition()).id);
+                    mContext.startActivity(intent);
+                }
+            });
+        }
+    }
+
+    public class ViewHolderOne extends RecyclerView.ViewHolder {
         public TextView roomName;
         public ImageView roomImage;
         public ImageView editRoom;
         public TextView counterMess;
         public LinearLayout parentLayout;
 
-        public ViewHolder(View itemView) {
+        public ViewHolderOne(View itemView) {
             super(itemView);
 
             roomName = (TextView) itemView.findViewById(R.id.room_name);
@@ -157,6 +250,13 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             counterMess = (TextView) itemView.findViewById(R.id.counter_mess);
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
 
+            itemView.setOnClickListener(v -> {
+                if (!isEdit()) {
+                    Intent intent = new Intent(mContext, MainActivity.class);
+                    intent.putExtra("roomId", mRooms.get(getAdapterPosition()).id);
+                    mContext.startActivity(intent);
+                }
+            });
         }
     }
 }

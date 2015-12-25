@@ -3,6 +3,7 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:gravity="center"
+              android:background="@color/md_grey_200"
               tools:context=".ui.fragments.RoomsListFragment">
 
     <ProgressBar
@@ -19,6 +20,8 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rooms_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp"/>
     </android.support.v4.widget.SwipeRefreshLayout>
 </LinearLayout>
