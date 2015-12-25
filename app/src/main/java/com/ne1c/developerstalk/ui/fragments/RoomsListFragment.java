@@ -112,7 +112,9 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
 
     @Override
     public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
-        mItemTouchHelper.startDrag(viewHolder);
+        if (mIsEdit) {
+            mItemTouchHelper.startDrag(viewHolder);
+        }
     }
 
     @Override

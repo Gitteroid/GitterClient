@@ -98,15 +98,15 @@ public class NewMessagesService extends Service {
 
                     sendNotificationMessage(room, message);
 
-//                    if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
-//                        final String username = Utils.getInstance().getUserPref().username;
-//
-//                        if (mWithUserName && message.text.contains(username)) {
-//                            sendNotificationMessage(room, message);
-//                        } else if (!mWithUserName) {
-//                            sendNotificationMessage(room, message);
-//                        }
-//                    }
+                    if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
+                        final String username = Utils.getInstance().getUserPref().username;
+
+                        if (mWithUserName && message.text.contains(username)) {
+                            sendNotificationMessage(room, message);
+                        } else if (!mWithUserName) {
+                            sendNotificationMessage(room, message);
+                        }
+                    }
                 }
             });
 

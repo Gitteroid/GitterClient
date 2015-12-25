@@ -173,7 +173,6 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     }
 
-
     @Override
     public int getItemCount() {
         return mRooms.size();
@@ -181,12 +180,16 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        mRooms.get(fromPosition).listPosition = toPosition;
-        mRooms.get(toPosition).listPosition = fromPosition;
-        Collections.swap(mRooms, fromPosition, toPosition);
-        notifyItemMoved(fromPosition, toPosition);
+        if (mIsEdit) {
+            mRooms.get(fromPosition).listPosition = toPosition;
+            mRooms.get(toPosition).listPosition = fromPosition;
+            Collections.swap(mRooms, fromPosition, toPosition);
+            notifyItemMoved(fromPosition, toPosition);
 
-        return true;
+            return true;
+        }
+
+        return false;
     }
 
     @Override
