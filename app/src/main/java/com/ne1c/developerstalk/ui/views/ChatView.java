@@ -5,7 +5,7 @@ import com.ne1c.developerstalk.models.MessageModel;
 import java.util.ArrayList;
 
 public interface ChatView extends BaseView {
-    void showMessages(ArrayList<MessageModel> messages, boolean showDialog, boolean showRefresh);
+    void showMessages(ArrayList<MessageModel> messages);
 
     void showError(String error);
 
@@ -18,4 +18,8 @@ public interface ChatView extends BaseView {
     void deliveredMessage(MessageModel message);
 
     void errorDeliveredMessage();
+
+    void showListProgress();
+
+    void hideListProgress();
 }

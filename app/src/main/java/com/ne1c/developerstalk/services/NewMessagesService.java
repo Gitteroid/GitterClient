@@ -22,7 +22,6 @@ import android.text.style.StyleSpan;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.api.GitterStreaming;
 import com.ne1c.developerstalk.database.ClientDatabase;
-import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
@@ -30,7 +29,6 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.List;
 
-import de.greenrobot.event.EventBus;
 import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
@@ -94,17 +92,21 @@ public class NewMessagesService extends Service {
         for (final RoomModel room : mRooms) {
             Subscription sub = mStreaming.getMessageStream(room.id).subscribe(message -> {
                 if (message.text != null) {
-                    EventBus.getDefault().post(new NewMessageEvent(message, room));
+                    sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
+                            .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
+                            .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));
 
-                    if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
-                        final String username = Utils.getInstance().getUserPref().username;
+                    sendNotificationMessage(room, message);
 
-                        if (mWithUserName && message.text.contains(username)) {
-                            sendNotificationMessage(room, message);
-                        } else if (!mWithUserName) {
-                            sendNotificationMessage(room, message);
-                        }
-                    }
+//                    if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
+//                        final String username = Utils.getInstance().getUserPref().username;
+//
+//                        if (mWithUserName && message.text.contains(username)) {
+//                            sendNotificationMessage(room, message);
+//                        } else if (!mWithUserName) {
+//                            sendNotificationMessage(room, message);
+//                        }
+//                    }
                 }
             });
 

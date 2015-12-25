@@ -47,16 +47,16 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 });
     }
 
-    public void loadMessages(String roomId, int limit, boolean showProgressBar, boolean refresh) {
+    public void loadMessages(String roomId, int limit) {
+        mView.showListProgress();
+
         mDataManger.getMessages(roomId, limit)
                 .subscribeOn(Schedulers.io())
                 .map(messageModels -> {
                     mDataManger.insertMessagesToDb(messageModels, roomId);
                     return messageModels;
                 }).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(messageModels -> {
-                    mView.showMessages(messageModels, showProgressBar, refresh);
-                }, throwable -> {
+                .subscribe(mView::showMessages, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
     }
@@ -65,9 +65,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mDataManger.getCachedMessages(roomId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(messageModels -> {
-                    mView.showMessages(messageModels, false, false);
-                }, throwable -> {
+                .subscribe(mView::showMessages, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
     }

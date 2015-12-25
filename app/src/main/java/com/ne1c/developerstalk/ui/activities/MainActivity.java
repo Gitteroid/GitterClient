@@ -9,7 +9,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
@@ -37,6 +36,7 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
+import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
@@ -53,6 +53,9 @@ import de.greenrobot.event.EventBus;
 
 public class MainActivity extends AppCompatActivity implements MainView {
     public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
+    public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
+    public final static String MESSAGE_INTENT_KEY = "message";
+    public final static String ROOM_ID_INTENT_KEY = "room";
 
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
@@ -97,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements MainView {
 
     private void init() {
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
+        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -293,23 +297,24 @@ public class MainActivity extends AppCompatActivity implements MainView {
         }
         UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
 
-        RoomModel extraRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-        if (mRoomsList != null && extraRoom != null) {
-            mActiveRoom = extraRoom;
-            getIntent().putExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY, (Parcelable) null);
-
-            for (int i = 0; i < mRoomsList.size(); i++) {
-                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                    selectedNavItem = i + 1;
-                }
-            }
-
-            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-            EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
-            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-
-            mDrawer.closeDrawer();
-        }
+//        RoomModel extraRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+//        if (mRoomsList != null && extraRoom != null) {
+//            mActiveRoom = extraRoom;
+//
+//            for (int i = 0; i < mRoomsList.size(); i++) {
+//                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+//                    selectedNavItem = i + 1;
+//                }
+//            }
+//
+//            if (selectedNavItem >= 0) {
+//                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+//                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+//                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+//            }
+//
+//            mDrawer.closeDrawer();
+//        }
     }
 
     @Override
@@ -404,12 +409,14 @@ public class MainActivity extends AppCompatActivity implements MainView {
 
         if (mRoomsList.size() > 0) {
             RoomModel room = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+
             String roomId = room != null ? room.id : null;
 
             if (roomId == null) {
                 roomId = getIntent().getStringExtra("roomId");
                 getIntent().removeExtra("roomId");
             } else {
+                // Not to repeat open room
                 getIntent().removeExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
             }
 
@@ -422,16 +429,17 @@ public class MainActivity extends AppCompatActivity implements MainView {
             } else if (selectedNavItem == -1) {
                 selectedNavItem = 1;
             }
-            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
         }
 
         mDrawer.getAdapter().notifyDataSetChanged();
+        mDrawer.setSelectionAtPosition(selectedNavItem + 1);
     }
 
     @Override
     protected void onDestroy() {
         try {
             unregisterReceiver(unauthorizedReceiver);
+            unregisterReceiver(newMessageReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -456,14 +464,7 @@ public class MainActivity extends AppCompatActivity implements MainView {
     }
 
     public void onEvent(NewMessageEvent message) {
-        for (int i = 0; i < mRoomsList.size(); i++) {
-            if (mRoomsList.get(i).id.equals(message.getRoom().id)) {
-                mRoomsList.get(i).unreadItems += 1;
-                final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
-                mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-                mDrawer.getAdapter().notifyDataSetChanged();
-            }
-        }
+
     }
 
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
@@ -471,6 +472,25 @@ public class MainActivity extends AppCompatActivity implements MainView {
         public void onReceive(Context context, Intent intent) {
             // Select "Sign Out"
             mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+        }
+    };
+
+    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            for (int i = 0; i < mRoomsList.size(); i++) {
+                String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
+                MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
+
+                if (mRoomsList.get(i).id.equals(roomId)) {
+                    mRoomsList.get(i).unreadItems += 1;
+                    final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
+                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+                    mDrawer.getAdapter().notifyDataSetChanged();
+
+                    EventBus.getDefault().post(new NewMessageEvent(message, mRoomsList.get(i)));
+                }
+            }
         }
     };
 

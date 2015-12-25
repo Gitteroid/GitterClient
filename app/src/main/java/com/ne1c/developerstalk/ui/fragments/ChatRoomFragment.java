@@ -275,16 +275,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
         }
     }
 
-    private void loadMessageRoomServer(final RoomModel roomModel, final boolean showProgressBar, final boolean refresh) {
+    private void loadMessageRoomServer(final RoomModel roomModel) {
         mMessagesAdapter.setRoom(roomModel);
 
-        isRefreshing = showProgressBar;
-        if (showProgressBar) {
-            mPtrFrameLayout.setVisibility(View.GONE);
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
-
-        mPresenter.loadMessages(roomModel.id, startNumberLoadMessages + countLoadMessages, showProgressBar, refresh);
+        mPresenter.loadMessages(roomModel.id, startNumberLoadMessages + countLoadMessages);
     }
 
     // Event from MainActivity or notification
@@ -299,7 +293,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
 
         mMessagesAdapter.setRoom(model);
         mPresenter.loadCachedMessages(model.id);
-        loadMessageRoomServer(mRoom, false, false);
+        loadMessageRoomServer(mRoom);
     }
 
     public void onEvent(UpdateMessageEvent message) {
@@ -337,22 +331,20 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
             }
-
-            markMessagesAsRead(mMessagesList);
         }
     }
 
     @Override
     public void onRefreshRoom() {
         if (Utils.getInstance().isNetworkConnected()) {
-            loadMessageRoomServer(mRoom, true, true);
+            loadMessageRoomServer(mRoom);
         } else if (getView() != null && mMessagesArr.size() > 0) {
             Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
-    public void showMessages(ArrayList<MessageModel> messages, boolean showProgress, boolean showRefresh) {
+    public void showMessages(ArrayList<MessageModel> messages) {
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 
@@ -368,23 +360,18 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
             }
         }
 
-        if (mProgressBar.getVisibility() == View.VISIBLE) {
-            mPtrFrameLayout.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(View.GONE);
-
-            isRefreshing = false;
-        }
+        hideListProgress();
     }
 
     @Override
     public void showError(String error) {
-        if (mProgressBar.getVisibility() == View.VISIBLE) {
-            mProgressBar.setVisibility(View.INVISIBLE);
-        } else if (mPtrFrameLayout.isRefreshing()) {
+        hideListProgress();
+
+        if (mPtrFrameLayout.isRefreshing()) {
             mPtrFrameLayout.refreshComplete();
         }
+
         isRefreshing = false;
-        mPtrFrameLayout.setVisibility(View.VISIBLE);
 
         if (error.contains("401")) {
             getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
@@ -477,6 +464,24 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
                 mMessagesAdapter.notifyItemChanged(i);
             }
         }
+    }
+
+    @Override
+    public void showListProgress() {
+        mPtrFrameLayout.setVisibility(View.GONE);
+        mProgressBar.setVisibility(View.VISIBLE);
+
+        isRefreshing = true;
+    }
+
+    @Override
+    public void hideListProgress() {
+        if (mPtrFrameLayout.getVisibility() != View.VISIBLE) {
+            mPtrFrameLayout.setVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.GONE);
+        }
+
+        isRefreshing = false;
     }
 
     @Override
