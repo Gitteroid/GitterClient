@@ -96,12 +96,11 @@ public class NewMessagesService extends Service {
                             .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
                             .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));
 
-                    sendNotificationMessage(room, message);
-
                     if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
                         final String username = Utils.getInstance().getUserPref().username;
 
-                        if (mWithUserName && message.text.contains(username)) {
+                        if (mWithUserName && message.text.contains(username) &&
+                                !message.fromUser.username.equals(username)) {
                             sendNotificationMessage(room, message);
                         } else if (!mWithUserName) {
                             sendNotificationMessage(room, message);
