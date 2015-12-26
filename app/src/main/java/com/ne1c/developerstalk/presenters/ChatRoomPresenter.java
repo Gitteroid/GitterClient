@@ -56,7 +56,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     mDataManger.insertMessagesToDb(messageModels, roomId);
                     return messageModels;
                 }).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(mView::showMessages, throwable -> {
+                .subscribe(messages -> {
+                    mView.showMessages(messages);
+                    mView.hideListProgress();
+                }, throwable -> {
+                    mView.hideListProgress();
                     mView.showError(throwable.getMessage());
                 });
     }
