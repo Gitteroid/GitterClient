@@ -305,7 +305,7 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
     }
 
     public void onEvent(NewMessageEvent message) {
-        mPresenter.insertMessageToDb(message.getMessage(), mRoom.id);
+        mPresenter.insertMessageToDb(message.getMessage(), message.getRoom().id);
 
         if (!message.getRoom().id.equals(mRoom.id)) {
             return;
