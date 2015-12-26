@@ -307,6 +307,10 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
     public void onEvent(NewMessageEvent message) {
         mPresenter.insertMessageToDb(message.getMessage(), mRoom.id);
 
+        if (!message.getRoom().id.equals(mRoom.id)) {
+            return;
+        }
+
         if (mMessagesAdapter != null) {
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
                 MessageModel item = mMessagesArr.get(i);
@@ -359,8 +363,6 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
                 mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
             }
         }
-
-        hideListProgress();
     }
 
     @Override
