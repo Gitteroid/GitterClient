@@ -112,7 +112,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             holderConf.editRoom.setVisibility(View.GONE);
         }
 
-        holderConf.totalPeopleRoom.setText(mContext.getString(R.string.total_people) + " " + room.userCount);
+        holderConf.totalPeopleRoom.setText(String.format("%s %d", mContext.getString(R.string.total_people), room.userCount));
 
         if (room.topic.isEmpty()) {
             holderConf.descRoom.setVisibility(View.GONE);
@@ -122,7 +122,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         holderConf.editRoom.setOnTouchListener((v, event) -> {
-            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEdit) {
                 mDragStartListener.onStartDrag(holder);
             }
             return false;
@@ -165,7 +165,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         holderOne.editRoom.setOnTouchListener((v, event) -> {
-            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEdit) {
                 mDragStartListener.onStartDrag(holder);
             }
             return false;
