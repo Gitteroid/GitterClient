@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk.di.modules;
 
+import android.content.Context;
 
 import com.ne1c.developerstalk.di.annotations.PerActivity;
 import com.ne1c.developerstalk.presenters.MainPresenter;
@@ -11,7 +12,7 @@ import dagger.Provides;
 public class MainPresenterModule {
     @PerActivity
     @Provides
-    public MainPresenter provideMainPresenter() {
-        return new MainPresenter();
+    public MainPresenter provideMainPresenter(Context context) {
+        return new MainPresenter(context);
     }
 }

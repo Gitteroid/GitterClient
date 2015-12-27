@@ -1,5 +1,7 @@
 package com.ne1c.developerstalk.di.modules;
 
+import android.content.Context;
+
 import com.ne1c.developerstalk.di.annotations.PerFragment;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
 
@@ -10,7 +12,7 @@ import dagger.Provides;
 public class RoomsListPresenterModule {
     @PerFragment
     @Provides
-    public RoomsListPresenter provideRoomsListPresenter() {
-        return new RoomsListPresenter();
+    public RoomsListPresenter provideRoomsListPresenter(Context context) {
+        return new RoomsListPresenter(context);
     }
 }

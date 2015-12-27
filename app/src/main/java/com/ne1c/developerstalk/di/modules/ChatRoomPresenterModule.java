@@ -10,7 +10,7 @@ import dagger.Provides;
 public class ChatRoomPresenterModule {
     @PerFragment
     @Provides
-    public ChatRoomPresenter provideCharRoomPresenter() {
+    public ChatRoomPresenter provideChatRoomPresenter() {
         return new ChatRoomPresenter();
     }
 }
