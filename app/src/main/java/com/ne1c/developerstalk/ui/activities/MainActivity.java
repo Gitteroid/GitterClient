@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,7 +32,11 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.di.components.DaggerMainComponent;
+import com.ne1c.developerstalk.di.components.MainComponent;
+import com.ne1c.developerstalk.di.modules.MainPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.models.MessageModel;
@@ -49,9 +52,11 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 
+import javax.inject.Inject;
+
 import de.greenrobot.event.EventBus;
 
-public class MainActivity extends AppCompatActivity implements MainView {
+public class MainActivity extends BaseActivity implements MainView {
     public final static String BROADCAST_UNAUTHORIZED = "com.ne1c.gitterclient.UnathorizedReceiver";
     public final static String BROADCAST_NEW_MESSAGE = "com.ne1c.gitterclient.NewMessageReceiver";
     public final static String MESSAGE_INTENT_KEY = "message";
@@ -75,7 +80,10 @@ public class MainActivity extends AppCompatActivity implements MainView {
     private int selectedNavItem = -1; // Default, item not selected
     private boolean loadAvatarFromNetworkFlag;
 
-    private MainPresenter mPresenter;
+    private MainComponent mComponent;
+
+    @Inject
+    MainPresenter mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,18 +98,24 @@ public class MainActivity extends AppCompatActivity implements MainView {
 
         setContentView(R.layout.activity_main);
 
-        mPresenter = new MainPresenter();
         mPresenter.bindView(this);
 
         EventBus.getDefault().register(this);
-        init();
+        initView();
         initSavedInstanceState(savedInstanceState);
     }
 
-    private void init() {
-        registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
-        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
+    @Override
+    protected void initDiComponent() {
+        mComponent = DaggerMainComponent.builder()
+                .applicationComponent(((Application) getApplication()).getComponent())
+                .mainPresenterModule(new MainPresenterModule())
+                .build();
 
+        mComponent.inject(this);
+    }
+
+    private void initView() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -172,6 +186,14 @@ public class MainActivity extends AppCompatActivity implements MainView {
                 setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
             }
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
+        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
     }
 
     @Override
@@ -296,25 +318,6 @@ public class MainActivity extends AppCompatActivity implements MainView {
             drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
         }
         UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
-
-//        RoomModel extraRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
-//        if (mRoomsList != null && extraRoom != null) {
-//            mActiveRoom = extraRoom;
-//
-//            for (int i = 0; i < mRoomsList.size(); i++) {
-//                if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-//                    selectedNavItem = i + 1;
-//                }
-//            }
-//
-//            if (selectedNavItem >= 0) {
-//                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-//                EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
-//                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
-//            }
-//
-//            mDrawer.closeDrawer();
-//        }
     }
 
     @Override
@@ -436,14 +439,19 @@ public class MainActivity extends AppCompatActivity implements MainView {
     }
 
     @Override
-    protected void onDestroy() {
+    protected void onStop() {
+        super.onStop();
+
         try {
             unregisterReceiver(unauthorizedReceiver);
             unregisterReceiver(newMessageReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
+    }
 
+    @Override
+    protected void onDestroy() {
         mPresenter.unbindView();
 
         EventBus.getDefault().unregister(this);

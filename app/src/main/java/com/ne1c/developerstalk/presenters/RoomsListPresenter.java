@@ -1,5 +1,8 @@
 package com.ne1c.developerstalk.presenters;
 
+import android.content.Context;
+
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.services.DataManger;
@@ -8,6 +11,8 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -25,10 +30,14 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
     private CompositeSubscription mSubscriptions;
 
+    @Inject
+    public RoomsListPresenter(Context context) {
+        mDataManger = ((Application) context).getDataManager();
+    }
+
     @Override
     public void bindView(RoomsListView view) {
         mView = view;
-        mDataManger = new DataManger(mView.getAppContext());
 
         mSubscriptions = new CompositeSubscription();
     }

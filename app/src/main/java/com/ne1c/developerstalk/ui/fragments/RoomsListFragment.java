@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
@@ -14,9 +13,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
+import com.ne1c.developerstalk.di.components.RoomsListComponent;
+import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
+import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
 import com.ne1c.developerstalk.ui.adapters.helper.SimpleItemTouchHelperCallback;
@@ -25,7 +29,9 @@ import com.ne1c.developerstalk.ui.views.RoomsListView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RoomsListFragment extends Fragment implements OnStartDragListener, RoomsListView {
+import javax.inject.Inject;
+
+public class RoomsListFragment extends BaseFragment implements OnStartDragListener, RoomsListView {
     private SwipeRefreshLayout mRefreshLayout;
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
@@ -36,14 +42,15 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
 
     private boolean mIsEdit = false;
 
-    private RoomsListPresenter mPresenter;
+    private RoomsListComponent mComponent;
+
+    @Inject
+    RoomsListPresenter mPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-
-        mPresenter = new RoomsListPresenter();
     }
 
     @Override
@@ -165,5 +172,15 @@ public class RoomsListFragment extends Fragment implements OnStartDragListener, 
         super.onDestroyView();
 
         mPresenter.unbindView();
+    }
+
+    @Override
+    protected void initDiComponent() {
+        mComponent = DaggerRoomsListComponent.builder()
+                .applicationComponent(getAppComponent())
+                .roomsListPresenterModule(new RoomsListPresenterModule())
+                .build();
+
+        mComponent.inject(this);
     }
 }

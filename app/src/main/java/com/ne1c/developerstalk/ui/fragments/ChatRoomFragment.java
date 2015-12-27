@@ -18,7 +18,11 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.di.components.ChatRoomComponent;
+import com.ne1c.developerstalk.di.components.DaggerChatRoomComponent;
+import com.ne1c.developerstalk.di.modules.ChatRoomPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
@@ -34,6 +38,8 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 
+import javax.inject.Inject;
+
 import de.greenrobot.event.EventBus;
 import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
@@ -41,7 +47,7 @@ import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
 import jp.wasabeef.recyclerview.animators.ScaleInBottomAnimator;
 
-public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRoomCallback, ChatView {
+public class ChatRoomFragment extends BaseFragment implements MainActivity.RefreshRoomCallback, ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -54,20 +60,20 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
 
-    private ChatRoomPresenter mPresenter;
+    private ChatRoomComponent mComponent;
+
+    @Inject
+    ChatRoomPresenter mPresenter;
 
     private int startNumberLoadMessages = 10;
     private int countLoadMessages = 0;
     private boolean isRefreshing = false;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         EventBus.getDefault().register(this);
-
-        mPresenter = new ChatRoomPresenter();
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         startNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
@@ -495,6 +501,16 @@ public class ChatRoomFragment extends Fragment implements MainActivity.RefreshRo
     public void onDestroyView() {
         mPresenter.unbindView();
         super.onDestroyView();
+    }
+
+    @Override
+    protected void initDiComponent() {
+        mComponent = DaggerChatRoomComponent.builder()
+                .applicationComponent(getAppComponent())
+                .chatRoomPresenterModule(new ChatRoomPresenterModule())
+                .build();
+
+        mComponent.inject(this);
     }
 
     // Callback for adapter

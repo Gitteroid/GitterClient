@@ -1,10 +1,12 @@
 package com.ne1c.developerstalk.presenters;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
@@ -13,6 +15,8 @@ import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
+
+import javax.inject.Inject;
 
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -25,11 +29,15 @@ public class MainPresenter extends BasePresenter<MainView> {
 
     private DataManger mDataManger;
 
+    @Inject
+    public MainPresenter(Context context) {
+        mDataManger = ((Application) context).getDataManager();
+    }
+
     @Override
     public void bindView(MainView view) {
         mView = view;
 
-        mDataManger = new DataManger(mView.getAppContext());
         mSubscriptions = new CompositeSubscription();
     }
 
