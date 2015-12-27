@@ -20,8 +20,6 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rooms_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingTop="4dp"
-            android:paddingBottom="8dp"/>
+            android:layout_height="match_parent"/>
     </android.support.v4.widget.SwipeRefreshLayout>
 </LinearLayout>
