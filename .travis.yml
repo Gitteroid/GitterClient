@@ -1,0 +1,20 @@
+language: android
+
+android:
+  components:
+    - build-tools-23.0.1
+    - android-23
+    - extra-android-m2repository
+  licenses:
+    - 'android-sdk-license-.+'
+    - 'google-gdk-license-.+'
+
+jdk:
+  - oraclejdk7
+  - oraclejdk8
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/
