@@ -1,4 +1,7 @@
 # Developers Talk
+
+[![Build Status](https://travis-ci.org/Ne1c/GitterClient.svg?branch=master)](https://travis-ci.org/Ne1c/GitterClient)
+
 <a href="https://play.google.com/store/apps/details?id=com.ne1c.developerstalk">
   <img alt="Get it on Google Play"
        src="https://developer.android.com/images/brand/en_generic_rgb_wo_45.png"/>
