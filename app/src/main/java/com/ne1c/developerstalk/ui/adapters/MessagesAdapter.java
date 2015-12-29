@@ -58,11 +58,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private EditText mMessageEditText;
     private DataManger mDataManager;
 
-    public MessagesAdapter(Activity activity, ArrayList<MessageModel> messages, EditText editText) {
+    public MessagesAdapter(DataManger dataManger, Activity activity, ArrayList<MessageModel> messages, EditText editText) {
         mActivity = activity;
         mMessages = messages;
         mMessageEditText = editText;
-        mDataManager = new DataManger(mActivity);
+        mDataManager = dataManger;
     }
 
     @Override

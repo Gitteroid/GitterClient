@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.database.ClientDatabase;
 import com.ne1c.developerstalk.di.annotations.PerApplication;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.utils.Utils;
@@ -12,7 +13,7 @@ import dagger.Module;
 import dagger.Provides;
 import retrofit.RestAdapter;
 
-@Module(includes = DatabaseModule.class)
+@Module(includes = {DatabaseModule.class, RxSchedulersModule.class})
 public class ApplicationModule {
     private Application mApp;
 
@@ -22,8 +23,8 @@ public class ApplicationModule {
 
     @PerApplication
     @Provides
-    public DataManger provideDataManager() {
-        return new DataManger(mApp);
+    public DataManger provideDataManager(ClientDatabase database) {
+        return new DataManger(database);
     }
 
     @PerApplication

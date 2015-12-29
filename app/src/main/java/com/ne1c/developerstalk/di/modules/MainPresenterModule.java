@@ -1,9 +1,9 @@
 package com.ne1c.developerstalk.di.modules;
 
-import android.content.Context;
-
 import com.ne1c.developerstalk.di.annotations.PerActivity;
 import com.ne1c.developerstalk.presenters.MainPresenter;
+import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 
 import dagger.Module;
 import dagger.Provides;
@@ -12,7 +12,7 @@ import dagger.Provides;
 public class MainPresenterModule {
     @PerActivity
     @Provides
-    public MainPresenter provideMainPresenter(Context context) {
-        return new MainPresenter(context);
+    public MainPresenter provideMainPresenter(RxSchedulersFactory factory, DataManger dataManger) {
+        return new MainPresenter(factory, dataManger);
     }
 }

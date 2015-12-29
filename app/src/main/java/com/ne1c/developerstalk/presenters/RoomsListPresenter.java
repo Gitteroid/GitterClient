@@ -1,12 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
-import android.content.Context;
-
-import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
+import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
@@ -27,12 +25,14 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     private RoomsListView mView;
 
     private DataManger mDataManger;
+    private RxSchedulersFactory mSchedulersFactory;
 
     private CompositeSubscription mSubscriptions;
 
     @Inject
-    public RoomsListPresenter(Context context) {
-        mDataManger = ((Application) context).getDataManager();
+    public RoomsListPresenter(RxSchedulersFactory factory, DataManger dataManger) {
+        mSchedulersFactory = factory;
+        mDataManger = dataManger;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         }
 
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms().subscribeOn(Schedulers.io())
+        Subscription sub = mDataManger.getRooms().subscribeOn(mSchedulersFactory.io())
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
 
@@ -72,7 +72,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
@@ -96,7 +96,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadCachedRooms() {
-        mDataManger.getDbRooms().subscribeOn(Schedulers.io())
+        mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
@@ -107,7 +107,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
                     mView.showError(throwable.getMessage());
                 });

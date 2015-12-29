@@ -6,9 +6,12 @@ import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
+import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
+
+import javax.inject.Inject;
 
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -16,12 +19,17 @@ import rx.schedulers.Schedulers;
 public class ChatRoomPresenter extends BasePresenter<ChatView> {
     private ChatView mView;
     private DataManger mDataManger;
+    private RxSchedulersFactory mSchedulersFactory;
+
+    @Inject
+    public ChatRoomPresenter(RxSchedulersFactory factory, DataManger dataManger) {
+        mSchedulersFactory = factory;
+        mDataManger = dataManger;
+    }
 
     @Override
     public void bindView(ChatView view) {
         mView = view;
-
-        mDataManger = new DataManger(mView.getAppContext());
     }
 
     @Override
@@ -31,8 +39,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     public void sendMessage(String roomId, String text) {
         mDataManger.sendMessage(roomId, text)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::deliveredMessage,
                         throwable -> mView.errorDeliveredMessage());
     }
@@ -40,8 +48,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     public void loadMessagesBeforeId(String roomId, int limit, String beforeId) {
         mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::successLoadBeforeId, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
@@ -51,11 +59,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mView.showListProgress();
 
         mDataManger.getMessages(roomId, limit)
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(mSchedulersFactory.io())
                 .map(messageModels -> {
                     mDataManger.insertMessagesToDb(messageModels, roomId);
                     return messageModels;
-                }).observeOn(AndroidSchedulers.mainThread())
+                }).observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
                     mView.showMessages(messages);
                     mView.hideListProgress();
@@ -67,8 +75,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     public void loadCachedMessages(String roomId) {
         mDataManger.getCachedMessages(roomId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showMessages, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
@@ -76,12 +84,12 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     public void updateMessages(String roomId, String messageId, String text) {
         mDataManger.updateMessage(roomId, messageId, text)
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(mSchedulersFactory.io())
                 .map(messageModel -> {
                     mDataManger.insertMessageToDb(messageModel, roomId);
                     return messageModel;
                 })
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::successUpdate, throwable -> {
                     mView.showError(mView.getAppContext().getString(R.string.updated_error));
                 });
@@ -93,8 +101,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     public void markMessageAsRead(int first, int last, String roomId, String[] ids) {
         mDataManger.readMessages(roomId, ids)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
                     mView.successRead(first, last, roomId, ids.length - 1);
                 }, throwable -> {

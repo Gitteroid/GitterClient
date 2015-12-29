@@ -2,7 +2,6 @@ package com.ne1c.developerstalk;
 
 import com.ne1c.developerstalk.di.HasComponent;
 import com.ne1c.developerstalk.di.components.ApplicationComponent;
-//import com.ne1c.developerstalk.di.components.DaggerApplicationComponent;
 import com.ne1c.developerstalk.di.components.DaggerApplicationComponent;
 import com.ne1c.developerstalk.di.modules.ApplicationModule;
 import com.ne1c.developerstalk.di.modules.DatabaseModule;

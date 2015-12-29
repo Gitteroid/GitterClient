@@ -1,7 +1,5 @@
 package com.ne1c.developerstalk.services;
 
-import android.content.Context;
-
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.database.ClientDatabase;
 import com.ne1c.developerstalk.models.MessageModel;
@@ -13,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import retrofit.RestAdapter;
 import retrofit.client.Response;
 import rx.Observable;
@@ -20,16 +20,15 @@ import rx.Observable;
 public class DataManger {
     private GitterApi mApi;
     private ClientDatabase mClientDatabase;
-    private Context mContext;
 
-    public DataManger(Context context) {
-        mContext = context;
-
+    @Inject
+    public DataManger(ClientDatabase database) {
         mApi = new RestAdapter.Builder()
                 .setEndpoint(Utils.GITTER_API_URL)
                 .build()
                 .create(GitterApi.class);
-        mClientDatabase = new ClientDatabase(context);
+
+        mClientDatabase = database;
     }
 
     public Observable<ArrayList<RoomModel>> getRooms() {

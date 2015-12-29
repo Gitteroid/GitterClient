@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -177,7 +176,11 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     }
 
     private void setDataToView(Bundle savedInstanceState) {
-        mMessagesAdapter = new MessagesAdapter(getActivity(), mMessagesArr, mMessageEditText);
+        mMessagesAdapter = new MessagesAdapter(((Application) getActivity().getApplication()).getDataManager(),
+                getActivity(),
+                mMessagesArr,
+                mMessageEditText);
+
         mMessagesList.setAdapter(mMessagesAdapter);
         mMessagesList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -493,11 +496,6 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     }
 
     @Override
-    public Context getAppContext() {
-        return getActivity();
-    }
-
-    @Override
     public void onDestroyView() {
         mPresenter.unbindView();
         super.onDestroyView();
@@ -511,6 +509,11 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
                 .build();
 
         mComponent.inject(this);
+    }
+
+    @Override
+    public Context getAppContext() {
+        return getActivity();
     }
 
     // Callback for adapter
