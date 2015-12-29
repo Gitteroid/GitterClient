@@ -25,6 +25,10 @@ android {
     }
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
+
 retrolambda {
     javaVersion JavaVersion.VERSION_1_7
 }
