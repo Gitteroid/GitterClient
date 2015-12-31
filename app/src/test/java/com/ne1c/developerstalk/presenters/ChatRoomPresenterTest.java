@@ -16,18 +16,13 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import retrofit.client.Response;
 import retrofit.mime.TypedInput;
 import rx.Observable;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,14 +34,11 @@ public class ChatRoomPresenterTest {
     private static final String ROOM_ID = "jf9w4j3fmn389f394n";
     private static final String MESSAGE_TEXT = "message";
     private static final String ERROR = "text_with_error";
-
-    private ChatRoomPresenter presenter;
-
     @Mock
     ChatView view;
-
     @Mock
     DataManger dataManger;
+    private ChatRoomPresenter presenter;
 
     @Before
     public void setup() {
@@ -189,7 +181,14 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void failMarkMessageAsRead() {
+        String[] ids = new String[5];
 
+        when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.error(new Throwable(ERROR)));
+
+        presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
+
+        verify(view, never()).successRead(100500, 100500, ROOM_ID, 4);
+        verify(view, times(1)).showError(ERROR);
     }
 
     @After
