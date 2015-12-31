@@ -24,6 +24,7 @@ env:
     - ANDROID_BUILD_TOOLS_VERSION=23.0.1
     - ANDROID_ABI=armeabi-v7a
     - ADB_INSTALL_TIMEOUT=8 # minutes (2 minutes by default)
+    - MALLOC_ARENA_MAX=2
 
 before_script:
   - echo no | android create avd --force -n test -t android-21 --abi armeabi-v7a
