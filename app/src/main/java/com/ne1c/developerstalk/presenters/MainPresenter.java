@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import javax.inject.Inject;
 
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
 public class MainPresenter extends BasePresenter<MainView> {
@@ -109,6 +107,7 @@ public class MainPresenter extends BasePresenter<MainView> {
     public void loadRooms() {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(mView.getAppContext().getString(R.string.no_network));
+            return;
         }
 
         @SuppressWarnings("unchecked")
