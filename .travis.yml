@@ -26,6 +26,11 @@ env:
     - ADB_INSTALL_TIMEOUT=8 # minutes (2 minutes by default)
     - MALLOC_ARENA_MAX=2
 
+before_install:
+  - pip install --user codecov
+after_success:
+  - codecov
+
 before_script:
   - echo no | android create avd --force -n test -t android-21 --abi armeabi-v7a
   - emulator -avd test -no-skin -no-audio -no-window &
