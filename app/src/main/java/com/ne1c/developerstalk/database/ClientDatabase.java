@@ -147,23 +147,27 @@ public class ClientDatabase {
         Cursor cursor = mDatabase.query(USERS_TABLE, null, COLUMN_USER_ID + " = ?",
                 ids, null, null, null, null);
 
-        if (cursor.moveToFirst()) {
-            int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
-            int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
-            int columnDisplayname = cursor.getColumnIndex(COLUMN_DISPLAY_NAME);
-            int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
-            int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
+        try {
+            if (cursor.moveToFirst()) {
+                int columnUserId = cursor.getColumnIndex(COLUMN_USER_ID);
+                int columnUsername = cursor.getColumnIndex(COLUMN_USERNAME);
+                int columnDisplayname = cursor.getColumnIndex(COLUMN_DISPLAY_NAME);
+                int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
+                int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
 
-            do {
-                UserModel model = new UserModel();
-                model.id = cursor.getString(columnUserId);
-                model.username = cursor.getString(columnUsername);
-                model.displayName = cursor.getString(columnDisplayname);
-                model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
-                model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
+                do {
+                    UserModel model = new UserModel();
+                    model.id = cursor.getString(columnUserId);
+                    model.username = cursor.getString(columnUsername);
+                    model.displayName = cursor.getString(columnDisplayname);
+                    model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
+                    model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
 
-                list.add(model);
-            } while (cursor.moveToNext());
+                    list.add(model);
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
         }
 
         return list;
