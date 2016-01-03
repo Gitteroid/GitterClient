@@ -19,8 +19,6 @@ public class Utils {
     public static final String GITTER_URL = "https://gitter.im";
     public static final String GITHUB_URL = "http://github.com";
     public static final String GITTER_API_URL = "https://api.gitter.im";
-    public final String USERINFO_PREF = "userinfo";
-
     public static final String ID_PREF_KEY = "id";
     public static final String USERNAME_PREF_KEY = "username";
     public static final String DISPLAY_NAME_PREF_KEY = "displayName";
@@ -30,9 +28,9 @@ public class Utils {
     public static final String ACCESS_TOKEN_PREF_KEY = "access_token";
     public static final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
     public static final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
-
-    private Context mContext;
     private static Utils mInstance;
+    public final String USERINFO_PREF = "userinfo";
+    private Context mContext;
 
     private Utils(Context context) {
         mContext = context;
@@ -73,7 +71,7 @@ public class Utils {
             return model;
         }
 
-        return null;
+        return model;
     }
 
     public boolean isNetworkConnected() {

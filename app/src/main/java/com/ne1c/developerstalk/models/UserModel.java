@@ -4,12 +4,33 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class UserModel implements Parcelable {
-    public String id;
-    public String username;
-    public String displayName;
-    public String url;
-    public String avatarUrlSmall;
-    public String avatarUrlMedium;
+    public static final Parcelable.Creator<UserModel> CREATOR = new Parcelable.Creator<UserModel>() {
+        public UserModel createFromParcel(Parcel source) {
+            return new UserModel(source);
+        }
+
+        public UserModel[] newArray(int size) {
+            return new UserModel[size];
+        }
+    };
+    public String id = "";
+    public String username = "";
+    public String displayName = "";
+    public String url = "";
+    public String avatarUrlSmall = "";
+    public String avatarUrlMedium = "";
+
+    public UserModel() {
+    }
+
+    protected UserModel(Parcel in) {
+        this.id = in.readString();
+        this.username = in.readString();
+        this.displayName = in.readString();
+        this.url = in.readString();
+        this.avatarUrlSmall = in.readString();
+        this.avatarUrlMedium = in.readString();
+    }
 
     @Override
     public int describeContents() {
@@ -25,26 +46,4 @@ public class UserModel implements Parcelable {
         dest.writeString(this.avatarUrlSmall);
         dest.writeString(this.avatarUrlMedium);
     }
-
-    public UserModel() {
-    }
-
-    protected UserModel(Parcel in) {
-        this.id = in.readString();
-        this.username = in.readString();
-        this.displayName = in.readString();
-        this.url = in.readString();
-        this.avatarUrlSmall = in.readString();
-        this.avatarUrlMedium = in.readString();
-    }
-
-    public static final Parcelable.Creator<UserModel> CREATOR = new Parcelable.Creator<UserModel>() {
-        public UserModel createFromParcel(Parcel source) {
-            return new UserModel(source);
-        }
-
-        public UserModel[] newArray(int size) {
-            return new UserModel[size];
-        }
-    };
 }
