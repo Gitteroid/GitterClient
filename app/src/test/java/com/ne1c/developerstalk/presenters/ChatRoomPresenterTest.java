@@ -16,11 +16,13 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import retrofit.client.Response;
 import retrofit.mime.TypedInput;
 import rx.Observable;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -52,40 +54,40 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successLoadCachedMessages() {
-        ArrayList<MessageModel> messages = mock(new ArrayList<MessageModel>().getClass());
-
-        when(dataManger.getCachedMessages(anyString())).thenReturn(Observable.just(messages));
+        when(dataManger.getCachedMessages(anyString()))
+                .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadCachedMessages(ROOM_ID);
 
-        verify(view, times(1)).showMessages(messages);
-        verify(view, never()).showError(ERROR);
+        verify(view, times(1)).showMessages(any(ArrayList.class));
+        verify(view, never()).showError(anyString());
     }
 
     @Test
     public void failLoadCachedMessages() {
-        when(dataManger.getCachedMessages(anyString())).thenReturn(Observable.error(new Throwable(ERROR)));
+        when(dataManger.getCachedMessages(anyString()))
+                .thenReturn(Observable.error(new Throwable(ERROR)));
 
-        presenter.loadCachedMessages(ROOM_ID);
+        presenter.loadCachedMessages(anyString());
 
-        verify(view, times(1)).showError(ERROR);
+        verify(view, times(1)).showError(anyString());
     }
 
     @Test
     public void successSendMessage() {
-        MessageModel emptyMessage = mock(MessageModel.class);
-
-        when(dataManger.sendMessage(anyString(), anyString())).thenReturn(Observable.just(emptyMessage));
+        when(dataManger.sendMessage(anyString(), anyString()))
+                .thenReturn(Observable.just(mock(MessageModel.class)));
 
         presenter.sendMessage(ROOM_ID, MESSAGE_TEXT);
 
-        verify(view, times(1)).deliveredMessage(emptyMessage);
-        verify(view, never()).showError(ERROR);
+        verify(view, times(1)).deliveredMessage(any(MessageModel.class));
+        verify(view, never()).showError(anyString());
     }
 
     @Test
     public void failSendMessage() {
-        when(dataManger.sendMessage(anyString(), anyString())).thenReturn(Observable.error(new Throwable(ERROR)));
+        when(dataManger.sendMessage(anyString(), anyString()))
+                .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.sendMessage(ROOM_ID, MESSAGE_TEXT);
 
@@ -94,70 +96,68 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successLoadMessagesBeforeId() {
-        ArrayList<MessageModel> messages = mock(new ArrayList<MessageModel>().getClass());
-
-        when(dataManger.getMessagesBeforeId(anyString(), anyInt(), anyString())).thenReturn(Observable.just(messages));
+        when(dataManger.getMessagesBeforeId(anyString(), anyInt(), anyString()))
+                .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, times(1)).successLoadBeforeId(messages);
-        verify(view, never()).showError(ERROR);
+        verify(view, times(1)).successLoadBeforeId(any(ArrayList.class));
+        verify(view, never()).showError(anyString());
     }
 
     @Test
     public void failLoadMessagesBeforeId() {
-        ArrayList<MessageModel> messages = mock(new ArrayList<MessageModel>().getClass());
-
-        when(dataManger.getMessagesBeforeId(anyString(), anyInt(), anyString())).thenReturn(Observable.error(new Throwable(ERROR)));
+        when(dataManger.getMessagesBeforeId(anyString(), anyInt(), anyString()))
+                .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, never()).successLoadBeforeId(messages);
-        verify(view, times(1)).showError(ERROR);
+        verify(view, never()).successLoadBeforeId(any(ArrayList.class));
+        verify(view, times(1)).showError(anyString());
     }
 
     @Test
     public void successLoadMessages() {
-        ArrayList<MessageModel> messages = mock(new ArrayList<MessageModel>().getClass());
-
-        when(dataManger.getMessages(anyString(), anyInt())).thenReturn(Observable.just(messages));
+        when(dataManger.getMessages(anyString(), anyInt()))
+                .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadMessages(ROOM_ID, 100500);
 
-        verify(view, times(1)).showMessages(messages);
-        verify(view, never()).showError(ERROR);
+        verify(view, times(1)).showMessages(any(ArrayList.class));
+        verify(view, never()).showError(anyString());
     }
 
     @Test
     public void failLoadMessages() {
-        ArrayList<MessageModel> messages = mock(new ArrayList<MessageModel>().getClass());
-
-        when(dataManger.getMessages(anyString(), anyInt())).thenReturn(Observable.error(new Throwable(ERROR)));
+        when(dataManger.getMessages(anyString(), anyInt()))
+                .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.loadMessages(ROOM_ID, 100500);
 
-        verify(view, never()).showMessages(messages);
-        verify(view, times(1)).showError(ERROR);
+        verify(view, never()).showMessages(any(ArrayList.class));
+        verify(view, times(1)).showError(anyString());
     }
 
     @Test
     public void successUploadMessages() {
         MessageModel message = mock(MessageModel.class);
 
-        when(dataManger.updateMessage(anyString(), anyString(), anyString())).thenReturn(Observable.just(message));
+        when(dataManger.updateMessage(anyString(), anyString(), anyString()))
+                .thenReturn(Observable.just(message));
 
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, times(1)).insertMessageToDb(message, ROOM_ID);
         verify(view, times(1)).successUpdate(message);
-        verify(view, never()).showError(ERROR);
+        verify(view, never()).showError(anyString());
     }
 
     @Test
     public void failUploadMessages() {
         MessageModel message = mock(MessageModel.class);
 
-        when(dataManger.updateMessage(anyString(), anyString(), anyString())).thenReturn(Observable.error(new Throwable(ERROR)));
+        when(dataManger.updateMessage(anyString(), anyString(), anyString()))
+                .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
@@ -168,15 +168,15 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successMarkMessageAsRead() {
-        Response resp = new Response("", 200, "", new ArrayList<>(), mock(TypedInput.class));
+        Response resp = new Response("", 200, "", Collections.emptyList(), mock(TypedInput.class));
         String[] ids = new String[5];
 
         when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.just(resp));
 
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
-        verify(view, times(1)).successRead(100500, 100500, ROOM_ID, 4);
-        verify(view, never()).showError(ERROR);
+        verify(view, times(1)).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, never()).showError(anyString());
     }
 
     @Test
@@ -187,8 +187,8 @@ public class ChatRoomPresenterTest {
 
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
-        verify(view, never()).successRead(100500, 100500, ROOM_ID, 4);
-        verify(view, times(1)).showError(ERROR);
+        verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, times(1)).showError(anyString());
     }
 
     @After
