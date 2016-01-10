@@ -34,6 +34,7 @@ import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.ui.SinglelineSpan;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.ui.fragments.EditMessageFragment;
 import com.ne1c.developerstalk.ui.fragments.LinksDialogFragment;
@@ -151,19 +152,28 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         if (markdown.existMarkdown()) {
             for (int i = 0; i < markdown.getParsedString().size(); i++) {
                 switch (markdown.getParsedString().get(i)) {
-                    case "{0}":
-                        FrameLayout singleline = views.getSinglelineCodeView();
-                        ((TextView) singleline.findViewById(R.id.singleline_textView)).setText(markdown.getSinglelineCode().get(++counterSingleline));
-                        holder.messageLayout.addView(singleline);
+                    case "{0}": // Singleline
+//                        FrameLayout singleline = views.getSinglelineCodeSpan();
+//                        ((TextView) singleline.findViewById(R.id.singleline_textView)).setText(markdown.getSinglelineCode().get(++counterSingleline));
+//                        holder.messageLayout.addView(singleline);
+
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getSinglelineCodeSpan("  " + markdown.getSinglelineCode().get(++counterSingleline) + "  "));
+                        } else {
+                            TextView textView = views.getTextView();
+                            textView.setText(views.getSinglelineCodeSpan("  " + markdown.getSinglelineCode().get(++counterSingleline) + "  "));
+                            holder.messageLayout.addView(textView);
+                        }
 
                         break;
-                    case "{1}":
+                    case "{1}": // Multiline
                         FrameLayout multiline = views.getMultilineCodeView();
                         ((TextView) multiline.findViewById(R.id.multiline_textView)).setText(markdown.getMultilineCode().get(++counterMultiline));
                         holder.messageLayout.addView(multiline);
 
                         break;
-                    case "{2}":
+                    case "{2}": // Bold
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
                                     .append(views.getBoldSpannableText(markdown.getBold().get(++counterBold)));
@@ -174,7 +184,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         break;
-                    case "{3}":
+                    case "{3}": // Italics
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
                                     .append(views.getItalicSpannableText(markdown.getItalics().get(++counterItalics)));
@@ -185,7 +195,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         break;
-                    case "{4}":
+                    case "{4}": // Strikethrough
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
                                     .append(views.getStrikethroughSpannableText(markdown.getStrikethrough().get(++counterStrikethrough)));
@@ -196,12 +206,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         break;
-                    case "{5}":
+                    case "{5}": // Quote
                         LinearLayout quote = views.getQuoteText(markdown.getQuote().get(++counterQuote));
                         holder.messageLayout.addView(quote);
 
                         break;
-                    case "{6}":
+                    case "{6}": // Links
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             String link = markdown.getLinks().get(++counterLinks);
                             link = link.substring(1, link.indexOf("]"));
@@ -217,7 +227,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             holder.messageLayout.addView(textView);
                         }
                         break;
-                    case "{7}":
+                    case "{7}": // Image
                         Object link = markdown.getImageLinks().get(++counterImageLinks);
                         String previewUrl;
                         final String fullUrl;
@@ -245,13 +255,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         image.setLayoutParams(params);
 
                         break;
-                    case "{8}":
+                    case "{8}": // Issue
                         TextView issue = views.getTextView();
                         issue.setText(views.getIssueSpannableText(markdown.getIssues().get(++counterIssue)));
                         holder.messageLayout.addView(issue);
 
                         break;
-                    default:
+                    default: // Text
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
                                     .append(markdown.getParsedString().get(i));
@@ -307,7 +317,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             long hour = calendar.get(Calendar.HOUR_OF_DAY) + hourOffset;
             int minutes = calendar.get(Calendar.MINUTE);
             int year = calendar.get(Calendar.YEAR);
-            int month = calendar.get(Calendar.MONTH);
+            int month = calendar.get(Calendar.MONTH) + 1; // If January Calendar gives 00, but need 01
             int day = calendar.get(Calendar.DAY_OF_MONTH);
 
             // Example: 26:31 hours, output 02:31
@@ -540,8 +550,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private class MarkdownViews {
-        public FrameLayout getSinglelineCodeView() {
-            return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
+        public Spannable getSinglelineCodeSpan(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new SinglelineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
+            //return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
         }
 
         public FrameLayout getMultilineCodeView() {
