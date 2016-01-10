@@ -13,14 +13,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
 import com.ne1c.developerstalk.di.components.RoomsListComponent;
 import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
-import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
 import com.ne1c.developerstalk.ui.adapters.helper.SimpleItemTouchHelperCallback;
@@ -32,20 +30,16 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class RoomsListFragment extends BaseFragment implements OnStartDragListener, RoomsListView {
+    @Inject
+    RoomsListPresenter mPresenter;
     private SwipeRefreshLayout mRefreshLayout;
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
     private ItemTouchHelper mItemTouchHelper;
     private ProgressDialog mProgressDialog;
-
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
-
     private boolean mIsEdit = false;
-
     private RoomsListComponent mComponent;
-
-    @Inject
-    RoomsListPresenter mPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -84,15 +78,15 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         return v;
     }
 
-    public boolean isEdit() {
-        return mIsEdit;
+    @Override
+    public void onDestroy() {
+        mComponent = null;
+
+        super.onDestroy();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        mPresenter.loadRooms();
+    public boolean isEdit() {
+        return mIsEdit;
     }
 
     public void setEdit(boolean edit) {
@@ -115,6 +109,13 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mRooms.clear();
             mRooms.addAll(visible);
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        mPresenter.loadRooms();
     }
 
     @Override

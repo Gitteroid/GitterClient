@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
-import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.services.DataManger;
@@ -76,7 +75,6 @@ public class MainPresenter extends BasePresenter<MainView> {
                 })
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(userModel -> {
-
                     mView.showProfile(userModel);
 
                     // Update avatar
@@ -88,7 +86,11 @@ public class MainPresenter extends BasePresenter<MainView> {
                                 }
                             });
                 }, throwable -> {
-                    mView.showError(throwable.getMessage());
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
+
                     mView.showProfile(Utils.getInstance().getUserPref());
 
                 });
@@ -100,16 +102,14 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .subscribe(response -> {
                     mView.leavedFromRoom();
                 }, (throwable -> {
-                    mView.showError(throwable.getMessage());
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
                 }));
     }
 
     public void loadRooms() {
-        if (!Utils.getInstance().isNetworkConnected()) {
-            mView.showError(mView.getAppContext().getString(R.string.no_network));
-            return;
-        }
-
         @SuppressWarnings("unchecked")
         Subscription sub = mDataManger.getRooms().subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
@@ -124,7 +124,10 @@ public class MainPresenter extends BasePresenter<MainView> {
                     return visibleList;
                 })
                 .subscribe(mView::showRooms, throwable -> {
-                    mView.showError(throwable.getMessage());
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
                 });
 
         mSubscriptions.add(sub);

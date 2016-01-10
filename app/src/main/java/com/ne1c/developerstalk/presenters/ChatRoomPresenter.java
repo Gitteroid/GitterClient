@@ -13,9 +13,6 @@ import java.util.ArrayList;
 
 import javax.inject.Inject;
 
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
-
 public class ChatRoomPresenter extends BasePresenter<ChatView> {
     private ChatView mView;
     private DataManger mDataManger;
@@ -51,7 +48,10 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::successLoadBeforeId, throwable -> {
-                    mView.showError(throwable.getMessage());
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
                 });
     }
 
@@ -69,7 +69,10 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     mView.hideListProgress();
                 }, throwable -> {
                     mView.hideListProgress();
-                    mView.showError(throwable.getMessage());
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
                 });
     }
 
@@ -100,13 +103,15 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     }
 
     public void markMessageAsRead(int first, int last, String roomId, String[] ids) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            return;
+        }
+
         mDataManger.readMessages(roomId, ids)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
                     mView.successRead(first, last, roomId, ids.length - 1);
-                }, throwable -> {
-                    mView.showError(throwable.getMessage());
                 });
     }
 
