@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.presenters;
 
 import android.content.Context;
 
+import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.services.DataManger;
@@ -14,6 +15,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.robolectric.RobolectricGradleTestRunner;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +35,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(RobolectricGradleTestRunner.class)
+@Config(constants = BuildConfig.class, sdk = 21)
 public class ChatRoomPresenterTest {
     private static final String ROOM_ID = "jf9w4j3fmn389f394n";
     private static final String MESSAGE_TEXT = "message";
@@ -176,7 +181,6 @@ public class ChatRoomPresenterTest {
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
         verify(view, times(1)).successRead(anyInt(), anyInt(), anyString(), anyInt());
-        verify(view, never()).showError(anyString());
     }
 
     @Test
@@ -188,7 +192,6 @@ public class ChatRoomPresenterTest {
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
         verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
-        verify(view, times(1)).showError(anyString());
     }
 
     @After
