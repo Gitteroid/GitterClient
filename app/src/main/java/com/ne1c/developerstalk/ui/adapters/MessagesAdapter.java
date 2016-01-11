@@ -153,16 +153,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             for (int i = 0; i < markdown.getParsedString().size(); i++) {
                 switch (markdown.getParsedString().get(i)) {
                     case "{0}": // Singleline
-//                        FrameLayout singleline = views.getSinglelineCodeSpan();
-//                        ((TextView) singleline.findViewById(R.id.singleline_textView)).setText(markdown.getSinglelineCode().get(++counterSingleline));
-//                        holder.messageLayout.addView(singleline);
-
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
-                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
-                                    .append(views.getSinglelineCodeSpan("  " + markdown.getSinglelineCode().get(++counterSingleline) + "  "));
+                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
+                                    textView.append(views.getSinglelineCodeSpan(textView.getText().length(),
+                                            " " + markdown.getSinglelineCode().get(++counterSingleline) + " "));
                         } else {
                             TextView textView = views.getTextView();
-                            textView.setText(views.getSinglelineCodeSpan("  " + markdown.getSinglelineCode().get(++counterSingleline) + "  "));
+                            textView.setText(views.getSinglelineCodeSpan(textView.getText().length(),
+                                    " " + markdown.getSinglelineCode().get(++counterSingleline) + " "));
                             holder.messageLayout.addView(textView);
                         }
 
@@ -550,12 +548,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     private class MarkdownViews {
-        public Spannable getSinglelineCodeSpan(String text) {
+        public Spannable getSinglelineCodeSpan(int fromStartPos, String text) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new SinglelineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new SinglelineSpan(fromStartPos, fromStartPos + text.length()), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
-            //return (FrameLayout) LayoutInflater.from(mActivity).inflate(R.layout.singleline_code_view, null);
         }
 
         public FrameLayout getMultilineCodeView() {
