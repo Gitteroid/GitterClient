@@ -14,9 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.robolectric.RobolectricGradleTestRunner;
-import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
@@ -26,6 +24,7 @@ import retrofit.client.Response;
 import retrofit.mime.TypedInput;
 import rx.Observable;
 
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -189,7 +188,11 @@ public class ChatRoomPresenterTest {
 
         when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.error(new Throwable(ERROR)));
 
-        presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
+        try {
+            presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
+        } catch (Exception e) {
+            assertTrue(e instanceof rx.exceptions.OnErrorNotImplementedException);
+        }
 
         verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
     }
