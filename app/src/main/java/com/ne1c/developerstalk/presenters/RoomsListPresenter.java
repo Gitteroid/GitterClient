@@ -34,7 +34,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     @Override
     public void bindView(RoomsListView view) {
         mView = view;
-
         mSubscriptions = new CompositeSubscription();
     }
 
@@ -91,7 +90,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadCachedRooms() {
-        mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
@@ -109,5 +108,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                         mView.showError(throwable.getMessage());
                     }
                 });
+
+        mSubscriptions.add(sub);
     }
 }

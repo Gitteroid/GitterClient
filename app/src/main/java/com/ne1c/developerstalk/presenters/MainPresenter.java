@@ -35,17 +35,17 @@ public class MainPresenter extends BasePresenter<MainView> {
     @Override
     public void bindView(MainView view) {
         mView = view;
-
         mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
+        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     public void loadCachedRooms() {
-        mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
@@ -58,10 +58,12 @@ public class MainPresenter extends BasePresenter<MainView> {
                     return visibleList;
                 })
                 .subscribe(mView::showRooms);
+
+        mSubscriptions.add(sub);
     }
 
     public void loadProfile() {
-        mDataManger.getProfile()
+        Subscription sub = mDataManger.getProfile()
                 .subscribeOn(mSchedulersFactory.io())
                 .map(userModels -> {
                     UserModel user = userModels.get(0);
@@ -94,10 +96,12 @@ public class MainPresenter extends BasePresenter<MainView> {
                     mView.showProfile(Utils.getInstance().getUserPref());
 
                 });
+
+        mSubscriptions.add(sub);
     }
 
     public void leaveFromRoom(String roomId) {
-        mDataManger.leaveFromRoom(roomId).subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.leaveFromRoom(roomId).subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
                     mView.leavedFromRoom();
@@ -107,6 +111,8 @@ public class MainPresenter extends BasePresenter<MainView> {
                         mView.showError(throwable.getMessage());
                     }
                 }));
+
+        mSubscriptions.add(sub);
     }
 
     public void loadRooms() {

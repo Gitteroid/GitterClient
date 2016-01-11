@@ -5,8 +5,10 @@ import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.Utils;
 
 import retrofit.RestAdapter;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 
 public class LoginPresenter extends BasePresenter<LoginView> {
     private final String CLIENT_ID = "247736d87aa0134a33f73b00cc47b18165296e9e";
@@ -20,13 +22,18 @@ public class LoginPresenter extends BasePresenter<LoginView> {
 
     private LoginView mView;
 
+    private CompositeSubscription mSubscriptions;
+
+
     @Override
     public void bindView(LoginView view) {
         mView = view;
+        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
+        mSubscriptions.unsubscribe();
         mView = null;
     }
 
@@ -43,7 +50,7 @@ public class LoginPresenter extends BasePresenter<LoginView> {
 
         mView.showDialog();
 
-        api.authorization(CLIENT_ID, CLIENT_SECRET, code,
+        Subscription sub = api.authorization(CLIENT_ID, CLIENT_SECRET, code,
                 GRANT_TYPE, REDIRECT_URL)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -57,5 +64,7 @@ public class LoginPresenter extends BasePresenter<LoginView> {
                     mView.dismissDialog();
                     mView.errorAuth(error.getMessage());
                 });
+
+        mSubscriptions.add(sub);
     }
 }
