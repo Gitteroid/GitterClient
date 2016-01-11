@@ -61,9 +61,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
-        mItemTouchHelper.attachToRecyclerView(mRoomsList);
-        mRoomsList.removeItemDecoration(mItemTouchHelper);
-        mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
         mRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.refresh_rooms_layout);
         mRefreshLayout.setOnRefreshListener(() -> {
@@ -96,18 +93,16 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mRooms.addAll(mPresenter.getAllRooms());
             mAdapter.setEdit(true);
 
-            mRoomsList.addItemDecoration(mItemTouchHelper);
-            mRoomsList.addOnChildAttachStateChangeListener(mItemTouchHelper);
+            mItemTouchHelper.attachToRecyclerView(mRoomsList);
         } else {
             mAdapter.setEdit(false);
-
-            mRoomsList.removeItemDecoration(mItemTouchHelper);
-            mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
             mPresenter.saveRooms(mRooms);
             ArrayList<RoomModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
             mRooms.clear();
             mRooms.addAll(visible);
+
+            mItemTouchHelper.attachToRecyclerView(null);
         }
     }
 
