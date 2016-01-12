@@ -19,6 +19,9 @@ cache: false
 
 sudo: false
 
+before_install:
+  - echo yes | android update sdk --all --filter build-tools-23.0.2 --no-ui --force > /dev/null
+  
 env:
   global:
     - ANDROID_API_LEVEL=21
