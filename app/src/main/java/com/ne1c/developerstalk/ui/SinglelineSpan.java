@@ -17,7 +17,7 @@ public class SinglelineSpan implements LineBackgroundSpan {
 
     /**
      * @param start - First symbol of text
-     * @param end - Last symbol of text
+     * @param end   - Last symbol of text
      */
     @Override
     public void drawBackground(Canvas canvas, Paint paint, int left, int right, int top, int baseline, int bottom, CharSequence text, int start, int end, int lnum) {
@@ -28,11 +28,25 @@ public class SinglelineSpan implements LineBackgroundSpan {
         }
 
         // If mStart not starting from 0 position, then calculate length spanning text
-        if (mStart > 0) {
+        if (mStart > 0 && mStart > start) {
             x = paint.measureText(text.subSequence(start, mStart).toString()); // From start text to start span text
         }
 
-        RectF rect = new RectF(x, top, x + measureText(paint, text, mStart, mEnd), bottom);
+        float lengthText;
+
+        if (start >= mStart && end > mEnd) {
+            lengthText = measureText(paint, text, start, mEnd);
+        } else if (mStart > start && end < mEnd) {
+            lengthText = measureText(paint, text, mStart, end);
+        } else if (start == mStart && end < mEnd) {
+            lengthText = measureText(paint, text, start, end);
+        } else if (mStart > start && end > mEnd) {
+            lengthText = measureText(paint, text, mStart, mEnd);
+        } else {
+            lengthText = measureText(paint, text, start, end);
+        }
+
+        RectF rect = new RectF(x, top, x + lengthText, bottom);
 
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.rgb(235, 235, 235));
