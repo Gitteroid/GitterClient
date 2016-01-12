@@ -97,10 +97,12 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
         mMessagesList.setItemViewCacheSize(50);
 
         // Animation for add new item or change item
-        ScaleInBottomAnimator anim = new ScaleInBottomAnimator(new OvershootInterpolator(1f));
-        anim.setAddDuration(500);
-        anim.setChangeDuration(0);
-        mMessagesList.setItemAnimator(anim);
+//        ScaleInBottomAnimator anim = new ScaleInBottomAnimator();
+//        anim.setAddDuration(500);
+//        anim.setChangeDuration(0);
+//
+
+//        mMessagesList.setItemAnimator(anim);
 
         setDataToView(savedInstanceState);
 
