@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.services.NewMessagesService;
@@ -46,6 +47,10 @@ public class RoomsActivity extends AppCompatActivity {
         }
 
         startService(new Intent(this, NewMessagesService.class));
+
+        if (!Utils.getInstance().isNetworkConnected()) {
+            Toast.makeText(this, R.string.no_network, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

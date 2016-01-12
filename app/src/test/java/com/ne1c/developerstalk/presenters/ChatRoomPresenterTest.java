@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.presenters;
 
 import android.content.Context;
 
+import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.services.DataManger;
@@ -13,7 +14,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.robolectric.RobolectricGradleTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +24,7 @@ import retrofit.client.Response;
 import retrofit.mime.TypedInput;
 import rx.Observable;
 
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -31,7 +34,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(RobolectricGradleTestRunner.class)
+@Config(constants = BuildConfig.class, sdk = 21)
 public class ChatRoomPresenterTest {
     private static final String ROOM_ID = "jf9w4j3fmn389f394n";
     private static final String MESSAGE_TEXT = "message";
@@ -176,7 +180,6 @@ public class ChatRoomPresenterTest {
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
         verify(view, times(1)).successRead(anyInt(), anyInt(), anyString(), anyInt());
-        verify(view, never()).showError(anyString());
     }
 
     @Test
@@ -185,10 +188,13 @@ public class ChatRoomPresenterTest {
 
         when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.error(new Throwable(ERROR)));
 
-        presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
+        try {
+            presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
+        } catch (Exception e) {
+            assertTrue(e instanceof rx.exceptions.OnErrorNotImplementedException);
+        }
 
         verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
-        verify(view, times(1)).showError(anyString());
     }
 
     @After

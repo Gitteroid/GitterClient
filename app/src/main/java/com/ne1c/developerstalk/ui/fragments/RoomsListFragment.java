@@ -13,14 +13,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
 import com.ne1c.developerstalk.di.components.RoomsListComponent;
 import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
-import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
 import com.ne1c.developerstalk.ui.adapters.helper.SimpleItemTouchHelperCallback;
@@ -32,20 +30,16 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class RoomsListFragment extends BaseFragment implements OnStartDragListener, RoomsListView {
+    @Inject
+    RoomsListPresenter mPresenter;
     private SwipeRefreshLayout mRefreshLayout;
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
     private ItemTouchHelper mItemTouchHelper;
     private ProgressDialog mProgressDialog;
-
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
-
     private boolean mIsEdit = false;
-
     private RoomsListComponent mComponent;
-
-    @Inject
-    RoomsListPresenter mPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -67,9 +61,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
-        mItemTouchHelper.attachToRecyclerView(mRoomsList);
-        mRoomsList.removeItemDecoration(mItemTouchHelper);
-        mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
         mRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.refresh_rooms_layout);
         mRefreshLayout.setOnRefreshListener(() -> {
@@ -84,15 +75,15 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         return v;
     }
 
-    public boolean isEdit() {
-        return mIsEdit;
+    @Override
+    public void onDestroy() {
+        mComponent = null;
+
+        super.onDestroy();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        mPresenter.loadRooms();
+    public boolean isEdit() {
+        return mIsEdit;
     }
 
     public void setEdit(boolean edit) {
@@ -102,19 +93,24 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mRooms.addAll(mPresenter.getAllRooms());
             mAdapter.setEdit(true);
 
-            mRoomsList.addItemDecoration(mItemTouchHelper);
-            mRoomsList.addOnChildAttachStateChangeListener(mItemTouchHelper);
+            mItemTouchHelper.attachToRecyclerView(mRoomsList);
         } else {
             mAdapter.setEdit(false);
-
-            mRoomsList.removeItemDecoration(mItemTouchHelper);
-            mRoomsList.removeOnChildAttachStateChangeListener(mItemTouchHelper);
 
             mPresenter.saveRooms(mRooms);
             ArrayList<RoomModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
             mRooms.clear();
             mRooms.addAll(visible);
+
+            mItemTouchHelper.attachToRecyclerView(null);
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        mPresenter.loadRooms();
     }
 
     @Override
