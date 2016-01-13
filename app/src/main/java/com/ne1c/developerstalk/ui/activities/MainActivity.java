@@ -452,9 +452,11 @@ public class MainActivity extends BaseActivity implements MainView {
 
     @Override
     protected void onDestroy() {
+        EventBus.getDefault().unregister(this);
+
         mPresenter.unbindView();
 
-        EventBus.getDefault().unregister(this);
+        mComponent = null;
         super.onDestroy();
     }
 

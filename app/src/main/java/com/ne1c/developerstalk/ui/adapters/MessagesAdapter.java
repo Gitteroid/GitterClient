@@ -155,12 +155,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     case "{0}": // Singleline
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
-                                    textView.append(views.getSinglelineCodeSpan(textView.getText().length(),
-                                            " " + markdown.getSinglelineCode().get(++counterSingleline) + " "));
+                            textView.append(views.getSinglelineCodeSpan(textView.getText().length(),
+                                    markdown.getSinglelineCode().get(++counterSingleline)));
                         } else {
                             TextView textView = views.getTextView();
                             textView.setText(views.getSinglelineCodeSpan(textView.getText().length(),
-                                    " " + markdown.getSinglelineCode().get(++counterSingleline) + " "));
+                                    markdown.getSinglelineCode().get(++counterSingleline)));
                             holder.messageLayout.addView(textView);
                         }
 
