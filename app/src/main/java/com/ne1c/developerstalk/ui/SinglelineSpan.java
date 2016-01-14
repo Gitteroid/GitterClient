@@ -34,6 +34,7 @@ public class SinglelineSpan implements LineBackgroundSpan {
 
         float lengthText;
 
+        // IT'S MAGIC!!!
         if (start >= mStart && end > mEnd) {
             lengthText = measureText(paint, text, start, mEnd);
         } else if (mStart > start && end < mEnd) {
