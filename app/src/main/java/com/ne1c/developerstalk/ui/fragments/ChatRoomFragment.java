@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -59,6 +60,8 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
 
+    private Parcelable mMessageListSavedState;
+
     private ChatRoomComponent mComponent;
 
     @Inject
@@ -72,7 +75,6 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        EventBus.getDefault().register(this);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         startNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
@@ -115,6 +117,20 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
         mPresenter.bindView(this);
 
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        EventBus.getDefault().unregister(this);
     }
 
     @Override
@@ -175,6 +191,8 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelable("scrollPosition", mMessagesList.getLayoutManager().onSaveInstanceState());
+        outState.putParcelable("active_room", mRoom);
+        outState.putParcelableArrayList("messages", mMessagesArr);
     }
 
     private void setDataToView(Bundle savedInstanceState) {
@@ -195,7 +213,23 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
         });
 
         if (savedInstanceState != null) {
-            mMessagesList.getLayoutManager().onRestoreInstanceState(savedInstanceState.getParcelable("scrollPosition"));
+            mMessageListSavedState = savedInstanceState.getParcelable("scrollPosition");
+            savedInstanceState.remove("scrollPosition");
+
+            RoomModel room = savedInstanceState.getParcelable("active_room");
+            savedInstanceState.remove("active_room");
+
+            if (room != null) {
+                mRoom = room;
+                mMessagesAdapter.setRoom(mRoom);
+            }
+
+            ArrayList<MessageModel> messages = savedInstanceState.getParcelableArrayList("messages");
+            savedInstanceState.remove("messages");
+
+            if (messages != null && messages.size() > 0) {
+                showMessages((ArrayList<MessageModel>) messages.clone());
+            }
         }
 
         if (isRefreshing) {
@@ -255,9 +289,9 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
 
     @Override
     public void onDestroy() {
-        EventBus.getDefault().unregister(this);
-
         mPresenter.unbindView();
+        mComponent = null;
+
         super.onDestroy();
     }
 
@@ -369,8 +403,10 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
         } else {
             mMessagesAdapter.notifyDataSetChanged();
 
-            // If room just was loaded
-            if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) {
+            if (mMessageListSavedState != null) {
+                mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
+                mMessageListSavedState = null;
+            } else if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) { // If room just was loaded
                 mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
             }
         }
