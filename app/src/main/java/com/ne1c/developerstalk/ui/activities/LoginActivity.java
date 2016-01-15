@@ -97,7 +97,9 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
             mDialog.setMessage(getString(R.string.loading));
         }
 
-        mDialog.show();
+        if (!isFinishing()) {
+            mDialog.show();
+        }
     }
 
     @Override
