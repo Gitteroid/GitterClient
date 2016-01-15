@@ -1,14 +1,11 @@
 package com.ne1c.developerstalk.activities;
 
-import android.support.test.espresso.IdlingPolicies;
-import android.support.test.espresso.IdlingResource;
-import android.support.test.espresso.base.IdlingResourceRegistry;
 import android.support.test.espresso.matcher.ViewMatchers;
 import android.support.test.espresso.web.webdriver.Locator;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.ne1c.developerstalk.ElapsedTimeIdlingResource;
+import com.ne1c.developerstalk.BaseTest;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.ui.activities.LoginActivity;
 
@@ -16,25 +13,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
-
 import static android.support.test.espresso.Espresso.onView;
-import static android.support.test.espresso.Espresso.registerIdlingResources;
-import static android.support.test.espresso.Espresso.unregisterIdlingResources;
 import static android.support.test.espresso.action.ViewActions.click;
-import static android.support.test.espresso.assertion.ViewAssertions.doesNotExist;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
-import static android.support.test.espresso.matcher.ViewMatchers.withText;
 import static android.support.test.espresso.web.assertion.WebViewAssertions.webMatches;
 import static android.support.test.espresso.web.sugar.Web.onWebView;
 import static android.support.test.espresso.web.webdriver.DriverAtoms.findElement;
 import static android.support.test.espresso.web.webdriver.DriverAtoms.getText;
+import static android.support.test.espresso.web.webdriver.DriverAtoms.webClick;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 @RunWith(AndroidJUnit4.class)
-public class LoginActivityTest {
+public class LoginActivityTest extends BaseTest {
 
     @Rule
     public ActivityTestRule<LoginActivity> mActivityRule = new ActivityTestRule<>(LoginActivity.class);
@@ -42,21 +35,28 @@ public class LoginActivityTest {
     @Test
     public void buttonSignInTest() {
         onView(ViewMatchers.withId(R.id.auth_but)).perform(click());
-        onView(withText(R.string.loading)).check(matches(isDisplayed()));
-        onView(withId(R.id.auth_but)).check(doesNotExist());
+        onView(withId(R.id.auth_but)).check(matches(not(isDisplayed())));
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // Wait for load page
+        pause(20000);
 
-        onView(withText(R.string.loading)).check(doesNotExist());
         onView(withId(R.id.auth_webView)).check(matches(isDisplayed()));
 
         onWebView(withId(R.id.auth_webView))
-                .withElement(findElement(Locator.CLASS_NAME, "auth-form"))
+                .withElement(findElement(Locator.CLASS_NAME, "login"))
+                .check(webMatches(getText(), containsString("EXISTING USER LOGIN")));
+
+        onWebView(withId(R.id.auth_webView))
+                .withElement(findElement(Locator.PARTIAL_LINK_TEXT, "EXISTING USER LOGIN"))
+                .perform(webClick());
+
+        // Wait for load page
+        pause(20000);
+
+        onWebView(withId(R.id.auth_webView))
+                .withElement(findElement(Locator.ID, "bubble auth-form-container"))
                 .check(webMatches(getText(), containsString("Sign in to GitHub")));
+
 
     }
 }
