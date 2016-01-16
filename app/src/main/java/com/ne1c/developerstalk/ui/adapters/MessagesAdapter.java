@@ -150,6 +150,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         int counterIssue = -1;
         int counterLinks = -1;
         int counterImageLinks = -1;
+        int counterMentions = -1;
 
         holder.messageLayout.removeAllViews();
 
@@ -207,6 +208,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             holder.messageLayout.addView(strikeView);
                         }
 
+
                         break;
                     case "{5}": // Quote
                         LinearLayout quote = views.getQuoteText(markdown.getQuote().get(++counterQuote));
@@ -261,6 +263,17 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         TextView issue = views.getTextView();
                         issue.setText(views.getIssueSpannableText(markdown.getIssues().get(++counterIssue)));
                         holder.messageLayout.addView(issue);
+
+                        break;
+                    case "{9}": // Mention
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
+                                    .append(views.getMentionSpannableText(markdown.getMentions().get(++counterMentions)));
+                        } else {
+                            TextView mentionView = views.getTextView();
+                            mentionView.setText(views.getMentionSpannableText(markdown.getMentions().get(++counterMentions)));
+                            holder.messageLayout.addView(mentionView);
+                        }
 
                         break;
                     default: // Text
@@ -625,6 +638,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             TextView view = new TextView(mActivity);
             view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
             return view;
+        }
+
+        private Spannable getMentionSpannableText(String text) {
+            Spannable span = new SpannableString(text);
+            span.setSpan(new StyleSpan(Typeface.ITALIC), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new UnderlineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            return span;
         }
     }
 }

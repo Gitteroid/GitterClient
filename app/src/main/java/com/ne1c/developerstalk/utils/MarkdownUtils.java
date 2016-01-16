@@ -71,6 +71,7 @@ public class MarkdownUtils {
         message = message.replaceAll(PREVIEW_IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
+        message = message.replaceAll(MENTION_PATTERN.pattern(), "{" + String.valueOf(MENTIONS) + "}");
 
         Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
         String[] splitted = message.split("\\{\\d\\}");
@@ -323,6 +324,26 @@ public class MarkdownUtils {
         return Collections.emptyList();
     }
 
+    private List<String> readMentions(String message) {
+        Matcher matcher = MENTION_PATTERN.matcher(message);
+
+        if (mMentions != null) {
+            return mMentions;
+        }
+
+        if (matcher.find()) {
+            mMentions = new ArrayList<>();
+
+            do {
+                mMentions.add(matcher.group());
+            } while (matcher.find());
+
+            return mMentions;
+        }
+
+        return Collections.emptyList();
+    }
+
     public List<String> getSinglelineCode() {
         return readSinglelineCode(mMessage);
     }
@@ -359,6 +380,10 @@ public class MarkdownUtils {
         return readIssues(mMessage);
     }
 
+    public List<String> getMentions() {
+        return readMentions(mMessage);
+    }
+
     public List<String> getParsedString() {
         return convertWithPatterns(mMessage);
     }
@@ -371,7 +396,8 @@ public class MarkdownUtils {
                 getQuote().size() > 0 ||
                 getItalics().size() > 0 ||
                 getImageLinks().size() > 0 ||
-                getLinks().size() > 0;
+                getLinks().size() > 0 ||
+                getMentions().size() > 0;
     }
 
     public static class PreviewImageModel {
