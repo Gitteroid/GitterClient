@@ -42,4 +42,5 @@
     <string name="edit_list_room">Edit list rooms</string>
     <string name="leave_from_one_to_one">Can\'t leave from one to one chat</string>
     <string name="total_people">Total people:</string>
+    <string name="error">Error</string>
 </resources>

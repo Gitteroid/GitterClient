@@ -63,5 +63,8 @@
             android:enabled="true"
             android:process=":NewMessagesService">
         </service>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="e903f4d992f51fdf223014886b051f314a5c16fe"/>
     </application>
 </manifest>
