@@ -129,6 +129,10 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
             holder.messageText.setText(span);
         } else {
+            if (message.substring(message.length() - 1).equals("\n")) {
+                message = message.substring(0, message.length() - 1);
+            }
+
             holder.messageText.setText(message);
         }
     }
@@ -272,9 +276,16 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             }
         } else {
             TextView textView = views.getTextView();
+
+            if (text.substring(text.length() - 1).equals("\n")) {
+                text = text.substring(0, text.length() - 1);
+            }
             textView.setText(text);
+
             holder.messageLayout.addView(textView);
         }
+
+        holder.messageLayout.requestLayout();
     }
 
     private String getUsername(MessageModel message) {
@@ -402,6 +413,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(messageModel -> {
                                 Toast.makeText(mActivity, R.string.deleted, Toast.LENGTH_SHORT).show();
+                                message.text = "";
+                                notifyItemChanged(position);
                             }, throwable -> {
                                 Toast.makeText(mActivity, R.string.deleted_error, Toast.LENGTH_SHORT).show();
                             });

@@ -17,6 +17,7 @@ public class MarkdownUtils {
     public static final int LINK = 6;
     public static final int IMAGE_LINK = 7;
     public static final int ISSUE = 8;
+    public static final int MENTIONS = 9;
 
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("((?!``)`(.+?)`(?!```))|(```(.+?)```)"); // `code` or ```code```
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n?)+?```");  // ```code``` multiline
@@ -29,6 +30,7 @@ public class MarkdownUtils {
     private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
     private static final Pattern PREVIEW_IMAGE_LINK_PATTERN =
             Pattern.compile("\\[!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [![alt](preview_url)(full_url)]
+    private static final Pattern MENTION_PATTERN = Pattern.compile("@\\w.*?\\b");
 
     private final String mMessage;
 
@@ -42,6 +44,7 @@ public class MarkdownUtils {
     private List<String> mLinks;
     private List<Object> mImageLinks;
     private List<String> mIssues;
+    private List<String> mMentions;
 
     public MarkdownUtils(String message) {
         if (message == null) {
@@ -267,31 +270,31 @@ public class MarkdownUtils {
     }
 
     private List<Object> readImageLinks(String message) {
-        Matcher prewiew_matcher = PREVIEW_IMAGE_LINK_PATTERN.matcher(message);
+        Matcher preview_matcher = PREVIEW_IMAGE_LINK_PATTERN.matcher(message);
         Matcher full_matcher = IMAGE_LINK_PATTERN.matcher(message);
 
         if (mImageLinks != null) {
             return mImageLinks;
         }
 
-        if (prewiew_matcher.find()) {
+        if (preview_matcher.find()) {
             mImageLinks = new ArrayList<>();
 
             do {
-                String previewUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\(", "").replaceFirst("(\\)\\].*)+", "");
-                String fullUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\((.*?)\\)\\]\\(", "").replaceFirst("\\)", "");
+                String previewUrl = preview_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\(", "").replaceFirst("(\\)\\].*)+", "");
+                String fullUrl = preview_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\((.*?)\\)\\]\\(", "").replaceFirst("\\)", "");
 
                 PreviewImageModel link = new PreviewImageModel(previewUrl, fullUrl);
 
                 mImageLinks.add(link);
-            } while (prewiew_matcher.find());
+            } while (preview_matcher.find());
 
             return mImageLinks;
         } else if (full_matcher.find()) {
             mImageLinks = new ArrayList<>();
 
             do {
-                mImageLinks.add(full_matcher.group().replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
+                mImageLinks.add(full_matcher.group().replaceFirst("!\\[.*?]\\(", "").replace(")", ""));
             } while (full_matcher.find());
 
             return mImageLinks;
