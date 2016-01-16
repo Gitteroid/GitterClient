@@ -48,7 +48,7 @@ public class LoginPresenter extends BasePresenter<LoginView> {
 
         GitterApi api = adapter.create(GitterApi.class);
 
-        mView.showDialog();
+        mView.showProgress();
 
         Subscription sub = api.authorization(CLIENT_ID, CLIENT_SECRET, code,
                 GRANT_TYPE, REDIRECT_URL)
@@ -57,11 +57,11 @@ public class LoginPresenter extends BasePresenter<LoginView> {
                 .subscribe(authResponseModel -> {
                     // Write access token to preferences
                     Utils.getInstance().writeAuthResponsePref(authResponseModel);
-                    mView.dismissDialog();
+                    mView.hideProgress();
                     mView.successAuth();
                 }, error -> {
                     // If error, then set visible "Sign In" button
-                    mView.dismissDialog();
+                    mView.hideProgress();
                     mView.errorAuth(error.getMessage());
                 });
 

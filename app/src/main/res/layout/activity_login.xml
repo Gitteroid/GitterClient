@@ -12,7 +12,7 @@
         android:layout_height="match_parent"
         app:shadowDrawable="@drawable/bottom_shadow">
 
-        <LinearLayout
+        <RelativeLayout
             android:id="@+id/content_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -23,6 +23,7 @@
                 android:id="@+id/logo_img"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
                 android:layout_marginBottom="24dp"
                 android:src="@mipmap/logo" />
 
@@ -32,15 +33,26 @@
                 android:layout_height="match_parent"
                 android:visibility="gone" />
 
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_alignParentTop="true"
+                android:indeterminate="true"
+                android:paddingBottom="-4dp"
+                android:paddingTop="-4dp"
+                android:visibility="gone"/>
             <Button
                 android:id="@+id/auth_but"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_below="@id/logo_img"
+                android:layout_centerInParent="true"
                 android:elevation="4dp"
                 android:minWidth="120dp"
-                android:text="Sign In" />
-        </LinearLayout>
+                android:text="Sign In"/>
+        </RelativeLayout>
 
         <include layout="@layout/toolbar" />
     </com.ne1c.developerstalk.ui.DrawShadowFrameLayout>
