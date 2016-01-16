@@ -354,7 +354,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 break;
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
-                    mChatRoomFragment.onRefreshRoom();
+                    EventBus.getDefault().post(mActiveRoom);
 
                     mPresenter.loadRooms();
                 }
