@@ -37,10 +37,9 @@ public class LoginActivityTest extends BaseTest {
         onView(ViewMatchers.withId(R.id.auth_but)).perform(click());
         onView(withId(R.id.auth_but)).check(matches(not(isDisplayed())));
 
-        // Wait for load page
-        pause(20000);
-
         onView(withId(R.id.auth_webView)).check(matches(isDisplayed()));
+
+        onView(withId(R.id.auth_but)).check(matches(not(isDisplayed())));
 
         onWebView(withId(R.id.auth_webView))
                 .withElement(findElement(Locator.CLASS_NAME, "login"))
@@ -49,14 +48,6 @@ public class LoginActivityTest extends BaseTest {
         onWebView(withId(R.id.auth_webView))
                 .withElement(findElement(Locator.PARTIAL_LINK_TEXT, "EXISTING USER LOGIN"))
                 .perform(webClick());
-
-        // Wait for load page
-        pause(20000);
-
-        onWebView(withId(R.id.auth_webView))
-                .withElement(findElement(Locator.ID, "bubble auth-form-container"))
-                .check(webMatches(getText(), containsString("Sign in to GitHub")));
-
 
     }
 }
