@@ -11,7 +11,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.OvershootInterpolator;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -45,9 +44,8 @@ import in.srain.cube.views.ptr.PtrClassicFrameLayout;
 import in.srain.cube.views.ptr.PtrDefaultHandler;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrHandler;
-import jp.wasabeef.recyclerview.animators.ScaleInBottomAnimator;
 
-public class ChatRoomFragment extends BaseFragment implements MainActivity.RefreshRoomCallback, ChatView {
+public class ChatRoomFragment extends BaseFragment implements ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -120,15 +118,15 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStart() {
+        super.onStart();
 
         EventBus.getDefault().register(this);
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
+    public void onStop() {
+        super.onStop();
 
         EventBus.getDefault().unregister(this);
     }
@@ -171,7 +169,7 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
 
                     mMessageEditText.setSelection(mMessageEditText.length());
                     break;
-                case MarkdownUtils.LINK:
+                case MarkdownUtils.GITTER_LINK:
                     mMessageEditText.append("[](http://)");
                     mMessageEditText.setSelection(mMessageEditText.length() - 10);
                     break;
@@ -338,7 +336,12 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
 
         mMessagesAdapter.setRoom(model);
         mPresenter.loadCachedMessages(model.id);
-        loadMessageRoomServer(mRoom);
+
+        if (Utils.getInstance().isNetworkConnected()) {
+            loadMessageRoomServer(mRoom);
+        } else if (getView() != null && mMessagesArr.size() > 0) {
+            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void onEvent(UpdateMessageEvent message) {
@@ -380,15 +383,6 @@ public class ChatRoomFragment extends BaseFragment implements MainActivity.Refre
             if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
                 mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
             }
-        }
-    }
-
-    @Override
-    public void onRefreshRoom() {
-        if (Utils.getInstance().isNetworkConnected()) {
-            loadMessageRoomServer(mRoom);
-        } else if (getView() != null && mMessagesArr.size() > 0) {
-            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
         }
     }
 
