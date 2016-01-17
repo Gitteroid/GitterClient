@@ -12,10 +12,13 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -69,14 +73,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == 0) {
-            return new DynamicViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_dynamic_message, parent, false));
+            return new DynamicViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_dynamic_message, parent, false));
         } else {
-            return new StaticViewHolder(LayoutInflater.from(mActivity).inflate(R.layout.item_chat_message, parent, false));
+            return new StaticViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_message, parent, false));
         }
     }
 
     @Override
     public int getItemViewType(int position) {
+        if (position >= mMessages.size()) {
+            return 0;
+        }
+
         MarkdownUtils markdownUtils = new MarkdownUtils(mMessages.get(position).text);
         if (markdownUtils.existMarkdown()) {
             return 0; // Dynamic
@@ -148,6 +156,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         int counterQuote = -1;
         int counterStrikethrough = -1;
         int counterIssue = -1;
+        int counterGitterLinks = -1;
         int counterLinks = -1;
         int counterImageLinks = -1;
         int counterMentions = -1;
@@ -215,19 +224,46 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         holder.messageLayout.addView(quote);
 
                         break;
-                    case "{6}": // Links
+                    case "{6}": // GitterLinks
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
-                            String link = markdown.getLinks().get(++counterLinks);
+                            String link = markdown.getGitterLinks().get(++counterGitterLinks);
+
+                            String url = "http://gitter.im";
+
+                            Matcher urlMatcher = Patterns.WEB_URL.matcher(link);
+                            if (urlMatcher.find()) {
+                                url = urlMatcher.group();
+
+                                if (url.substring(url.length() - 1, url.length()).equals(")")) {
+                                    url = url.substring(0, url.length() - 1);
+                                }
+                            }
+
                             link = link.substring(1, link.indexOf("]"));
 
-                            ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
-                                    .append(views.getLinksSpannableText(link));
+                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
+                            textView.append(views.getLinksSpannableText(link, url));
+                            textView.setMovementMethod(LinkMovementMethod.getInstance());
                         } else {
                             TextView textView = views.getTextView();
-                            String link = markdown.getLinks().get(++counterLinks);
+                            String link = markdown.getGitterLinks().get(++counterGitterLinks);
+
+                            String url = "http://gitter.im";
+
+                            Matcher urlMatcher = Patterns.WEB_URL.matcher(link);
+                            if (urlMatcher.find()) {
+                                url = urlMatcher.group();
+
+                                if (url.substring(url.length() - 1, url.length()).equals(")")) {
+                                    url = url.substring(0, url.length() - 1);
+                                }
+                            }
+
                             link = link.substring(1, link.indexOf("]"));
 
-                            textView.setText(views.getLinksSpannableText(link));
+                            textView.setText(views.getLinksSpannableText(link, url));
+                            textView.setMovementMethod(LinkMovementMethod.getInstance());
+
                             holder.messageLayout.addView(textView);
                         }
                         break;
@@ -274,6 +310,25 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             mentionView.setText(views.getMentionSpannableText(markdown.getMentions().get(++counterMentions)));
                             holder.messageLayout.addView(mentionView);
                         }
+
+                        break;
+                    case "{10}": // Links
+                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+                            String url = markdown.getLinks().get(++counterLinks);
+
+                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
+                            textView.append(views.getLinksSpannableText(url, url));
+                            textView.setMovementMethod(LinkMovementMethod.getInstance());
+                        } else {
+                            TextView textView = views.getTextView();
+                            String url = markdown.getLinks().get(++counterLinks);
+
+                            textView.setText(views.getLinksSpannableText(url, url));
+                            textView.setMovementMethod(LinkMovementMethod.getInstance());
+
+                            holder.messageLayout.addView(textView);
+                        }
+
 
                         break;
                     default: // Text
@@ -614,10 +669,16 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             return parent;
         }
 
-        public Spannable getLinksSpannableText(String text) {
+        public Spannable getLinksSpannableText(String text, String link) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new ForegroundColorSpan(Color.BLUE), 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             span.setSpan(new UnderlineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new ClickableSpan() {
+                @Override
+                public void onClick(View widget) {
+                    mActivity.startActivity(
+                            new Intent(Intent.ACTION_VIEW, Uri.parse(link)));
+                }
+            }, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
             return span;
         }
