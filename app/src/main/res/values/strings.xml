@@ -43,4 +43,5 @@
     <string name="leave_from_one_to_one">Can\'t leave from one to one chat</string>
     <string name="total_people">Total people:</string>
     <string name="error">Error</string>
+    <string name="type_to_compose">Type to compose</string>
 </resources>
