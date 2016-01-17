@@ -79,8 +79,8 @@ public class MarkdownUtils {
         message = message.replaceAll(MENTION_PATTERN.pattern(), "{" + String.valueOf(MENTIONS) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
-        Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
-        String[] splitted = message.split("\\{\\d\\}");
+        Matcher matcher = Pattern.compile("\\{\\d+\\}").matcher(message);
+        String[] splitted = message.split("\\{\\d+\\}");
 
         boolean find = matcher.find();
 
