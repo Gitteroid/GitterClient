@@ -12,12 +12,12 @@ android {
         applicationId "com.ne1c.developerstalk"
         minSdkVersion 16
         targetSdkVersion 23
-        versionCode 17
-        versionName "1.3.3-1"
+        versionCode 18
+        versionName "1.3.4"
 
         multiDexEnabled true
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "com.ne1c.developerstalk.test.DevTalksTestRunner"
     }
     buildTypes {
         release {
