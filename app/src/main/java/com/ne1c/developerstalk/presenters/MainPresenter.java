@@ -135,7 +135,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                     return visibleList;
                 })
                 .subscribe(mView::showRooms, throwable -> {
-                    if (throwable.getMessage().contains("Unable to resolve") &&
+                    if (throwable.getMessage().contains("Unable to resolve") ||
                             throwable.getMessage().contains("timeout")) {
                         mView.showError(mView.getAppContext().getString(R.string.no_network));
                     }
