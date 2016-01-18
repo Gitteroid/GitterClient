@@ -3,6 +3,8 @@ package com.ne1c.developerstalk.ui.activities;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -23,11 +25,13 @@ import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
+import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
+
 public class LoginActivity extends AppCompatActivity implements LoginView {
     private Button mAuthBut;
     private ImageView mLogoImg;
     private WebView mAuthWebView;
-    private ProgressBar mProgressBar;
+    private MaterialProgressBar mProgressBar;
 
     private LoginPresenter mPresenter;
 
@@ -42,7 +46,9 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         mAuthBut = (Button) findViewById(R.id.auth_but);
         mLogoImg = (ImageView) findViewById(R.id.logo_img);
         mAuthWebView = (WebView) findViewById(R.id.auth_webView);
-        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
+
+        mProgressBar.setUseIntrinsicPadding(false);
 
         mAuthBut.setOnClickListener(v -> {
             if (Utils.getInstance().isNetworkConnected()) {
