@@ -17,6 +17,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.aspsine.swipetoloadlayout.OnRefreshListener;
+import com.aspsine.swipetoloadlayout.SwipeToLoadLayout;
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.ChatRoomComponent;
@@ -40,12 +42,8 @@ import java.util.ArrayList;
 import javax.inject.Inject;
 
 import de.greenrobot.event.EventBus;
-import in.srain.cube.views.ptr.PtrClassicFrameLayout;
-import in.srain.cube.views.ptr.PtrDefaultHandler;
-import in.srain.cube.views.ptr.PtrFrameLayout;
-import in.srain.cube.views.ptr.PtrHandler;
 
-public class ChatRoomFragment extends BaseFragment implements ChatView {
+public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefreshListener {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -53,7 +51,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
 
-    private PtrClassicFrameLayout mPtrFrameLayout;
+    private SwipeToLoadLayout mSwipeLoadLayout;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
@@ -83,7 +81,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_chat_room, container, false);
 
-        mPtrFrameLayout = (PtrClassicFrameLayout) v.findViewById(R.id.ptr_framelayout);
+        //mPtrFrameLayout = (PtrClassicFrameLayout) v.findViewById(R.id.ptr_framelayout);
+        mSwipeLoadLayout = (SwipeToLoadLayout) v.findViewById(R.id.refresh_messages_layout);
+        mSwipeLoadLayout.setOnRefreshListener(this);
+        mSwipeLoadLayout.setRefreshHeaderView(v.findViewById(R.id.swipe_refresh_header));
 
         mMessageEditText = (EditText) v.findViewById(R.id.message_edit_text);
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
@@ -91,10 +92,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
         mProgressBar.setIndeterminate(true);
 
-        mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
+        mMessagesList = (RecyclerView) v.findViewById(R.id.swipe_target);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
+        mMessagesList.setScrollContainer(true);
 
         // Animation for add new item or change item
 //        ScaleInBottomAnimator anim = new ScaleInBottomAnimator();
@@ -232,11 +234,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         if (isRefreshing) {
             isRefreshing = false;
-            mPtrFrameLayout.setVisibility(View.GONE);
+            mSwipeLoadLayout.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.VISIBLE);
         }
 
-        mPtrFrameLayout.setSaveEnabled(true);
+        mSwipeLoadLayout.setSaveEnabled(true);
 
         mSendButton.setOnClickListener(v -> {
             if (!mMessageEditText.getText().toString().isEmpty()) {
@@ -257,23 +259,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 }
             } else {
                 Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        mPtrFrameLayout.setPtrHandler(new PtrHandler() {
-            @Override
-            public boolean checkCanDoRefresh(PtrFrameLayout ptrFrameLayout, View view, View view1) {
-                return PtrDefaultHandler.checkContentCanBePulledDown(ptrFrameLayout, view, view1);
-            }
-
-            @Override
-            public void onRefreshBegin(PtrFrameLayout ptrFrameLayout) {
-                // Message not sent or sending, it hasn't id
-                if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
-                    mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
-                } else {
-                    mPtrFrameLayout.refreshComplete();
-                }
             }
         });
 
@@ -330,8 +315,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mRoom = model;
         countLoadMessages = 0;
 
-        if (mPtrFrameLayout.isRefreshing()) {
-            mPtrFrameLayout.refreshComplete();
+        if (mSwipeLoadLayout.isRefreshing()) {
+            mSwipeLoadLayout.setRefreshing(false);
         }
 
         mMessagesAdapter.setRoom(model);
@@ -391,9 +376,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 
-        if (mPtrFrameLayout.isRefreshing()) {
+        if (mSwipeLoadLayout.isRefreshing()) {
             mMessagesAdapter.notifyDataSetChanged();
-            mPtrFrameLayout.refreshComplete();
+            mSwipeLoadLayout.setRefreshing(false);
         } else {
             mMessagesAdapter.notifyDataSetChanged();
 
@@ -410,8 +395,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     public void showError(String error) {
         hideListProgress();
 
-        if (mPtrFrameLayout.isRefreshing()) {
-            mPtrFrameLayout.refreshComplete();
+        if (mSwipeLoadLayout.isRefreshing()) {
+            mSwipeLoadLayout.setRefreshing(false);
         }
 
         isRefreshing = false;
@@ -479,7 +464,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             countLoadMessages += messages.size();
         }
 
-        mPtrFrameLayout.refreshComplete();
+        mSwipeLoadLayout.setRefreshing(false);
     }
 
     @Override
@@ -511,7 +496,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     @Override
     public void showListProgress() {
-        mPtrFrameLayout.setVisibility(View.GONE);
+        mSwipeLoadLayout.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.VISIBLE);
 
         isRefreshing = true;
@@ -519,8 +504,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     @Override
     public void hideListProgress() {
-        if (mPtrFrameLayout.getVisibility() != View.VISIBLE) {
-            mPtrFrameLayout.setVisibility(View.VISIBLE);
+        if (mSwipeLoadLayout.getVisibility() != View.VISIBLE) {
+            mSwipeLoadLayout.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.GONE);
         }
 
@@ -546,6 +531,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Override
     public Context getAppContext() {
         return getActivity();
+    }
+
+    @Override
+    public void onRefresh() {
+        mSwipeLoadLayout.postDelayed(() -> {
+            // Message not sent or sending, it hasn't id
+            if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
+                mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
+            } else {
+                mSwipeLoadLayout.setRefreshing(false);
+            }
+        }, 2000);
     }
 
     // Callback for adapter

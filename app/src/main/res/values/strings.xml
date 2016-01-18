@@ -44,4 +44,6 @@
     <string name="total_people">Total people:</string>
     <string name="error">Error</string>
     <string name="type_to_compose">Type to compose</string>
+    <string name="refreshing">REFRESHING</string>
+    <string name="complete">COMPLETE</string>
 </resources>
