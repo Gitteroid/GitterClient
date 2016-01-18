@@ -54,6 +54,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public void finish() {
+        // Restart service for update prefs in service
+        stopService(new Intent(this, NewMessagesService.class));
         startService(new Intent(this, NewMessagesService.class));
         super.finish();
     }
