@@ -13,7 +13,10 @@ import java.util.ArrayList;
 
 import javax.inject.Inject;
 
+import rx.Observable;
 import rx.Subscription;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.subscriptions.CompositeSubscription;
 
 public class ChatRoomPresenter extends BasePresenter<ChatView> {
@@ -67,7 +70,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mSubscriptions.add(sub);
     }
 
-    public void loadMessages(String roomId, int limit) {
+    // Load messages from network
+    public void loadNetworkMessages(String roomId, int limit) {
         mView.showListProgress();
 
         Subscription sub = mDataManger.getMessages(roomId, limit)
@@ -77,7 +81,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     return messageModels;
                 }).observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
-                    mView.showMessages(messages);
+                    mView.showMessagesFromNetwork(messages);
                     mView.hideListProgress();
                 }, throwable -> {
                     mView.hideListProgress();
@@ -90,11 +94,49 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mSubscriptions.add(sub);
     }
 
+    // Load messages from database, then load from network if possible
+    public void loadMessages(String roomId, int limit) {
+        Subscription sub = mDataManger.getCachedMessages(roomId)
+                .subscribeOn(mSchedulersFactory.io())
+                .flatMap(messages -> {
+                    mView.showMessagesFromCache(messages);
+
+                    if (messages.size() == 0) {
+                        mView.showListProgress();
+                    } else {
+                        mView.showProgressBar();
+                    }
+
+                    return mDataManger.getMessages(roomId, limit);
+                })
+                .map(messages -> {
+                    mDataManger.insertMessagesToDb(messages, roomId);
+                    return messages;
+                })
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .subscribe(messages -> {
+                    mView.showMessagesFromNetwork(messages);
+                    mView.hideListProgress();
+                    mView.hideProgressBar();
+                }, throwable -> {
+                    mView.hideListProgress();
+                    mView.hideProgressBar();
+
+                    if (!throwable.getMessage().contains("Unable to resolve") &&
+                            !throwable.getMessage().contains("timeout")) {
+                        mView.showError(throwable.getMessage());
+                    }
+            });
+
+        mSubscriptions.add(sub);
+    }
+
+    // Load messages from database
     public void loadCachedMessages(String roomId) {
         Subscription sub = mDataManger.getCachedMessages(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showMessages, throwable -> {
+                .subscribe(mView::showMessagesFromCache, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
 

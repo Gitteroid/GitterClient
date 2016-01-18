@@ -1,4 +1,4 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:app="http://schemas.android.com/apk/res-auto"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
@@ -13,6 +13,7 @@
         android:layout_height="3dp"
         android:background="@null"
         android:indeterminate="true"
+        android:layout_alignParentTop="true"
         android:visibility="gone"
         app:mpb_progressStyle="horizontal"/>
 
@@ -21,6 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_centerInParent="true"
         android:layout_weight="1"
         android:visibility="gone"/>
 
@@ -28,6 +30,7 @@
         android:id="@+id/refresh_messages_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@+id/input_layout"
         android:layout_weight="1"
         app:swipe_style="classic">
 
@@ -90,8 +93,10 @@
     </com.aspsine.swipetoloadlayout.SwipeToLoadLayout>
 
     <LinearLayout
+        android:id="@+id/input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal">
 
         <ImageButton
@@ -120,4 +125,4 @@
             android:background="?attr/selectableItemBackground"
             android:src="@mipmap/ic_send"/>
     </LinearLayout>
-</LinearLayout>
+</RelativeLayout>

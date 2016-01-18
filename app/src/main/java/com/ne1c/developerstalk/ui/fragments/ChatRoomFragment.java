@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import javax.inject.Inject;
 
 import de.greenrobot.event.EventBus;
+import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
 public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefreshListener {
     private EditText mMessageEditText;
@@ -50,6 +51,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     private LinearLayoutManager mListLayoutManager;
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
+    private MaterialProgressBar mHorizontalProgressBar;
 
     private SwipeToLoadLayout mSwipeLoadLayout;
 
@@ -81,7 +83,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_chat_room, container, false);
 
-        //mPtrFrameLayout = (PtrClassicFrameLayout) v.findViewById(R.id.ptr_framelayout);
         mSwipeLoadLayout = (SwipeToLoadLayout) v.findViewById(R.id.refresh_messages_layout);
         mSwipeLoadLayout.setOnRefreshListener(this);
         mSwipeLoadLayout.setRefreshHeaderView(v.findViewById(R.id.swipe_refresh_header));
@@ -91,6 +92,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
 
         mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
         mProgressBar.setIndeterminate(true);
+
+        mHorizontalProgressBar = (MaterialProgressBar) v.findViewById(R.id.top_progress_bar);
 
         mMessagesList = (RecyclerView) v.findViewById(R.id.swipe_target);
         mListLayoutManager = new LinearLayoutManager(getActivity());
@@ -228,7 +231,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
             savedInstanceState.remove("messages");
 
             if (messages != null && messages.size() > 0) {
-                showMessages((ArrayList<MessageModel>) messages.clone());
+                showMessagesFromCache((ArrayList<MessageModel>) messages.clone());
             }
         }
 
@@ -306,7 +309,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     private void loadMessageRoomServer(final RoomModel roomModel) {
         mMessagesAdapter.setRoom(roomModel);
 
-        mPresenter.loadMessages(roomModel.id, startNumberLoadMessages + countLoadMessages);
+        mPresenter.loadNetworkMessages(roomModel.id, startNumberLoadMessages + countLoadMessages);
     }
 
     // Event from MainActivity or notification
@@ -320,11 +323,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
         }
 
         mMessagesAdapter.setRoom(model);
-        mPresenter.loadCachedMessages(model.id);
+        mPresenter.loadMessages(mRoom.id, countLoadMessages);
 
-        if (Utils.getInstance().isNetworkConnected()) {
-            loadMessageRoomServer(mRoom);
-        } else if (getView() != null && mMessagesArr.size() > 0) {
+//        if (Utils.getInstance().isNetworkConnected()) {
+//            //loadMessageRoomServer(mRoom);
+//        } else
+        if (Utils.getInstance().isNetworkConnected() && getView() != null && mMessagesArr.size() > 0) {
             Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
         }
     }
@@ -372,7 +376,27 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     }
 
     @Override
-    public void showMessages(ArrayList<MessageModel> messages) {
+    public void showMessagesFromNetwork(ArrayList<MessageModel> messages) {
+        mMessagesArr.clear();
+        mMessagesArr.addAll(messages);
+
+        if (mSwipeLoadLayout.isRefreshing()) {
+            mMessagesAdapter.notifyDataSetChanged();
+            mSwipeLoadLayout.setRefreshing(false);
+        } else {
+            mMessagesAdapter.notifyDataSetChanged();
+
+            if (mMessageListSavedState != null) {
+                mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
+                mMessageListSavedState = null;
+            } else if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) { // If room just was loaded
+                mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+            }
+        }
+    }
+
+    @Override
+    public void showMessagesFromCache(ArrayList<MessageModel> messages) {
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 
@@ -492,6 +516,16 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
                 mMessagesAdapter.notifyItemChanged(i);
             }
         }
+    }
+
+    @Override
+    public void showProgressBar() {
+        mHorizontalProgressBar.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void hideProgressBar() {
+        mHorizontalProgressBar.setVisibility(View.GONE);
     }
 
     @Override
