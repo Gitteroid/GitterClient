@@ -231,7 +231,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
             savedInstanceState.remove("messages");
 
             if (messages != null && messages.size() > 0) {
-                showMessagesFromCache((ArrayList<MessageModel>) messages.clone());
+                showMessages((ArrayList<MessageModel>) messages.clone());
             }
         }
 
@@ -376,27 +376,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     }
 
     @Override
-    public void showMessagesFromNetwork(ArrayList<MessageModel> messages) {
-        mMessagesArr.clear();
-        mMessagesArr.addAll(messages);
-
-        if (mSwipeLoadLayout.isRefreshing()) {
-            mMessagesAdapter.notifyDataSetChanged();
-            mSwipeLoadLayout.setRefreshing(false);
-        } else {
-            mMessagesAdapter.notifyDataSetChanged();
-
-            if (mMessageListSavedState != null) {
-                mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
-                mMessageListSavedState = null;
-            } else if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) { // If room just was loaded
-                mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
-            }
-        }
-    }
-
-    @Override
-    public void showMessagesFromCache(ArrayList<MessageModel> messages) {
+    public void showMessages(ArrayList<MessageModel> messages) {
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 

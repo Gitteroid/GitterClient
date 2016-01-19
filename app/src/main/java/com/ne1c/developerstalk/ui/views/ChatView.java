@@ -5,9 +5,7 @@ import com.ne1c.developerstalk.models.MessageModel;
 import java.util.ArrayList;
 
 public interface ChatView extends BaseView {
-    void showMessagesFromNetwork(ArrayList<MessageModel> messages);
-
-    void showMessagesFromCache(ArrayList<MessageModel> messages);
+    void showMessages(ArrayList<MessageModel> messages);
 
     void showError(String error);
 
