@@ -112,7 +112,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getCachedMessages(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showMessagesFromCache, throwable -> {
+                .subscribe(mView::showMessages, throwable -> {
                     mView.showError(throwable.getMessage());
                 });
 
