@@ -122,7 +122,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successLoadMessages() {
-        when(dataManger.getMessages(anyString(), anyInt()))
+        when(dataManger.getNetworkMessages(anyString(), anyInt()))
                 .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadNetworkMessages(ROOM_ID, 100500);
@@ -133,7 +133,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void failLoadMessages() {
-        when(dataManger.getMessages(anyString(), anyInt()))
+        when(dataManger.getNetworkMessages(anyString(), anyInt()))
                 .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.loadNetworkMessages(ROOM_ID, 100500);
