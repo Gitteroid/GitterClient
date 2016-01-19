@@ -125,7 +125,7 @@ public class ChatRoomPresenterTest {
         when(dataManger.getMessages(anyString(), anyInt()))
                 .thenReturn(Observable.just(mock(ArrayList.class)));
 
-        presenter.loadMessages(ROOM_ID, 100500);
+        presenter.loadNetworkMessages(ROOM_ID, 100500);
 
         verify(view, times(1)).showMessages(any(ArrayList.class));
         verify(view, never()).showError(anyString());
@@ -136,7 +136,7 @@ public class ChatRoomPresenterTest {
         when(dataManger.getMessages(anyString(), anyInt()))
                 .thenReturn(Observable.error(new Throwable(ERROR)));
 
-        presenter.loadMessages(ROOM_ID, 100500);
+        presenter.loadNetworkMessages(ROOM_ID, 100500);
 
         verify(view, never()).showMessages(any(ArrayList.class));
         verify(view, times(1)).showError(anyString());

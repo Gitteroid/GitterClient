@@ -17,7 +17,7 @@ android {
 
         multiDexEnabled true
 
-        testInstrumentationRunner "com.ne1c.developerstalk.test.DevTalksTestRunner"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {

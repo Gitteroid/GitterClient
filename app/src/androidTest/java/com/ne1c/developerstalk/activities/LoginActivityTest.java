@@ -1,17 +1,22 @@
 package com.ne1c.developerstalk.activities;
 
+import android.support.test.espresso.IdlingPolicies;
 import android.support.test.espresso.matcher.ViewMatchers;
 import android.support.test.espresso.web.webdriver.Locator;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
+import android.test.suitebuilder.annotation.LargeTest;
 
 import com.ne1c.developerstalk.BaseTest;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.ui.activities.LoginActivity;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.TimeUnit;
 
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
@@ -26,6 +31,7 @@ import static android.support.test.espresso.web.webdriver.DriverAtoms.webClick;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
+@LargeTest
 @RunWith(AndroidJUnit4.class)
 public class LoginActivityTest extends BaseTest {
 
