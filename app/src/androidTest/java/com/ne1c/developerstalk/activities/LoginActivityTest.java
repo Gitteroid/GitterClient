@@ -1,6 +1,6 @@
 package com.ne1c.developerstalk.activities;
 
-import android.support.test.espresso.IdlingPolicies;
+import android.support.test.espresso.IdlingResource;
 import android.support.test.espresso.matcher.ViewMatchers;
 import android.support.test.espresso.web.webdriver.Locator;
 import android.support.test.rule.ActivityTestRule;
@@ -11,14 +11,12 @@ import com.ne1c.developerstalk.BaseTest;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.ui.activities.LoginActivity;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
-
 import static android.support.test.espresso.Espresso.onView;
+import static android.support.test.espresso.Espresso.unregisterIdlingResources;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
@@ -31,8 +29,8 @@ import static android.support.test.espresso.web.webdriver.DriverAtoms.webClick;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-@LargeTest
 @RunWith(AndroidJUnit4.class)
+@LargeTest
 public class LoginActivityTest extends BaseTest {
 
     @Rule
@@ -47,9 +45,13 @@ public class LoginActivityTest extends BaseTest {
 
         onView(withId(R.id.auth_but)).check(matches(not(isDisplayed())));
 
+        IdlingResource idlingResource = waitFor(60 * 5);
+
         onWebView(withId(R.id.auth_webView))
                 .withElement(findElement(Locator.CLASS_NAME, "login"))
                 .check(webMatches(getText(), containsString("EXISTING USER LOGIN")));
+
+        unregisterIdlingResources(idlingResource);
 
         onWebView(withId(R.id.auth_webView))
                 .withElement(findElement(Locator.PARTIAL_LINK_TEXT, "EXISTING USER LOGIN"))
