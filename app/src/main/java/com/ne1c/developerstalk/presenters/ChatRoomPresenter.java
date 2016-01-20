@@ -95,16 +95,18 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     if (mDataManger.isLoadMessagesFromDatabase() && messages.size() == 0) {
                         mView.showListProgress();
                     } else if (mDataManger.isLoadMessagesFromDatabase() && messages.size() > 0) {
-                        mView.showProgressBar();
+                        mView.showTopProgressBar();
                     }
 
                     if (mDataManger.isLoadMessagesFromNetwork()) {
                         mView.hideListProgress();
-                        mView.hideProgressBar();
+                        mView.hideTopProgressBar();
                     }
 
                     mView.showMessages(messages);
                 });
+
+        mSubscriptions.add(sub);
     }
 
     // Load messages from database

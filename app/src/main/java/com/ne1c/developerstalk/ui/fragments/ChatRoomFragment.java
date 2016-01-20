@@ -17,8 +17,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.aspsine.swipetoloadlayout.OnRefreshListener;
-import com.aspsine.swipetoloadlayout.SwipeToLoadLayout;
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.ChatRoomComponent;
@@ -26,6 +24,7 @@ import com.ne1c.developerstalk.di.components.DaggerChatRoomComponent;
 import com.ne1c.developerstalk.di.modules.ChatRoomPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
+import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -44,7 +43,7 @@ import javax.inject.Inject;
 import de.greenrobot.event.EventBus;
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
-public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefreshListener {
+public class ChatRoomFragment extends BaseFragment implements ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
     private RecyclerView mMessagesList;
@@ -52,8 +51,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
     private MaterialProgressBar mHorizontalProgressBar;
-
-    private SwipeToLoadLayout mSwipeLoadLayout;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
@@ -83,10 +80,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_chat_room, container, false);
 
-        mSwipeLoadLayout = (SwipeToLoadLayout) v.findViewById(R.id.refresh_messages_layout);
-        mSwipeLoadLayout.setOnRefreshListener(this);
-        mSwipeLoadLayout.setRefreshHeaderView(v.findViewById(R.id.swipe_refresh_header));
-
         mMessageEditText = (EditText) v.findViewById(R.id.message_edit_text);
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
 
@@ -94,20 +87,13 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
         mProgressBar.setIndeterminate(true);
 
         mHorizontalProgressBar = (MaterialProgressBar) v.findViewById(R.id.top_progress_bar);
+        mHorizontalProgressBar.setUseIntrinsicPadding(false);
 
-        mMessagesList = (RecyclerView) v.findViewById(R.id.swipe_target);
+        mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
         mListLayoutManager = new LinearLayoutManager(getActivity());
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
         mMessagesList.setScrollContainer(true);
-
-        // Animation for add new item or change item
-//        ScaleInBottomAnimator anim = new ScaleInBottomAnimator();
-//        anim.setAddDuration(500);
-//        anim.setChangeDuration(0);
-//
-
-//        mMessagesList.setItemAnimator(anim);
 
         setDataToView(savedInstanceState);
 
@@ -212,6 +198,19 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     markMessagesAsRead(recyclerView);
                 }
+
+                if (mListLayoutManager.findFirstVisibleItemPosition() == 1) {
+                    if (!Utils.getInstance().isNetworkConnected()) {
+                        Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+                    }
+
+                    if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
+                        mHorizontalProgressBar.setVisibility(View.VISIBLE);
+                        mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
+                    } else {
+                        mHorizontalProgressBar.setVisibility(View.INVISIBLE);
+                    }
+                }
             }
         });
 
@@ -237,11 +236,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
 
         if (isRefreshing) {
             isRefreshing = false;
-            mSwipeLoadLayout.setVisibility(View.GONE);
+            mMessagesList.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.VISIBLE);
         }
-
-        mSwipeLoadLayout.setSaveEnabled(true);
 
         mSendButton.setOnClickListener(v -> {
             if (!mMessageEditText.getText().toString().isEmpty()) {
@@ -315,21 +312,31 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     // Event from MainActivity or notification
     // Load messages of room
     public void onEvent(RoomModel model) {
-        mRoom = model;
-        countLoadMessages = 0;
-
-        if (mSwipeLoadLayout.isRefreshing()) {
-            mSwipeLoadLayout.setRefreshing(false);
+        if (mHorizontalProgressBar.getVisibility() == View.VISIBLE) {
+            mHorizontalProgressBar.setVisibility(View.INVISIBLE);
         }
 
+        countLoadMessages = 0;
         mMessagesAdapter.setRoom(model);
-        mPresenter.loadMessages(mRoom.id, countLoadMessages);
 
-//        if (Utils.getInstance().isNetworkConnected()) {
-//            //loadMessageRoomServer(mRoom);
-//        } else
-        if (Utils.getInstance().isNetworkConnected() && getView() != null && mMessagesArr.size() > 0) {
+        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
             Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+
+            if (mRoom == null || !mRoom.id.equals(model.id)) {
+                mPresenter.loadMessages(model.id, startNumberLoadMessages);
+            }
+        } else {
+            mPresenter.loadMessages(model.id, startNumberLoadMessages);
+        }
+
+        mRoom = model;
+    }
+
+    public void onEvent(RefreshMessagesRoomEvent room) {
+        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
+            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+        } else {
+            loadMessageRoomServer(room.getRoomModel());
         }
     }
 
@@ -380,9 +387,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 
-        if (mSwipeLoadLayout.isRefreshing()) {
+        if (mHorizontalProgressBar.getVisibility() == View.VISIBLE) {
             mMessagesAdapter.notifyDataSetChanged();
-            mSwipeLoadLayout.setRefreshing(false);
+            mHorizontalProgressBar.setVisibility(View.INVISIBLE);
         } else {
             mMessagesAdapter.notifyDataSetChanged();
 
@@ -399,8 +406,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     public void showError(String error) {
         hideListProgress();
 
-        if (mSwipeLoadLayout.isRefreshing()) {
-            mSwipeLoadLayout.setRefreshing(false);
+        if (mHorizontalProgressBar.getVisibility() == View.VISIBLE) {
+            mHorizontalProgressBar.setVisibility(View.INVISIBLE);
         }
 
         isRefreshing = false;
@@ -468,7 +475,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
             countLoadMessages += messages.size();
         }
 
-        mSwipeLoadLayout.setRefreshing(false);
+        mHorizontalProgressBar.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -499,18 +506,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     }
 
     @Override
-    public void showProgressBar() {
+    public void showTopProgressBar() {
         mHorizontalProgressBar.setVisibility(View.VISIBLE);
     }
 
     @Override
-    public void hideProgressBar() {
+    public void hideTopProgressBar() {
         mHorizontalProgressBar.setVisibility(View.GONE);
     }
 
     @Override
     public void showListProgress() {
-        mSwipeLoadLayout.setVisibility(View.GONE);
+        mMessagesList.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.VISIBLE);
 
         isRefreshing = true;
@@ -518,8 +525,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
 
     @Override
     public void hideListProgress() {
-        if (mSwipeLoadLayout.getVisibility() != View.VISIBLE) {
-            mSwipeLoadLayout.setVisibility(View.VISIBLE);
+        if (mMessagesList.getVisibility() != View.VISIBLE) {
+            mMessagesList.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.GONE);
         }
 
@@ -545,18 +552,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView, OnRefres
     @Override
     public Context getAppContext() {
         return getActivity();
-    }
-
-    @Override
-    public void onRefresh() {
-        mSwipeLoadLayout.postDelayed(() -> {
-            // Message not sent or sending, it hasn't id
-            if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
-                mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
-            } else {
-                mSwipeLoadLayout.setRefreshing(false);
-            }
-        }, 2000);
     }
 
     // Callback for adapter

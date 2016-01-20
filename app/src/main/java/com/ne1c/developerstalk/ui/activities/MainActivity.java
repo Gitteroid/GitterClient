@@ -39,6 +39,7 @@ import com.ne1c.developerstalk.di.components.MainComponent;
 import com.ne1c.developerstalk.di.modules.MainPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
+import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
@@ -218,7 +219,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 if (mRoomsList.size() > 0) {
                     EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
                 }
-                setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                setTitle(mRoomsList.get(selectedNavItem - 1).name);
             }
 
             mDrawer.closeDrawer();
@@ -354,7 +355,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 break;
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
-                    EventBus.getDefault().post(mActiveRoom);
+                    EventBus.getDefault().post(new RefreshMessagesRoomEvent(mActiveRoom));
 
                     mPresenter.loadRooms();
                 }

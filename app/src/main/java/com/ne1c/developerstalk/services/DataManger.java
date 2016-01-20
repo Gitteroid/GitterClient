@@ -16,9 +16,6 @@ import javax.inject.Inject;
 import retrofit.RestAdapter;
 import retrofit.client.Response;
 import rx.Observable;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func1;
 
 public class DataManger {
     private GitterApi mApi;
@@ -96,7 +93,7 @@ public class DataManger {
     }
 
     public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit) {
-        return Observable.concat(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
+        return Observable.merge(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
     }
 
     public void insertMessageToDb(MessageModel model, String roomId) {
@@ -104,7 +101,18 @@ public class DataManger {
     }
 
     public void insertMessagesToDb(ArrayList<MessageModel> messages, String roomId) {
-        mClientDatabase.insertMessages(messages, roomId);
+        // Save last 10 messages
+        if (messages.size() > 10) {
+            ArrayList<MessageModel> newList = new ArrayList<>();
+
+            for (int i = messages.size() - 11; i < messages.size(); i++) {
+                newList.add(messages.get(i));
+            }
+
+            mClientDatabase.insertMessages(newList, roomId);
+        } else {
+            mClientDatabase.insertMessages(messages, roomId);
+        }
     }
 
     private void sortByName(List<RoomModel> rooms) {
@@ -127,12 +135,11 @@ public class DataManger {
     }
 
     public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
-        mLoadMessagesFromNetwork = true;
-
         return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
                 .doOnNext(messageModels -> mLoadMessagesFromNetwork = true)
                 .doOnCompleted(() -> mLoadMessagesFromNetwork = false)
                 .map(messageModels -> {
+
                     insertMessagesToDb(messageModels, roomId);
                     return messageModels;
                 });
