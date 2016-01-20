@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.services.DataManger;
@@ -90,7 +91,9 @@ public class MainPresenter extends BasePresenter<MainView> {
                 }, throwable -> {
                     if (!throwable.getMessage().contains("Unable to resolve") &&
                             !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
+                        mView.showError(mView.getAppContext().getString(R.string.error));
+                    } else {
+                        mView.showError(mView.getAppContext().getString(R.string.no_network));
                     }
 
                     mView.showProfile(Utils.getInstance().getUserPref());
@@ -108,7 +111,9 @@ public class MainPresenter extends BasePresenter<MainView> {
                 }, (throwable -> {
                     if (!throwable.getMessage().contains("Unable to resolve") &&
                             !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
+                        mView.showError(mView.getAppContext().getString(R.string.error));
+                    } else {
+                        mView.showError(mView.getAppContext().getString(R.string.no_network));
                     }
                 }));
 
@@ -130,9 +135,9 @@ public class MainPresenter extends BasePresenter<MainView> {
                     return visibleList;
                 })
                 .subscribe(mView::showRooms, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
+                    if (throwable.getMessage().contains("Unable to resolve") ||
+                            throwable.getMessage().contains("timeout")) {
+                        mView.showError(mView.getAppContext().getString(R.string.no_network));
                     }
                 });
 

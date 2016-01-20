@@ -30,16 +30,20 @@ import java.util.List;
 import javax.inject.Inject;
 
 public class RoomsListFragment extends BaseFragment implements OnStartDragListener, RoomsListView {
-    @Inject
-    RoomsListPresenter mPresenter;
     private SwipeRefreshLayout mRefreshLayout;
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
     private ItemTouchHelper mItemTouchHelper;
     private ProgressDialog mProgressDialog;
+
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
+
     private boolean mIsEdit = false;
+
     private RoomsListComponent mComponent;
+
+    @Inject
+    RoomsListPresenter mPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -66,6 +70,8 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mRefreshLayout.setOnRefreshListener(() -> {
             if (!mIsEdit) {
                 mPresenter.loadRooms();
+            } else {
+                mRefreshLayout.setRefreshing(false);
             }
         });
 
@@ -126,9 +132,11 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mRefreshLayout.setRefreshing(false);
         }
 
-        mRooms.clear();
-        mRooms.addAll(rooms);
-        mAdapter.notifyDataSetChanged();
+        if (!mIsEdit) {
+            mRooms.clear();
+            mRooms.addAll(rooms);
+            mAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override

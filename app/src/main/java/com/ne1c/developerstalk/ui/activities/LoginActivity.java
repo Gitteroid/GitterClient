@@ -1,9 +1,10 @@
 package com.ne1c.developerstalk.ui.activities;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +15,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
@@ -23,11 +25,13 @@ import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
+import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
+
 public class LoginActivity extends AppCompatActivity implements LoginView {
     private Button mAuthBut;
     private ImageView mLogoImg;
     private WebView mAuthWebView;
-    private ProgressDialog mDialog;
+    private MaterialProgressBar mProgressBar;
 
     private LoginPresenter mPresenter;
 
@@ -42,6 +46,9 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         mAuthBut = (Button) findViewById(R.id.auth_but);
         mLogoImg = (ImageView) findViewById(R.id.logo_img);
         mAuthWebView = (WebView) findViewById(R.id.auth_webView);
+        mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
+
+        mProgressBar.setUseIntrinsicPadding(false);
 
         mAuthBut.setOnClickListener(v -> {
             if (Utils.getInstance().isNetworkConnected()) {
@@ -90,21 +97,13 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
     }
 
     @Override
-    public void showDialog() {
-        if (mDialog == null) {
-            mDialog = new ProgressDialog(LoginActivity.this);
-            mDialog.setIndeterminate(true);
-            mDialog.setMessage(getString(R.string.loading));
-        }
-
-        mDialog.show();
+    public void showProgress() {
+        mProgressBar.setVisibility(View.VISIBLE);
     }
 
     @Override
-    public void dismissDialog() {
-        if (mDialog.isShowing()) {
-            mDialog.dismiss();
-        }
+    public void hideProgress() {
+        mProgressBar.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -131,14 +130,18 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         return getApplicationContext();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mPresenter.unbindView();
+    }
+
     private class MyWebViewClient extends WebViewClient {
         private boolean startLoadToken = false;
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
-            if (url.equals(mPresenter.getAuthUrl())) {
-                showDialog();
-            }
+            showProgress();
 
             // If the authorization is successful, then get access_token
             // startLoadToken check that don't run second request
@@ -158,7 +161,7 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
 
-            dismissDialog();
+            hideProgress();
         }
 
         @Override
@@ -167,11 +170,5 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
 
             return super.shouldOverrideUrlLoading(view, url);
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mPresenter.unbindView();
     }
 }

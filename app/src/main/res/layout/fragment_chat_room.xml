@@ -1,41 +1,102 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
               tools:context=".ui.fragments.ChatRoomFragment">
 
+    <me.zhanghai.android.materialprogressbar.MaterialProgressBar
+        android:id="@+id/top_progress_bar"
+        style="@style/Widget.MaterialProgressBar.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="@null"
+        android:indeterminate="true"
+        android:layout_alignParentTop="true"
+        android:visibility="gone"
+        app:mpb_progressStyle="horizontal"/>
+
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_centerInParent="true"
         android:layout_weight="1"
         android:visibility="gone"/>
 
-    <in.srain.cube.views.ptr.PtrClassicFrameLayout
-        android:id="@+id/ptr_framelayout"
-        xmlns:cube_ptr="http://schemas.android.com/apk/res-auto"
+    <com.aspsine.swipetoloadlayout.SwipeToLoadLayout
+        android:id="@+id/refresh_messages_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_above="@+id/input_layout"
         android:layout_weight="1"
-        cube_ptr:ptr_duration_to_close="200"
-        cube_ptr:ptr_duration_to_close_header="1000"
-        cube_ptr:ptr_keep_header_when_refresh="true"
-        cube_ptr:ptr_pull_to_fresh="false"
-        cube_ptr:ptr_ratio_of_header_height_to_refresh="1.2"
-        cube_ptr:ptr_resistance="1.7">
+        app:swipe_style="classic">
+
+        <com.ne1c.developerstalk.ui.RefreshHeaderView
+            android:id="@id/swipe_refresh_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#F5F5F5"
+            android:gravity="center">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/refresh_header_height"
+                android:layout_gravity="center">
+
+                <ImageView
+                    android:id="@+id/arrow_imageView"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginRight="48dp"
+                    android:layout_toLeftOf="@+id/refresh_textView"
+                    android:background="@drawable/arrow_up" />
+
+                <ImageView
+                    android:id="@+id/success_imageView"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginRight="48dp"
+                    android:layout_toLeftOf="@+id/refresh_textView"
+                    android:background="@drawable/success" />
+
+                <ProgressBar
+                    android:id="@+id/progress_bar_header"
+                    style="?android:attr/progressBarStyleSmallInverse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginRight="48dp"
+                    android:layout_toLeftOf="@+id/refresh_textView" />
+
+                <TextView
+                    android:id="@+id/refresh_textView"
+                    android:layout_width="150dp"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:gravity="center"
+                    android:textColor="@color/darkTextColor" />
+            </RelativeLayout>
+
+        </com.ne1c.developerstalk.ui.RefreshHeaderView>
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/messages_list"
+            android:id="@id/swipe_target"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipToPadding="false"
             android:transcriptMode="alwaysScroll"/>
-    </in.srain.cube.views.ptr.PtrClassicFrameLayout>
+    </com.aspsine.swipetoloadlayout.SwipeToLoadLayout>
 
     <LinearLayout
+        android:id="@+id/input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="horizontal">
 
         <ImageButton
@@ -48,8 +109,13 @@
         <EditText
             android:id="@+id/message_edit_text"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
             android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
+            android:background="@android:color/transparent"
+            android:hint="@string/type_to_compose"
             android:maxLines="3"/>
 
         <ImageButton
@@ -59,5 +125,4 @@
             android:background="?attr/selectableItemBackground"
             android:src="@mipmap/ic_send"/>
     </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>

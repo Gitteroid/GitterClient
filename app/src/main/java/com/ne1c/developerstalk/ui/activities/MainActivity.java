@@ -205,7 +205,7 @@ public class MainActivity extends BaseActivity implements MainView {
             RoomModel intentRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
 
             // If selected room not equal room id from notification, than load room
-            if (mActiveRoom == null || !intentRoom.id.equals(mActiveRoom.id)) {
+            if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
                 mActiveRoom = intentRoom;
 
                 for (int i = 0; i < mRoomsList.size(); i++) {
@@ -354,7 +354,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 break;
             case R.id.action_refresh:
                 if (mActiveRoom != null) {
-                    mChatRoomFragment.onRefreshRoom();
+                    EventBus.getDefault().post(mActiveRoom);
 
                     mPresenter.loadRooms();
                 }
@@ -567,9 +567,5 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public Context getAppContext() {
         return getApplicationContext();
-    }
-
-    public interface RefreshRoomCallback {
-        void onRefreshRoom();
     }
 }

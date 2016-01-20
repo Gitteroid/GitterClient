@@ -65,7 +65,7 @@ public class MainPresenterTest {
 
     @Test
     public void failLoadRooms() {
-        when(dataManger.getRooms()).thenReturn(Observable.error(new Throwable("error_text")));
+        when(dataManger.getRooms()).thenReturn(Observable.error(new Throwable("Unable to resolve api.gitter.im")));
 
         presenter.loadRooms();
 

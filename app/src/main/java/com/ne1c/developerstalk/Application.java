@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk;
 
+import com.crashlytics.android.Crashlytics;
 import com.ne1c.developerstalk.di.HasComponent;
 import com.ne1c.developerstalk.di.components.ApplicationComponent;
 import com.ne1c.developerstalk.di.components.DaggerApplicationComponent;
@@ -10,6 +11,8 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import javax.inject.Inject;
 
+import io.fabric.sdk.android.Fabric;
+
 public class Application extends android.app.Application implements HasComponent<ApplicationComponent>{
     private ApplicationComponent mApplicationComponent;
 
@@ -19,6 +22,7 @@ public class Application extends android.app.Application implements HasComponent
     @Override
     public void onCreate() {
         super.onCreate();
+        Fabric.with(this, new Crashlytics());
 
         Utils.init(getApplicationContext());
 

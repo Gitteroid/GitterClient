@@ -1,5 +1,7 @@
 package com.ne1c.developerstalk.utils;
 
+import android.util.Patterns;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,9 +16,11 @@ public class MarkdownUtils {
     public static final int ITALICS = 3;
     public static final int STRIKETHROUGH = 4;
     public static final int QUOTE = 5;
-    public static final int LINK = 6;
+    public static final int GITTER_LINK = 6;
     public static final int IMAGE_LINK = 7;
     public static final int ISSUE = 8;
+    public static final int MENTIONS = 9;
+    public static final int LINK = 10;
 
     private static final Pattern SINGLELINE_CODE_PATTERN = Pattern.compile("((?!``)`(.+?)`(?!```))|(```(.+?)```)"); // `code` or ```code```
     private static final Pattern MULTILINE_CODE_PATTERN = Pattern.compile("```(.|\\n?)+?```");  // ```code``` multiline
@@ -25,10 +29,12 @@ public class MarkdownUtils {
     private static final Pattern STRIKETHROUGH_PATTERN = Pattern.compile("~{2}(.+?)~{2}"); // ~~strikethrough~~
     private static final Pattern QUOTE_PATTERN = Pattern.compile("(\\n|^)>(.+?[\\n]?)+", Pattern.MULTILINE); // >blockquote
     private static final Pattern ISSUE_PATTERN = Pattern.compile("#(.+?)\\S+"); // #123
-    private static final Pattern LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
+    private static final Pattern GITTER_LINK_PATTERN = Pattern.compile("\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [title](http://)
+    private static final Pattern LINK_PATTERN = Patterns.WEB_URL;
     private static final Pattern IMAGE_LINK_PATTERN = Pattern.compile("!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // ![alt](http://)
     private static final Pattern PREVIEW_IMAGE_LINK_PATTERN =
             Pattern.compile("\\[!\\[.*?]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)]\\((\\bhttp\\b|\\bhttps\\b):\\/\\/.*?\\)"); // [![alt](preview_url)(full_url)]
+    private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\w*-?\\w)*");
 
     private final String mMessage;
 
@@ -39,9 +45,11 @@ public class MarkdownUtils {
     private List<String> mItalics;
     private List<String> mStrikethrough;
     private List<String> mQuote;
+    private List<String> mGitterLinks;
     private List<String> mLinks;
     private List<Object> mImageLinks;
     private List<String> mIssues;
+    private List<String> mMentions;
 
     public MarkdownUtils(String message) {
         if (message == null) {
@@ -67,10 +75,12 @@ public class MarkdownUtils {
         //message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
         message = message.replaceAll(PREVIEW_IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
+        message = message.replaceAll(GITTER_LINK_PATTERN.pattern(), "{" + String.valueOf(GITTER_LINK) + "}");
+        message = message.replaceAll(MENTION_PATTERN.pattern(), "{" + String.valueOf(MENTIONS) + "}");
         message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
-        Matcher matcher = Pattern.compile("\\{\\d\\}").matcher(message);
-        String[] splitted = message.split("\\{\\d\\}");
+        Matcher matcher = Pattern.compile("\\{\\d+\\}").matcher(message);
+        String[] splitted = message.split("\\{\\d+\\}");
 
         boolean find = matcher.find();
 
@@ -100,7 +110,6 @@ public class MarkdownUtils {
                 i++;
                 find = matcher.find();
             } while (i < splitted.length || find);
-
         } else {
             mParsedString.addAll(Arrays.asList(splitted));
         }
@@ -246,6 +255,26 @@ public class MarkdownUtils {
         return Collections.emptyList();
     }
 
+    private List<String> readGitterLinks(String message) {
+        Matcher matcher = GITTER_LINK_PATTERN.matcher(message);
+
+        if (mGitterLinks != null) {
+            return mGitterLinks;
+        }
+
+        if (matcher.find()) {
+            mGitterLinks = new ArrayList<>();
+
+            do {
+                mGitterLinks.add(matcher.group().replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)", ""));
+            } while (matcher.find());
+
+            return mGitterLinks;
+        }
+
+        return Collections.emptyList();
+    }
+
     private List<String> readLinks(String message) {
         Matcher matcher = LINK_PATTERN.matcher(message);
 
@@ -257,7 +286,7 @@ public class MarkdownUtils {
             mLinks = new ArrayList<>();
 
             do {
-                mLinks.add(matcher.group().replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)", ""));
+                mLinks.add(matcher.group());
             } while (matcher.find());
 
             return mLinks;
@@ -267,31 +296,31 @@ public class MarkdownUtils {
     }
 
     private List<Object> readImageLinks(String message) {
-        Matcher prewiew_matcher = PREVIEW_IMAGE_LINK_PATTERN.matcher(message);
+        Matcher preview_matcher = PREVIEW_IMAGE_LINK_PATTERN.matcher(message);
         Matcher full_matcher = IMAGE_LINK_PATTERN.matcher(message);
 
         if (mImageLinks != null) {
             return mImageLinks;
         }
 
-        if (prewiew_matcher.find()) {
+        if (preview_matcher.find()) {
             mImageLinks = new ArrayList<>();
 
             do {
-                String previewUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\(", "").replaceFirst("(\\)\\].*)+", "");
-                String fullUrl = prewiew_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\((.*?)\\)\\]\\(", "").replaceFirst("\\)", "");
+                String previewUrl = preview_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\(", "").replaceFirst("(\\)\\].*)+", "");
+                String fullUrl = preview_matcher.group().replaceFirst("\\[!\\[\\b.*\\b]\\((.*?)\\)\\]\\(", "").replaceFirst("\\)", "");
 
                 PreviewImageModel link = new PreviewImageModel(previewUrl, fullUrl);
 
                 mImageLinks.add(link);
-            } while (prewiew_matcher.find());
+            } while (preview_matcher.find());
 
             return mImageLinks;
         } else if (full_matcher.find()) {
             mImageLinks = new ArrayList<>();
 
             do {
-                mImageLinks.add(full_matcher.group().replaceFirst("!\\[\\b.*\\b]\\(", "").replace(")", ""));
+                mImageLinks.add(full_matcher.group().replaceFirst("!\\[.*?]\\(", "").replace(")", ""));
             } while (full_matcher.find());
 
             return mImageLinks;
@@ -315,6 +344,26 @@ public class MarkdownUtils {
             } while (matcher.find());
 
             return mIssues;
+        }
+
+        return Collections.emptyList();
+    }
+
+    private List<String> readMentions(String message) {
+        Matcher matcher = MENTION_PATTERN.matcher(message);
+
+        if (mMentions != null) {
+            return mMentions;
+        }
+
+        if (matcher.find()) {
+            mMentions = new ArrayList<>();
+
+            do {
+                mMentions.add(matcher.group());
+            } while (matcher.find());
+
+            return mMentions;
         }
 
         return Collections.emptyList();
@@ -344,6 +393,10 @@ public class MarkdownUtils {
         return readItalics(mMessage);
     }
 
+    public List<String> getGitterLinks() {
+        return readGitterLinks(mMessage);
+    }
+
     public List<String> getLinks() {
         return readLinks(mMessage);
     }
@@ -354,6 +407,10 @@ public class MarkdownUtils {
 
     public List<String> getIssues() {
         return readIssues(mMessage);
+    }
+
+    public List<String> getMentions() {
+        return readMentions(mMessage);
     }
 
     public List<String> getParsedString() {
@@ -368,7 +425,9 @@ public class MarkdownUtils {
                 getQuote().size() > 0 ||
                 getItalics().size() > 0 ||
                 getImageLinks().size() > 0 ||
-                getLinks().size() > 0;
+                getGitterLinks().size() > 0 ||
+                getLinks().size() > 0 ||
+                getMentions().size() > 0;
     }
 
     public static class PreviewImageModel {

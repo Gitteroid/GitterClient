@@ -19,6 +19,10 @@ public interface ChatView extends BaseView {
 
     void errorDeliveredMessage();
 
+    void showProgressBar();
+
+    void hideProgressBar();
+
     void showListProgress();
 
     void hideListProgress();

@@ -67,15 +67,13 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mSubscriptions.add(sub);
     }
 
-    public void loadMessages(String roomId, int limit) {
+    // Load messages from network
+    public void loadNetworkMessages(String roomId, int limit) {
         mView.showListProgress();
 
-        Subscription sub = mDataManger.getMessages(roomId, limit)
+        Subscription sub = mDataManger.getNetworkMessages(roomId, limit)
                 .subscribeOn(mSchedulersFactory.io())
-                .map(messageModels -> {
-                    mDataManger.insertMessagesToDb(messageModels, roomId);
-                    return messageModels;
-                }).observeOn(mSchedulersFactory.androidMainThread())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
                     mView.showMessages(messages);
                     mView.hideListProgress();
@@ -90,6 +88,26 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mSubscriptions.add(sub);
     }
 
+    // Load messages from database, then load from network if possible
+    public void loadMessages(String roomId, int limit) {
+        Subscription sub = mDataManger.getMessages(roomId, limit)
+                .subscribe(messages -> {
+                    if (mDataManger.isLoadMessagesFromDatabase() && messages.size() == 0) {
+                        mView.showListProgress();
+                    } else if (mDataManger.isLoadMessagesFromDatabase() && messages.size() > 0) {
+                        mView.showProgressBar();
+                    }
+
+                    if (mDataManger.isLoadMessagesFromNetwork()) {
+                        mView.hideListProgress();
+                        mView.hideProgressBar();
+                    }
+
+                    mView.showMessages(messages);
+                });
+    }
+
+    // Load messages from database
     public void loadCachedMessages(String roomId) {
         Subscription sub = mDataManger.getCachedMessages(roomId)
                 .subscribeOn(mSchedulersFactory.io())
