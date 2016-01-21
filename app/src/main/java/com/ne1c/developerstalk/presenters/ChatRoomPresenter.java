@@ -91,20 +91,24 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     // Load messages from database, then load from network if possible
     public void loadMessages(String roomId, int limit) {
         Subscription sub = mDataManger.getMessages(roomId, limit)
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
                     if (mDataManger.isLoadMessagesFromDatabase() && messages.size() == 0) {
                         mView.showListProgress();
                     } else if (mDataManger.isLoadMessagesFromDatabase() && messages.size() > 0) {
-                        mView.showProgressBar();
+                        mView.showTopProgressBar();
                     }
 
                     if (mDataManger.isLoadMessagesFromNetwork()) {
                         mView.hideListProgress();
-                        mView.hideProgressBar();
+                        mView.hideTopProgressBar();
                     }
 
                     mView.showMessages(messages);
                 });
+
+        mSubscriptions.add(sub);
     }
 
     // Load messages from database

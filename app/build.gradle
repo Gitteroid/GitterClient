@@ -98,7 +98,6 @@ dependencies {
     compile 'io.reactivex:rxandroid:1.0.1'
     compile 'jp.wasabeef:recyclerview-animators:1.3.0'
     compile 'com.android.support:cardview-v7:23.1.1'
-    compile 'com.github.Aspsine:SwipeToLoadLayout:v1.0.2'
     compile 'me.zhanghai.android.materialprogressbar:library:1.1.4'
 
     compile 'com.google.dagger:dagger:2.0.1'
