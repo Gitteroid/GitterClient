@@ -199,7 +199,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     markMessagesAsRead(recyclerView);
                 }
 
-                if (mListLayoutManager.findFirstVisibleItemPosition() == 1) {
+                if (mListLayoutManager.findFirstVisibleItemPosition() == 1 ||
+                        mListLayoutManager.findFirstVisibleItemPosition() == 0) {
                     if (!Utils.getInstance().isNetworkConnected()) {
                         Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
                     }
