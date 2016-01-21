@@ -16,6 +16,7 @@ import javax.inject.Inject;
 import retrofit.RestAdapter;
 import retrofit.client.Response;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 public class DataManger {
     private GitterApi mApi;
@@ -93,7 +94,7 @@ public class DataManger {
     }
 
     public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit) {
-        return Observable.merge(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
+        return Observable.concat(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
     }
 
     public void insertMessageToDb(MessageModel model, String roomId) {
@@ -136,13 +137,14 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
         return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
-                .doOnNext(messageModels -> mLoadMessagesFromNetwork = true)
-                .doOnCompleted(() -> mLoadMessagesFromNetwork = false)
+                .doOnEach(messageModels -> mLoadMessagesFromNetwork = true)
+                .doOnTerminate(() -> mLoadMessagesFromNetwork = false)
                 .map(messageModels -> {
-
                     insertMessagesToDb(messageModels, roomId);
                     return messageModels;
-                });
+                })
+                .observeOn(Schedulers.io())
+                ;
     }
 
     public Observable<Response> readMessages(String roomId, String[] ids) {
@@ -158,8 +160,8 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
         return mClientDatabase.getMessages(roomId)
-                .doOnNext(messageModels -> mLoadMessagesFromDatabase = true)
-                .doOnCompleted(() -> mLoadMessagesFromDatabase = false);
+                .doOnEach(messageModels -> mLoadMessagesFromDatabase = true)
+                .doOnTerminate(() -> mLoadMessagesFromDatabase = false);
     }
 
     public boolean isLoadMessagesFromNetwork() {
