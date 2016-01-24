@@ -17,7 +17,9 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.text.util.Linkify;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -328,7 +330,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
                             holder.messageLayout.addView(textView);
                         }
-
 
                         break;
                     default: // Text
@@ -671,7 +672,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         public Spannable getLinksSpannableText(String text, String link) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new UnderlineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new URLSpan(link), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             span.setSpan(new ClickableSpan() {
                 @Override
                 public void onClick(View widget) {
@@ -698,6 +699,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         public TextView getTextView() {
             TextView view = new TextView(mActivity);
             view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
+            view.setAutoLinkMask(Linkify.WEB_URLS);
+            view.setLinksClickable(true);
             return view;
         }
 
