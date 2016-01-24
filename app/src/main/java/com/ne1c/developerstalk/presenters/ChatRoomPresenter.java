@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 import javax.inject.Inject;
 
+import rx.Observable;
 import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
@@ -90,17 +91,29 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from database, then load from network if possible
     public void loadMessages(String roomId, int limit) {
-        Subscription sub = mDataManger.getMessages(roomId, limit)
+        final boolean[] fromNetwork = {false};
+        final boolean[] fromDatabase = {false};
+
+        Subscription sub = Observable.concat(mDataManger.getCachedMessages(roomId),
+                mDataManger.getNetworkMessages(roomId, limit))
+                .doOnNext(messages -> {
+                    if (fromDatabase[0]) {
+                        fromDatabase[0] = false;
+                        fromNetwork[0] = true;
+                    } else {
+                        fromDatabase[0] = true;
+                    }
+                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
-                    if (mDataManger.isLoadMessagesFromDatabase() && messages.size() == 0) {
+                    if (fromDatabase[0] && messages.size() == 0) {
                         mView.showListProgress();
-                    } else if (mDataManger.isLoadMessagesFromDatabase() && messages.size() > 0) {
+                    } else if (fromDatabase[0] && messages.size() > 0) {
                         mView.showTopProgressBar();
                     }
 
-                    if (mDataManger.isLoadMessagesFromNetwork()) {
+                    if (fromNetwork[0]) {
                         mView.hideListProgress();
                         mView.hideTopProgressBar();
                     }

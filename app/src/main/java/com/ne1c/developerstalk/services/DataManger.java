@@ -22,9 +22,6 @@ public class DataManger {
     private GitterApi mApi;
     private ClientDatabase mClientDatabase;
 
-    private boolean mLoadMessagesFromNetwork = false;
-    private boolean mLoadMessagesFromDatabase = false;
-
     @Inject
     public DataManger(ClientDatabase database) {
         mApi = new RestAdapter.Builder()
@@ -93,10 +90,6 @@ public class DataManger {
                 roomId, limit, beforeId);
     }
 
-    public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit) {
-        return Observable.concat(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
-    }
-
     public void insertMessageToDb(MessageModel model, String roomId) {
         mClientDatabase.insertMessage(model, roomId);
     }
@@ -137,14 +130,11 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
         return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
-                .doOnEach(messageModels -> mLoadMessagesFromNetwork = true)
-                .doOnTerminate(() -> mLoadMessagesFromNetwork = false)
                 .map(messageModels -> {
                     insertMessagesToDb(messageModels, roomId);
                     return messageModels;
                 })
-                .observeOn(Schedulers.io())
-                ;
+                .observeOn(Schedulers.io());
     }
 
     public Observable<Response> readMessages(String roomId, String[] ids) {
@@ -159,16 +149,6 @@ public class DataManger {
     }
 
     public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
-        return mClientDatabase.getMessages(roomId)
-                .doOnEach(messageModels -> mLoadMessagesFromDatabase = true)
-                .doOnTerminate(() -> mLoadMessagesFromDatabase = false);
-    }
-
-    public boolean isLoadMessagesFromNetwork() {
-        return mLoadMessagesFromNetwork;
-    }
-
-    public boolean isLoadMessagesFromDatabase() {
-        return mLoadMessagesFromDatabase;
+        return mClientDatabase.getMessages(roomId);
     }
 }
