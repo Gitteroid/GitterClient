@@ -676,7 +676,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             span.setSpan(new ClickableSpan() {
                 @Override
                 public void onClick(View widget) {
-                    mActivity.startActivity(
+                    widget.getContext().startActivity(
                             new Intent(Intent.ACTION_VIEW, Uri.parse(link)));
                 }
             }, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);

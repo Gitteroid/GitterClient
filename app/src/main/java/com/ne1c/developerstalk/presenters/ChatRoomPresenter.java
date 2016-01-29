@@ -58,19 +58,14 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successLoadBeforeId, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
-                });
+                .subscribe(mView::successLoadBeforeId, throwable -> {});
 
         mSubscriptions.add(sub);
     }
 
     // Load messages from network
     public void loadNetworkMessages(String roomId, int limit) {
-        mView.showListProgress();
+        mView.showListProgressBar();
 
         Subscription sub = mDataManger.getNetworkMessages(roomId, limit)
                 .subscribeOn(mSchedulersFactory.io())
@@ -108,7 +103,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
                     if (fromDatabase[0] && messages.size() == 0) {
-                        mView.showListProgress();
+                        mView.showListProgressBar();
                     } else if (fromDatabase[0] && messages.size() > 0) {
                         mView.showTopProgressBar();
                     }
@@ -119,7 +114,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     }
 
                     mView.showMessages(messages);
-                });
+                }, throwable -> {});
 
         mSubscriptions.add(sub);
     }
@@ -144,7 +139,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     return messageModel;
                 })
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successUpdate, throwable -> {
+                .subscribe(mView::successUpdateMessage, throwable -> {
                     mView.showError(mView.getAppContext().getString(R.string.updated_error));
                 });
 
@@ -164,8 +159,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
-                    mView.successRead(first, last, roomId, ids.length - 1);
-                });
+                    mView.successReadMessages(first, last, roomId, ids.length - 1);
+                }, throwable -> {});
 
         mSubscriptions.add(sub);
     }
