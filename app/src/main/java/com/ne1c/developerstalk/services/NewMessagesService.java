@@ -81,7 +81,7 @@ public class NewMessagesService extends Service {
                     mRooms = roomModels;
 
                     createSubscribers();
-                });
+                }).unsubscribe();
 
         return START_STICKY;
     }
