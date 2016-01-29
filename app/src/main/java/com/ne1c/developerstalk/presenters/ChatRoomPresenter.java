@@ -1,10 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -58,7 +58,9 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successLoadBeforeId, throwable -> {});
+                .subscribe(mView::successLoadBeforeId, throwable -> {
+                    mView.hideTopProgressBar();
+                });
 
         mSubscriptions.add(sub);
     }
@@ -75,10 +77,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     mView.hideListProgress();
                 }, throwable -> {
                     mView.hideListProgress();
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                    mView.hideTopProgressBar();
                 });
 
         mSubscriptions.add(sub);
@@ -114,7 +113,10 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     }
 
                     mView.showMessages(messages);
-                }, throwable -> {});
+                }, throwable -> {
+                    mView.hideListProgress();
+                    mView.hideTopProgressBar();
+                });
 
         mSubscriptions.add(sub);
     }
