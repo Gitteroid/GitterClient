@@ -4,19 +4,18 @@
         <SwitchPreference
             android:defaultValue="true"
             android:key="enable_notif"
-            android:title="@string/enable_notif" />
-
+            android:title="@string/enable_notif"/>
         <CheckBoxPreference
             android:defaultValue="true"
             android:dependency="enable_notif"
             android:key="notif_sound"
-            android:title="@string/enable_notif_sound" />
+            android:title="@string/enable_notif_sound"/>
 
         <CheckBoxPreference
             android:defaultValue="true"
             android:dependency="enable_notif"
             android:key="notif_vibro"
-            android:title="@string/enable_notif_vibro" />
+            android:title="@string/enable_notif_vibro"/>
         <CheckBoxPreference
             android:defaultValue="false"
             android:dependency="enable_notif"
@@ -30,7 +29,14 @@
             android:defaultValue="10"
             android:inputType="numberSigned"
             android:key="number_load_mess"
-            android:title="@string/count_load_mess"
-            android:summary="Range of messages from 10 to 25"/>
+            android:summary="Range of messages from 10 to 25"
+            android:title="@string/count_load_mess"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/app_work">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="background_service"
+            android:summary="@string/enable_background_app_desc"
+            android:title="@string/enable_background_service"/>
     </PreferenceCategory>
 </PreferenceScreen>
