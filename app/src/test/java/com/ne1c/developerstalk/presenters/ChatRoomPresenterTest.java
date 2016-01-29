@@ -152,7 +152,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, times(1)).insertMessageToDb(message, ROOM_ID);
-        verify(view, times(1)).successUpdate(message);
+        verify(view, times(1)).successUpdateMessage(message);
         verify(view, never()).showError(anyString());
     }
 
@@ -166,7 +166,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, never()).insertMessageToDb(message, ROOM_ID);
-        verify(view, never()).successUpdate(message);
+        verify(view, never()).successUpdateMessage(message);
         verify(view, times(1)).showError(anyString());
     }
 
@@ -179,7 +179,7 @@ public class ChatRoomPresenterTest {
 
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
-        verify(view, times(1)).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, times(1)).successReadMessages(anyInt(), anyInt(), anyString(), anyInt());
     }
 
     @Test
@@ -194,7 +194,7 @@ public class ChatRoomPresenterTest {
             assertTrue(e instanceof rx.exceptions.OnErrorNotImplementedException);
         }
 
-        verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, never()).successReadMessages(anyInt(), anyInt(), anyString(), anyInt());
     }
 
     @After
