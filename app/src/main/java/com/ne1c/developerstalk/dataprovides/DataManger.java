@@ -1,7 +1,6 @@
-package com.ne1c.developerstalk.services;
+package com.ne1c.developerstalk.dataprovides;
 
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.database.ClientDatabase;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;

@@ -21,7 +21,7 @@ import android.text.style.StyleSpan;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.api.GitterStreaming;
-import com.ne1c.developerstalk.database.ClientDatabase;
+import com.ne1c.developerstalk.dataprovides.ClientDatabase;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
@@ -42,7 +42,7 @@ public class NewMessagesService extends Service {
     public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
     private List<RoomModel> mRooms;
-    private CompositeSubscription mMessagesSubscrptions;
+    private CompositeSubscription mMessagesSubscriptions;
 
     private GitterStreaming mStreaming;
 
@@ -87,7 +87,7 @@ public class NewMessagesService extends Service {
     }
 
     private void createSubscribers() {
-        mMessagesSubscrptions = new CompositeSubscription();
+        mMessagesSubscriptions = new CompositeSubscription();
 
         for (final RoomModel room : mRooms) {
             Subscription sub = mStreaming.getMessageStream(room.id).subscribe(message -> {
@@ -109,13 +109,16 @@ public class NewMessagesService extends Service {
                 }
             });
 
-            mMessagesSubscrptions.add(sub);
+            mMessagesSubscriptions.add(sub);
         }
     }
 
     @Override
     public void onDestroy() {
-        mMessagesSubscrptions.unsubscribe();
+        if (!mMessagesSubscriptions.isUnsubscribed()) {
+            mMessagesSubscriptions.unsubscribe();
+        }
+
         unregisterReceiver(networkChangeReceiver);
         super.onDestroy();
     }
@@ -124,11 +127,13 @@ public class NewMessagesService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Utils.getInstance().isNetworkConnected()) {
-                if (mMessagesSubscrptions.isUnsubscribed()) {
+                if (mMessagesSubscriptions.isUnsubscribed()) {
                     createSubscribers();
                 }
             } else {
-                mMessagesSubscrptions.unsubscribe();
+                if (!mMessagesSubscriptions.isUnsubscribed()) {
+                    mMessagesSubscriptions.unsubscribe();
+                }
             }
         }
     };

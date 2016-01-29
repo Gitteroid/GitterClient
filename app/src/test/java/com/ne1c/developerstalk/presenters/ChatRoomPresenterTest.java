@@ -5,7 +5,7 @@ import android.content.Context;
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.MessageModel;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
 
 import org.junit.After;
