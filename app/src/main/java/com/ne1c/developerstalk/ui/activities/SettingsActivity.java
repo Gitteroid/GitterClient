@@ -1,7 +1,6 @@
 package com.ne1c.developerstalk.ui.activities;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -10,8 +9,9 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.ui.fragments.PreferencesFragment;
+import com.ne1c.developerstalk.utils.Utils;
+
 public class SettingsActivity extends AppCompatActivity {
 
     private final int FRAGMENT_CONTAINER_ID = Integer.valueOf(666);
@@ -54,21 +54,21 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public void finish() {
-        // Restart service for update prefs in service
-        stopService(new Intent(this, NewMessagesService.class));
-        startService(new Intent(this, NewMessagesService.class));
-        super.finish();
+        Utils.getInstance().startNotificationService();
+        SettingsActivity.super.finish();
     }
 
     private void showDialog() {
         new AlertDialog.Builder(SettingsActivity.this)
                 .setTitle("Warning!")
-                .setMessage(R.string.changes)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        SettingsActivity.super.finish();
-                    }
-                }).show();
+                .setMessage(R.string.prefs_restart_app)
+                .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                    Intent intent = getBaseContext().getPackageManager()
+                            .getLaunchIntentForPackage(getBaseContext().getPackageName());
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                }).setNegativeButton(android.R.string.no, (dialog, which) -> {
+            SettingsActivity.super.finish();
+        }).show();
     }
 }

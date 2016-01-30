@@ -7,11 +7,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.text.Spannable;
@@ -32,7 +30,7 @@ import java.util.List;
 import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
-public class NewMessagesService extends Service {
+public class NotificationService extends Service {
     public static final int NOTIF_REQUEST_CODE = 1000;
     public static final int NOTIF_CODE = 101;
 
@@ -70,11 +68,10 @@ public class NewMessagesService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        mEnableNotif = prefs.getBoolean("enable_notif", true);
-        mSound = prefs.getBoolean("notif_sound", true);
-        mVibro = prefs.getBoolean("notif_vibro", true);
-        mWithUserName = prefs.getBoolean("notif_username", false);
+        mEnableNotif = intent.getBooleanExtra("enable_notif", true);
+        mSound = intent.getBooleanExtra("notif_sound", true);
+        mVibro = intent.getBooleanExtra("notif_vibro", true);
+        mWithUserName = intent.getBooleanExtra("notif_username", false);
 
         new ClientDatabase(getApplicationContext()).getRooms()
                 .subscribe(roomModels -> {
@@ -120,6 +117,7 @@ public class NewMessagesService extends Service {
         }
 
         unregisterReceiver(networkChangeReceiver);
+
         super.onDestroy();
     }
 
