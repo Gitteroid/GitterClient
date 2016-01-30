@@ -103,7 +103,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             holderConf.counterMess.setVisibility(View.VISIBLE);
         } else {
-            holderConf.counterMess.setVisibility(View.GONE);
+            holderConf.counterMess.setVisibility(View.INVISIBLE);
         }
 
         if (mIsEdit) {
@@ -155,7 +155,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             holderOne.counterMess.setVisibility(View.VISIBLE);
         } else {
-            holderOne.counterMess.setVisibility(View.GONE);
+            holderOne.counterMess.setVisibility(View.INVISIBLE);
         }
 
         if (mIsEdit) {
