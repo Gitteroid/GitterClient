@@ -3,13 +3,16 @@ package com.ne1c.developerstalk.utils;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.services.NotificationService;
 
 /**
  * Helper class
@@ -111,5 +114,17 @@ public class Utils {
         clipboard.setPrimaryClip(clip);
 
         Toast.makeText(mContext, "Copied", Toast.LENGTH_SHORT).show();
+    }
+
+    public void startNotificationService() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+        Intent intent = new Intent(mContext, NotificationService.class);
+        intent.putExtra("enable_notif", prefs.getBoolean("enable_notif", true));
+        intent.putExtra("notif_sound", prefs.getBoolean("notif_sound", true));
+        intent.putExtra("notif_vibro", prefs.getBoolean("notif_vibro", true));
+        intent.putExtra("notif_username", prefs.getBoolean("notif_username", false));
+
+        mContext.startService(intent);
     }
 }
