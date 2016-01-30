@@ -4,8 +4,8 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
-import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.ui.views.ChatView;
 
 import org.junit.After;
@@ -117,7 +117,7 @@ public class ChatRoomPresenterTest {
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
         verify(view, never()).successLoadBeforeId(any(ArrayList.class));
-        verify(view, times(1)).showError(anyString());
+        verify(view, times(1)).hideTopProgressBar();
     }
 
     @Test
@@ -139,7 +139,7 @@ public class ChatRoomPresenterTest {
         presenter.loadNetworkMessages(ROOM_ID, 100500);
 
         verify(view, never()).showMessages(any(ArrayList.class));
-        verify(view, times(1)).showError(anyString());
+        verify(view, times(1)).hideListProgress();
     }
 
     @Test
