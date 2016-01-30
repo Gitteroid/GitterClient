@@ -34,11 +34,11 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
-import com.ne1c.developerstalk.dataprovides.DataManger;
-import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.SinglelineSpan;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.ui.fragments.EditMessageFragment;
@@ -499,9 +499,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             mMessages.get(position).sent = StatusMessage.SENDING.name();
 
                             // Repeat send
-                            mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                    .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, message.text)
-                                    .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                            mActivity.sendBroadcast(new Intent(NotificationService.BROADCAST_SEND_MESSAGE)
+                                    .putExtra(NotificationService.SEND_MESSAGE_EXTRA_KEY, message.text)
+                                    .putExtra(NotificationService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
 
                             notifyItemChanged(position);
                         }

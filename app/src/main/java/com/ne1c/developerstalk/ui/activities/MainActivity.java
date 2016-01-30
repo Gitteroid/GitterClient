@@ -44,7 +44,7 @@ import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
-import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.ui.views.MainView;
@@ -170,7 +170,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
             if (mRoomsList.size() > 0) {
                 // If activity open from notification
-                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+                mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
                 if (mActiveRoom == null || mActiveRoom.id == null) {
                     mActiveRoom = mRoomsList.get(selectedNavItem - 1);
@@ -203,7 +203,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         // If get intent from notification
         if (mRoomsList != null) {
-            RoomModel intentRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             // If selected room not equal room id from notification, than load room
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
@@ -286,7 +286,7 @@ public class MainActivity extends BaseActivity implements MainView {
                         startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
-                        stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+                        stopService(new Intent(getApplicationContext(), NotificationService.class));
                         finish();
                     } else if (mRoomsList != null && mRoomsList.size() > 0) {
                         if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
@@ -412,7 +412,7 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         if (mRoomsList.size() > 0) {
-            RoomModel room = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            RoomModel room = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             String roomId = room != null ? room.id : null;
 
@@ -421,7 +421,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 getIntent().removeExtra("roomId");
             } else {
                 // Not to repeat open room
-                getIntent().removeExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+                getIntent().removeExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
             }
 
             if (roomId != null) {
