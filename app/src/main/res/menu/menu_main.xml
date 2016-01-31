@@ -8,10 +8,10 @@
         android:orderInCategory="100"
         android:title="@string/action_refresh"
         app:showAsAction="always"/>
-    <item
-        android:id="@+id/action_leave"
-        android:icon="@mipmap/ic_leave"
-        android:orderInCategory="100"
-        android:title="@string/action_leave"
-        app:showAsAction="ifRoom"/>
+    <!--<item-->
+    <!--android:id="@+id/action_leave"-->
+    <!--android:icon="@mipmap/ic_leave"-->
+    <!--android:orderInCategory="100"-->
+    <!--android:title="@string/action_leave"-->
+    <!--app:showAsAction="ifRoom"/>-->
 </menu>
