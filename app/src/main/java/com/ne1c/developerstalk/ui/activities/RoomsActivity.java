@@ -63,6 +63,9 @@ public class RoomsActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.action_edit_room) {
             mRoomsListFragment.setEdit(!mRoomsListFragment.isEdit());
         }
+        if (item.getItemId() == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+        }
 
         return true;
     }
