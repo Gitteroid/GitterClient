@@ -88,7 +88,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         final boolean[] fromNetwork = {false};
         final boolean[] fromDatabase = {false};
 
-        Subscription sub = Observable.concat(mDataManger.getCachedMessages(roomId),
+        Subscription sub = Observable.concat(mDataManger.getDbMessages(roomId),
                 mDataManger.getNetworkMessages(roomId, limit))
                 .doOnNext(messages -> {
                     if (fromDatabase[0]) {
@@ -123,7 +123,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from database
     public void loadCachedMessages(String roomId) {
-        Subscription sub = mDataManger.getCachedMessages(roomId)
+        Subscription sub = mDataManger.getDbMessages(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showMessages, throwable -> {

@@ -58,7 +58,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successLoadCachedMessages() {
-        when(dataManger.getCachedMessages(anyString()))
+        when(dataManger.getDbMessages(anyString()))
                 .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadCachedMessages(ROOM_ID);
@@ -69,7 +69,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void failLoadCachedMessages() {
-        when(dataManger.getCachedMessages(anyString()))
+        when(dataManger.getDbMessages(anyString()))
                 .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.loadCachedMessages(anyString());
