@@ -147,7 +147,26 @@ public class DataManger {
         return mApi.sendMessage(Utils.getInstance().getBearer(), roomId, text);
     }
 
-    public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
+    public Observable<ArrayList<MessageModel>> getDbMessages(String roomId) {
         return mClientDatabase.getMessages(roomId);
+    }
+
+    public void clearCachedMessagesInRoom(String roomId) {
+        mClientDatabase.clearCachedMessages(roomId);
+    }
+
+    public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
+        return mClientDatabase.getCachedMessagesModel(roomId);
+    }
+
+    public void insertCachedMessages(ArrayList<MessageModel> list, String roomId) {
+        mClientDatabase.insertCachedMessages(list, roomId);
+    }
+
+    public void insertCachedMessage(MessageModel message, String roomId) {
+        ArrayList<MessageModel> list = new ArrayList<>();
+        list.add(message);
+
+        mClientDatabase.insertCachedMessages(list, roomId);
     }
 }

@@ -17,9 +17,11 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
 
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.api.GitterStreaming;
 import com.ne1c.developerstalk.dataprovides.ClientDatabase;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
@@ -55,6 +57,8 @@ public class NotificationService extends Service {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    private DataManger mDataManger;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -64,6 +68,7 @@ public class NotificationService extends Service {
         registerReceiver(networkChangeReceiver, filterNetwork);
 
         mStreaming = new GitterStreaming();
+        mDataManger = ((Application) getApplication()).getDataManager();
     }
 
     @Override
@@ -89,6 +94,8 @@ public class NotificationService extends Service {
         for (final RoomModel room : mRooms) {
             Subscription sub = mStreaming.getMessageStream(room.id).subscribe(message -> {
                 if (message.text != null) {
+                    mDataManger.insertCachedMessage(message, room.id);
+
                     sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
                             .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
                             .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));

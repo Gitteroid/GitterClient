@@ -17,12 +17,13 @@ import java.util.List;
 import rx.Observable;
 
 public class ClientDatabase {
-
-    public static final int DB_VERSION = 2;
+    public static final int DB_VERSION = 3;
     public static final String DB_NAME = "gitter_db";
 
     public static final String ROOM_TABLE = "room";
     public static final String MESSAGES_TABLE = "messages";
+    // This table for messages that comes from service and not shown to user
+    public static final String CACHED_MESSAGES_TABLE = "cached_messages";
     public static final String USERS_TABLE = "users";
 
     public static final String COLUMN_ID = "_id";
@@ -254,6 +255,61 @@ public class ClientDatabase {
         return list;
     }
 
+    // Method get messages from cached table and move their to messages table
+    public Observable<ArrayList<MessageModel>> getCachedMessagesModel(String roomId) {
+        return Observable.create(subscriber -> {
+            ArrayList<MessageModel> list = new ArrayList<>();
+            Cursor cursor = mDatabase.rawQuery(String.format("SELECT * FROM %s WHERE %s = \'%s\';",
+                    CACHED_MESSAGES_TABLE, COLUMN_ROOM_ID, roomId), null);
+
+            int difference = 1;
+            try {
+                if (cursor.moveToPosition(cursor.getCount() - difference)) {
+                    int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
+                    int columnText = cursor.getColumnIndex(COLUMN_TEXT);
+                    int columnHtml = cursor.getColumnIndex(COLUMN_HTML);
+                    int columnSent = cursor.getColumnIndex(COLUMN_SENT);
+                    int columnEditedAt = cursor.getColumnIndex(COLUMN_EDITED_AT);
+                    int columnFromUserId = cursor.getColumnIndex(COLUMN_FROM_USER_ID);
+                    int columnUnread = cursor.getColumnIndex(COLUMN_UNREAD);
+                    int columnReadBy = cursor.getColumnIndex(COLUMN_READ_BY);
+                    int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+                    int columnUrls = cursor.getColumnIndex(COLUMN_URLS);
+
+                    do {
+                        MessageModel model = new MessageModel();
+                        model.id = cursor.getString(columnMessageId);
+                        model.text = cursor.getString(columnText);
+                        model.html = cursor.getString(columnHtml);
+                        model.sent = cursor.getString(columnSent);
+                        model.editedAt = cursor.getString(columnEditedAt);
+                        model.fromUser = getUser(cursor.getString(columnFromUserId));
+                        model.unread = cursor.getInt(columnUnread) == 1;
+                        model.readBy = cursor.getInt(columnReadBy);
+                        model.v = cursor.getInt(columnVersion);
+                        String url = cursor.getString(columnUrls);
+                        model.urls = getUrls(url);
+
+                        list.add(model);
+                        difference += 1;
+                    } while (cursor.moveToPosition(cursor.getCount() - difference));
+                }
+            } finally {
+                cursor.close();
+            }
+
+            insertMessages(list, roomId);
+            clearCachedMessages(roomId);
+
+            subscriber.onNext(list);
+            subscriber.onCompleted();
+        });
+    }
+
+    public void clearCachedMessages(String roomId) {
+        mDatabase.delete(CACHED_MESSAGES_TABLE, COLUMN_ROOM_ID + " = " + roomId, null);
+    }
+
     public void insertUsers(ArrayList<UserModel> list) {
         mDatabase.beginTransaction();
 
@@ -308,6 +364,43 @@ public class ClientDatabase {
 
         mDatabase.setTransactionSuccessful();
         mDatabase.endTransaction();
+    }
+
+    public void insertCachedMessages(ArrayList<MessageModel> list, String roomId) {
+        // Write users once, that will not write, after every iteration of loop
+        ArrayList<UserModel> users = new ArrayList<>();
+
+        mDatabase.beginTransaction();
+
+        for (MessageModel model : list) {
+            ContentValues cv = new ContentValues();
+            cv.put(COLUMN_MESSAGE_ID, model.id);
+            cv.put(COLUMN_ROOM_ID, roomId);
+            cv.put(COLUMN_TEXT, model.text);
+            cv.put(COLUMN_HTML, model.html);
+            cv.put(COLUMN_SENT, model.sent);
+            cv.put(COLUMN_EDITED_AT, model.editedAt);
+            cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
+            cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
+            cv.put(COLUMN_READ_BY, model.readBy);
+            cv.put(COLUMN_VERSION, model.v);
+
+            String urls = "";
+            for (MessageModel.Urls url : model.urls) {
+                urls += url.url + ";";
+            }
+
+            cv.put(COLUMN_URLS, urls);
+
+            users.add(model.fromUser);
+
+            mDatabase.insertWithOnConflict(CACHED_MESSAGES_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        }
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+
+        insertUsers(users);
     }
 
     public void insertMessages(ArrayList<MessageModel> list, String roomId) {
@@ -403,6 +496,20 @@ public class ClientDatabase {
                     + COLUMN_READ_BY + " integer,"
                     + COLUMN_VERSION + " integer);");
 
+            db.execSQL("CREATE TABLE " + CACHED_MESSAGES_TABLE + " ("
+                    + COLUMN_ID + " integer primary key autoincrement,"
+                    + COLUMN_MESSAGE_ID + " text unique,"
+                    + COLUMN_ROOM_ID + " text,"
+                    + COLUMN_TEXT + " text,"
+                    + COLUMN_HTML + " text,"
+                    + COLUMN_SENT + " text,"
+                    + COLUMN_EDITED_AT + " text,"
+                    + COLUMN_FROM_USER_ID + " text,"
+                    + COLUMN_URLS + " text,"
+                    + COLUMN_UNREAD + " integer,"
+                    + COLUMN_READ_BY + " integer,"
+                    + COLUMN_VERSION + " integer);");
+
             db.execSQL("CREATE TABLE " + USERS_TABLE + " ("
                     + COLUMN_ID + " integer primary key autoincrement,"
                     + COLUMN_USER_ID + " text unique,"
@@ -427,6 +534,21 @@ public class ClientDatabase {
                     } finally {
                         db.endTransaction();
                     }
+                    break;
+                case 2:
+                    db.execSQL("CREATE TABLE " + CACHED_MESSAGES_TABLE + " ("
+                            + COLUMN_ID + " integer primary key autoincrement,"
+                            + COLUMN_MESSAGE_ID + " text unique,"
+                            + COLUMN_ROOM_ID + " text,"
+                            + COLUMN_TEXT + " text,"
+                            + COLUMN_HTML + " text,"
+                            + COLUMN_SENT + " text,"
+                            + COLUMN_EDITED_AT + " text,"
+                            + COLUMN_FROM_USER_ID + " text,"
+                            + COLUMN_URLS + " text,"
+                            + COLUMN_UNREAD + " integer,"
+                            + COLUMN_READ_BY + " integer,"
+                            + COLUMN_VERSION + " integer);");
                     break;
             }
         }
