@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -172,6 +173,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     break;
             }
 
+            if (mMessageEditText.hasFocus()) {
+                mMessageEditText.clearFocus();
+            }
+
             mMessageEditText.requestFocus();
         }
 
@@ -185,6 +190,25 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         outState.putParcelable("active_room", mRoom);
         outState.putParcelableArrayList("messages", mMessagesArr);
     }
+
+    private View.OnFocusChangeListener mMessageEditTextFocusChangeListener = new View.OnFocusChangeListener() {
+        @Override
+        public void onFocusChange(View v, boolean hasFocus) {
+            if (hasFocus) {
+                mMessageEditText.post(() -> {
+                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+                });
+
+                mMessagesList.postDelayed(() -> {
+                    int last = mListLayoutManager.findLastVisibleItemPosition();
+                    if (last != mMessagesArr.size() - 1) {
+                        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+                    }
+                }, 500);
+            }
+        }
+    };
 
     private void setDataToView(Bundle savedInstanceState) {
         mMessagesAdapter = new MessagesAdapter(((Application) getActivity().getApplication()).getDataManager(),
@@ -265,12 +289,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             }
         });
 
-        mMessageEditText.setOnClickListener(v -> {
-            int last = mListLayoutManager.findLastVisibleItemPosition();
-            if (last != mMessagesArr.size() - 1) {
-                mListLayoutManager.scrollToPosition(mMessagesArr.size() - 1);
-            }
-        });
+        mMessageEditText.setFocusable(true);
+        mMessageEditText.setFocusableInTouchMode(true);
+        mMessageEditText.setOnFocusChangeListener(mMessageEditTextFocusChangeListener);
     }
 
     @Override
