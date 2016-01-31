@@ -283,18 +283,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         ImageView image = views.getLinkImage();
-                        image.setScaleType(ImageView.ScaleType.FIT_XY);
                         image.setOnClickListener(v -> mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))));
 
+                        holder.messageLayout.addView(image, 256, 192);
+
                         //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
-                        Glide.with(mActivity).load(previewUrl).into(image);
+                        Glide.with(mActivity).load(previewUrl).crossFade(500).into(image);
 
-                        holder.messageLayout.addView(image);
 
-                        ViewGroup.LayoutParams params = image.getLayoutParams();
-                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        image.setLayoutParams(params);
+//                        ViewGroup.LayoutParams params = image.getLayoutParams();
+//                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        image.setLayoutParams(params);
 
                         break;
                     case "{8}": // Issue
