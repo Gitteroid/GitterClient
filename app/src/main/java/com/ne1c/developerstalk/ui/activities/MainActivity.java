@@ -257,7 +257,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new DividerDrawerItem());
-        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings)
+        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings_dark)
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
