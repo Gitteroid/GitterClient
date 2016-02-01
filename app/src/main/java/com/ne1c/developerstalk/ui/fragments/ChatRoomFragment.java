@@ -227,10 +227,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
                 if (mListLayoutManager.findFirstVisibleItemPosition() == 1 ||
                         mListLayoutManager.findFirstVisibleItemPosition() == 0) {
-                    if (!Utils.getInstance().isNetworkConnected()) {
-                        Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-                    }
-
                     if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
                         showTopProgressBar();
                         mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
@@ -342,9 +338,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         countLoadMessages = 0;
         mMessagesAdapter.setRoom(model);
 
-        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
-            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-        }
+//        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
+//            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+//        }
 
         mPresenter.loadMessages(model.id, startNumberLoadMessages);
 
