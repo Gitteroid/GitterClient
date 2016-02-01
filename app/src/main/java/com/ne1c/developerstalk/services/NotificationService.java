@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
+import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -20,7 +21,6 @@ import android.text.style.StyleSpan;
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.api.GitterStreaming;
-import com.ne1c.developerstalk.dataprovides.ClientDatabase;
 import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -56,7 +56,25 @@ public class NotificationService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (intent != null) {
+            mEnableNotif = intent.getBooleanExtra("enable_notif", true);
+            mSound = intent.getBooleanExtra("notif_sound", true);
+            mVibrate = intent.getBooleanExtra("notif_vibro", true);
+            mWithUserName = intent.getBooleanExtra("notif_username", false);
+        }
+
+        if (mRoomsSubscription != null && !mRoomsSubscription.isUnsubscribed()) {
+            mRoomsSubscription.unsubscribe();
+        }
+
+        mRoomsSubscription = mDataManger.getDbRooms()
+                .subscribe(roomModels -> {
+                    mRooms = roomModels;
+
+                    createSubscribers();
+                });
+
+        return new Binder();
     }
 
     private DataManger mDataManger;
@@ -86,7 +104,7 @@ public class NotificationService extends Service {
             mRoomsSubscription.unsubscribe();
         }
 
-        mRoomsSubscription = mDataManger.getRooms()
+        mRoomsSubscription = mDataManger.getDbRooms()
                 .subscribe(roomModels -> {
                     mRooms = roomModels;
 
@@ -94,6 +112,15 @@ public class NotificationService extends Service {
                 });
 
         return START_STICKY;
+    }
+
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        unsubscribeAll();
+        unregisterReceiver(networkChangeReceiver);
+
+        return super.onUnbind(intent);
     }
 
     private void createSubscribers() {
@@ -131,6 +158,13 @@ public class NotificationService extends Service {
 
     @Override
     public void onDestroy() {
+        unsubscribeAll();
+        unregisterReceiver(networkChangeReceiver);
+
+        super.onDestroy();
+    }
+
+    private void unsubscribeAll() {
         if (!mMessagesSubscriptions.isUnsubscribed()) {
             mMessagesSubscriptions.unsubscribe();
         }
@@ -138,16 +172,11 @@ public class NotificationService extends Service {
         if (!mRoomsSubscription.isUnsubscribed()) {
             mRoomsSubscription.unsubscribe();
         }
-
-        unregisterReceiver(networkChangeReceiver);
-
-        super.onDestroy();
     }
-
     private BroadcastReceiver networkChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (Utils.getInstance().isNetworkConnected()) {
+            if (Utils.getInstance().isNetworkConnected() && mRooms != null) {
                     createSubscribers();
             } else {
                 if (mMessagesSubscriptions != null && !mMessagesSubscriptions.isUnsubscribed()) {

@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
@@ -81,12 +80,7 @@ public class Utils {
 
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni == null) {
-            // There are no active networks.
-            return false;
-        } else
-            return true;
+        return cm.getActiveNetworkInfo() != null;
     }
 
     public String getBearer() {
@@ -117,6 +111,10 @@ public class Utils {
     }
 
     public void startNotificationService() {
+        mContext.startService(getServiceIntentWithPrefs());
+    }
+
+    public Intent getServiceIntentWithPrefs() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         Intent intent = new Intent(mContext, NotificationService.class);
@@ -125,6 +123,11 @@ public class Utils {
         intent.putExtra("notif_vibro", prefs.getBoolean("notif_vibro", true));
         intent.putExtra("notif_username", prefs.getBoolean("notif_username", false));
 
-        mContext.startService(intent);
+        return intent;
+    }
+
+    public ServiceMode getServiceMode() {
+        return PreferenceManager.getDefaultSharedPreferences(mContext)
+                .getBoolean("background_service", true) ? ServiceMode.LEAVE_WORK_WITHOUT_APP : ServiceMode.DEAD_WITH_APP;
     }
 }
