@@ -140,7 +140,10 @@ public class MainActivity extends BaseActivity implements MainView {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
 
             mPresenter.loadCachedRooms();
-            mPresenter.loadRooms();
+
+            if (Utils.getInstance().isNetworkConnected()) {
+                mPresenter.loadRooms();
+            }
 
             mPresenter.loadProfile();
         } else {
@@ -295,7 +298,9 @@ public class MainActivity extends BaseActivity implements MainView {
                                     selectedNavItem = i + 1; // Because item "Home" in navigation menu
                                     mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
-                                    setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                                    String drawerItemName = ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
+
+                                    setTitle(drawerItemName);
                                     EventBus.getDefault().post(mRoomsList.get(i));
                                 }
                             }
@@ -436,7 +441,10 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         mDrawer.getAdapter().notifyDataSetChanged();
-        mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+
+        if (mActiveRoom == null || !mActiveRoom.id.equals(mRoomsList.get(selectedNavItem - 1).id)) {
+            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+        }
     }
 
     @Override
