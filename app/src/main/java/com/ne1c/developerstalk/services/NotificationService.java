@@ -44,13 +44,15 @@ public class NotificationService extends Service {
     private List<RoomModel> mRooms;
     private CompositeSubscription mMessagesSubscriptions;
 
+    private Subscription mRoomsSubscription;
+
     private GitterStreaming mStreaming;
 
-    private boolean mEnableNotif;
-    private boolean mSound;
-    private boolean mVibro;
+    private boolean mEnableNotif = true;
+    private boolean mSound = true;
+    private boolean mVibrate = true;
     // Get messages only with user name
-    private boolean mWithUserName;
+    private boolean mWithUserName = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -73,28 +75,38 @@ public class NotificationService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mEnableNotif = intent.getBooleanExtra("enable_notif", true);
-        mSound = intent.getBooleanExtra("notif_sound", true);
-        mVibro = intent.getBooleanExtra("notif_vibro", true);
-        mWithUserName = intent.getBooleanExtra("notif_username", false);
+        if (intent != null) {
+            mEnableNotif = intent.getBooleanExtra("enable_notif", true);
+            mSound = intent.getBooleanExtra("notif_sound", true);
+            mVibrate = intent.getBooleanExtra("notif_vibro", true);
+            mWithUserName = intent.getBooleanExtra("notif_username", false);
+        }
 
-        new ClientDatabase(getApplicationContext()).getRooms()
+        if (mRoomsSubscription != null && !mRoomsSubscription.isUnsubscribed()) {
+            mRoomsSubscription.unsubscribe();
+        }
+
+        mRoomsSubscription = mDataManger.getRooms()
                 .subscribe(roomModels -> {
                     mRooms = roomModels;
 
                     createSubscribers();
-                }).unsubscribe();
+                });
 
         return START_STICKY;
     }
 
     private void createSubscribers() {
+        if (mMessagesSubscriptions != null && !mMessagesSubscriptions.isUnsubscribed()) {
+            mMessagesSubscriptions.unsubscribe();
+        }
+
         mMessagesSubscriptions = new CompositeSubscription();
 
         for (final RoomModel room : mRooms) {
             Subscription sub = mStreaming.getMessageStream(room.id).subscribe(message -> {
                 if (message.text != null) {
-                    mDataManger.insertCachedMessage(message, room.id);
+                    mDataManger.insertMessageToDb(message, room.id);
 
                     sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
                             .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
@@ -123,6 +135,10 @@ public class NotificationService extends Service {
             mMessagesSubscriptions.unsubscribe();
         }
 
+        if (!mRoomsSubscription.isUnsubscribed()) {
+            mRoomsSubscription.unsubscribe();
+        }
+
         unregisterReceiver(networkChangeReceiver);
 
         super.onDestroy();
@@ -132,11 +148,9 @@ public class NotificationService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Utils.getInstance().isNetworkConnected()) {
-                if (mMessagesSubscriptions.isUnsubscribed()) {
                     createSubscribers();
-                }
             } else {
-                if (!mMessagesSubscriptions.isUnsubscribed()) {
+                if (mMessagesSubscriptions != null && !mMessagesSubscriptions.isUnsubscribed()) {
                     mMessagesSubscriptions.unsubscribe();
                 }
             }
@@ -173,7 +187,7 @@ public class NotificationService extends Service {
 
         notification.defaults = Notification.DEFAULT_LIGHTS;
 
-        if (mVibro) {
+        if (mVibrate) {
             notification.defaults |= Notification.DEFAULT_VIBRATE;
         }
 
