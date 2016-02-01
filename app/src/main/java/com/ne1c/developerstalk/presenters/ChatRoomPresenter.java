@@ -112,7 +112,9 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                         mView.hideTopProgressBar();
                     }
 
-                    mView.showMessages(messages);
+                    if (messages.size() > 0) {
+                        mView.showMessages(messages);
+                    }
                 }, throwable -> {
                     mView.hideListProgress();
                     mView.hideTopProgressBar();

@@ -129,11 +129,11 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
         return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
+                .onErrorResumeNext(Observable.just(new ArrayList<>()))
                 .map(messageModels -> {
                     insertMessagesToDb(messageModels, roomId);
                     return messageModels;
-                })
-                .observeOn(Schedulers.io());
+                });
     }
 
     public Observable<Response> readMessages(String roomId, String[] ids) {
