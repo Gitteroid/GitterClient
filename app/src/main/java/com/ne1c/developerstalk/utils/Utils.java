@@ -31,9 +31,9 @@ public class Utils {
     public static final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
     public static final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
     public final String USERINFO_PREF = "userinfo";
-    
+
     private static Utils mInstance;
-    
+
     private Context mContext;
 
     private Utils(Context context) {
@@ -124,10 +124,5 @@ public class Utils {
         intent.putExtra("notif_username", prefs.getBoolean("notif_username", false));
 
         return intent;
-    }
-
-    public ServiceMode getServiceMode() {
-        return PreferenceManager.getDefaultSharedPreferences(mContext)
-                .getBoolean("background_service", true) ? ServiceMode.LEAVE_WORK_WITHOUT_APP : ServiceMode.DEAD_WITH_APP;
     }
 }

@@ -1,10 +1,7 @@
 package com.ne1c.developerstalk.ui.activities;
 
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -14,24 +11,11 @@ import android.widget.Toast;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.RoomsListFragment;
-import com.ne1c.developerstalk.utils.ServiceMode;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
 public class RoomsActivity extends AppCompatActivity {
     private RoomsListFragment mRoomsListFragment;
-
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,11 +45,7 @@ public class RoomsActivity extends AppCompatActivity {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
         }
 
-        if (Utils.getInstance().getServiceMode() == ServiceMode.LEAVE_WORK_WITHOUT_APP) {
-            Utils.getInstance().startNotificationService();
-        } else {
-            bindService(Utils.getInstance().getServiceIntentWithPrefs(), mServiceConnection, BIND_AUTO_CREATE);
-        }
+        Utils.getInstance().startNotificationService();
 
         if (!Utils.getInstance().isNetworkConnected()) {
             Toast.makeText(this, R.string.no_network, Toast.LENGTH_SHORT).show();
@@ -102,12 +82,5 @@ public class RoomsActivity extends AppCompatActivity {
         }
 
         UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
-    }
-
-    @Override
-    protected void onDestroy() {
-        unbindService(mServiceConnection);
-
-        super.onDestroy();
     }
 }
