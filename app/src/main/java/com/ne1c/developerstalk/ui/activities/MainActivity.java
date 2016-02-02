@@ -104,6 +104,8 @@ public class MainActivity extends BaseActivity implements MainView {
         EventBus.getDefault().register(this);
         initView();
         initSavedInstanceState(savedInstanceState);
+
+        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
     }
 
     @Override
@@ -197,7 +199,6 @@ public class MainActivity extends BaseActivity implements MainView {
         super.onStart();
 
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
-        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
     }
 
     @Override
@@ -453,7 +454,6 @@ public class MainActivity extends BaseActivity implements MainView {
 
         try {
             unregisterReceiver(unauthorizedReceiver);
-            unregisterReceiver(newMessageReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -462,6 +462,8 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
+
+        unregisterReceiver(newMessageReceiver);
 
         mPresenter.unbindView();
 
@@ -480,10 +482,6 @@ public class MainActivity extends BaseActivity implements MainView {
                 }
             }
         });
-    }
-
-    public void onEvent(NewMessageEvent message) {
-
     }
 
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
