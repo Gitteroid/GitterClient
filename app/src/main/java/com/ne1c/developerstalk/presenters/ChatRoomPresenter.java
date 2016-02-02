@@ -58,7 +58,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successLoadBeforeId, throwable -> {
+                .subscribe(mView::showLoadBeforeIdMessages, throwable -> {
                     mView.hideTopProgressBar();
                 });
 
@@ -143,7 +143,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     return messageModel;
                 })
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successUpdateMessage, throwable -> {
+                .subscribe(mView::showUpdateMessage, throwable -> {
                     mView.showError(mView.getAppContext().getString(R.string.updated_error));
                 });
 

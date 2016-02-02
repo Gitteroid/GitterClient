@@ -9,11 +9,11 @@ public interface ChatView extends BaseView {
 
     void showError(String error);
 
-    void successUpdateMessage(MessageModel message);
+    void showUpdateMessage(MessageModel message);
 
     void successReadMessages(int first, int last, String roomId, int i);
 
-    void successLoadBeforeId(ArrayList<MessageModel> messages);
+    void showLoadBeforeIdMessages(ArrayList<MessageModel> messages);
 
     void deliveredMessage(MessageModel message);
 

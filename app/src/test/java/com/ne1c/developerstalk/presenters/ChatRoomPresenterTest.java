@@ -105,7 +105,7 @@ public class ChatRoomPresenterTest {
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, times(1)).successLoadBeforeId(any(ArrayList.class));
+        verify(view, times(1)).showLoadBeforeIdMessages(any(ArrayList.class));
         verify(view, never()).showError(anyString());
     }
 
@@ -116,7 +116,7 @@ public class ChatRoomPresenterTest {
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, never()).successLoadBeforeId(any(ArrayList.class));
+        verify(view, never()).showLoadBeforeIdMessages(any(ArrayList.class));
         verify(view, times(1)).hideTopProgressBar();
     }
 
@@ -152,7 +152,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, times(1)).insertMessageToDb(message, ROOM_ID);
-        verify(view, times(1)).successUpdateMessage(message);
+        verify(view, times(1)).showUpdateMessage(message);
         verify(view, never()).showError(anyString());
     }
 
@@ -166,7 +166,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, never()).insertMessageToDb(message, ROOM_ID);
-        verify(view, never()).successUpdateMessage(message);
+        verify(view, never()).showUpdateMessage(message);
         verify(view, times(1)).showError(anyString());
     }
 
