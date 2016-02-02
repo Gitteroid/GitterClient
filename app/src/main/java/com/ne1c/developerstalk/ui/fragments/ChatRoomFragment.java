@@ -18,7 +18,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.ChatRoomComponent;
 import com.ne1c.developerstalk.di.components.DaggerChatRoomComponent;
@@ -38,6 +37,8 @@ import com.ne1c.developerstalk.utils.MarkdownUtils;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -51,7 +52,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private LinearLayoutManager mListLayoutManager;
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
-    private MaterialProgressBar mHorizontalProgressBar;
+    private MaterialProgressBar mTopProgressBar;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
@@ -63,9 +64,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Inject
     ChatRoomPresenter mPresenter;
 
-    private int startNumberLoadMessages = 10;
-    private int countLoadMessages = 0;
-    private boolean isRefreshing = false;
+    private int mStartNumberLoadMessages = 10;
+    private int mCountLoadMessages = 0;
+
+    private boolean mIsLoadBeforeIdMessages = false;
+    private boolean mIsRefreshing = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -73,7 +76,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         setRetainInstance(true);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
-        startNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
+        mStartNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
+
+        EventBus.getDefault().register(this);
     }
 
     @Override
@@ -87,11 +92,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
         mProgressBar.setIndeterminate(true);
 
-        mHorizontalProgressBar = (MaterialProgressBar) v.findViewById(R.id.top_progress_bar);
-        mHorizontalProgressBar.setUseIntrinsicPadding(false);
+        mTopProgressBar = (MaterialProgressBar) v.findViewById(R.id.top_progress_bar);
+        mTopProgressBar.setUseIntrinsicPadding(false);
 
         mMessagesList = (RecyclerView) v.findViewById(R.id.messages_list);
-        mListLayoutManager = new LinearLayoutManager(getActivity());
+        mListLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, true);
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
         mMessagesList.setScrollContainer(true);
@@ -107,20 +112,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mPresenter.bindView(this);
 
         return v;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-
-        EventBus.getDefault().register(this);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        EventBus.getDefault().unregister(this);
     }
 
     @Override
@@ -173,11 +164,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     break;
             }
 
-            if (mMessageEditText.hasFocus()) {
-                mMessageEditText.clearFocus();
-            }
-
             mMessageEditText.requestFocus();
+            mMessageEditText.post(() -> {
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+            });
         }
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -191,27 +182,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         outState.putParcelableArrayList("messages", mMessagesArr);
     }
 
-    private View.OnFocusChangeListener mMessageEditTextFocusChangeListener = new View.OnFocusChangeListener() {
-        @Override
-        public void onFocusChange(View v, boolean hasFocus) {
-            if (hasFocus) {
-                mMessageEditText.post(() -> {
-                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
-                });
-
-                mMessagesList.postDelayed(() -> {
-                    int last = mListLayoutManager.findLastVisibleItemPosition();
-                    if (last != mMessagesArr.size() - 1) {
-                        mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
-                    }
-                }, 500);
-            }
-        }
-    };
-
     private void setDataToView(Bundle savedInstanceState) {
-        mMessagesAdapter = new MessagesAdapter(((Application) getActivity().getApplication()).getDataManager(),
+        mMessagesAdapter = new MessagesAdapter(getAppComponent().getDataManager(),
                 getActivity(),
                 mMessagesArr,
                 mMessageEditText);
@@ -225,11 +197,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     markMessagesAsRead(recyclerView);
                 }
 
-                if (mListLayoutManager.findFirstVisibleItemPosition() == 1 ||
-                        mListLayoutManager.findFirstVisibleItemPosition() == 0) {
-                    if (mMessagesArr.size() > 0 && !mMessagesArr.get(mMessagesArr.size() - 1).id.isEmpty()) {
-                        showTopProgressBar();
-                        mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(0).id);
+                int lastMessage = mMessagesArr.size() - 1;
+                int lastPrevMessage = lastMessage - 1;
+
+                if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage ||
+                        mListLayoutManager.findLastVisibleItemPosition() == lastPrevMessage) {
+                    if (mMessagesArr.size() > 0 && !mMessagesArr.get(lastMessage).id.isEmpty()) {
+                        if (!mIsLoadBeforeIdMessages) {
+                            mIsLoadBeforeIdMessages = true;
+
+                            showTopProgressBar();
+                            mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(lastMessage).id);
+                        }
                     } else {
                         hideTopProgressBar();
                     }
@@ -257,9 +236,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             }
         }
 
-        if (isRefreshing) {
-            isRefreshing = false;
+        if (mIsRefreshing) {
             mMessagesList.setVisibility(View.GONE);
+            showListProgressBar();
+        }
+
+        if (mIsLoadBeforeIdMessages) {
             showListProgressBar();
         }
 
@@ -268,11 +250,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 if (Utils.getInstance().isNetworkConnected()) {
                     MessageModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
 
-                    mMessagesArr.add(model);
-                    mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
+                    mMessagesArr.add(0, model);
+                    mMessagesAdapter.notifyItemInserted(0);
 
-                    if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 2) {
-                        mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
+                    if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+                        mMessagesList.smoothScrollToPosition(0);
                     }
 
                     mPresenter.sendMessage(mRoom.id, model.text);
@@ -284,14 +266,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
             }
         });
-
-        mMessageEditText.setFocusable(true);
-        mMessageEditText.setFocusableInTouchMode(true);
-        mMessageEditText.setOnFocusChangeListener(mMessageEditTextFocusChangeListener);
     }
 
     @Override
     public void onDestroy() {
+        EventBus.getDefault().unregister(this);
+
         mPresenter.unbindView();
         mComponent = null;
 
@@ -326,7 +306,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private void loadMessageRoomServer(final RoomModel roomModel) {
         mMessagesAdapter.setRoom(roomModel);
 
-        mPresenter.loadNetworkMessages(roomModel.id, startNumberLoadMessages + countLoadMessages);
+        mPresenter.loadNetworkMessages(roomModel.id, mStartNumberLoadMessages + mCountLoadMessages);
     }
 
     // Event from MainActivity or notification
@@ -335,14 +315,17 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         hideListProgress();
         hideTopProgressBar();
 
-        countLoadMessages = 0;
+        mCountLoadMessages = 0;
         mMessagesAdapter.setRoom(model);
 
-//        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
-//            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-//        }
+        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
+            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+        }
 
-        mPresenter.loadMessages(model.id, startNumberLoadMessages);
+        mIsRefreshing = false;
+        mIsLoadBeforeIdMessages = false;
+
+        mPresenter.loadMessages(model.id, mStartNumberLoadMessages);
 
         mRoom = model;
     }
@@ -351,6 +334,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
             Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
         } else {
+            mIsRefreshing = true;
             loadMessageRoomServer(room.getRoomModel());
         }
     }
@@ -386,17 +370,19 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 }
             }
 
-            mMessagesArr.add(message.getMessage());
-            mMessagesAdapter.notifyItemInserted(mMessagesArr.size() - 1);
+            mMessagesArr.add(0, message.getMessage());
+            mMessagesAdapter.notifyItemInserted(0);
 
-            if (mListLayoutManager.findLastVisibleItemPosition() == mMessagesArr.size() - 2) {
-                mMessagesList.smoothScrollToPosition(mMessagesArr.size() - 1);
+            if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+                mMessagesList.smoothScrollToPosition(0);
             }
         }
     }
 
     @Override
     public void showMessages(ArrayList<MessageModel> messages) {
+        Collections.reverse(messages);
+
         mMessagesArr.clear();
         mMessagesArr.addAll(messages);
 
@@ -405,8 +391,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         if (mMessageListSavedState != null) {
             mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
             mMessageListSavedState = null;
-        } else if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != mMessagesArr.size() - 1) { // If room just was loaded
-            mMessagesList.scrollToPosition(mMessagesArr.size() - 1);
+        } else if (mListLayoutManager.findLastCompletelyVisibleItemPosition() != 0) { // If room just was loaded
+            mMessagesList.scrollToPosition(0);
+        }
+
+        if (mIsRefreshing) {
+            mIsRefreshing = false;
         }
     }
 
@@ -415,7 +405,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         hideListProgress();
         hideTopProgressBar();
 
-        isRefreshing = false;
+        mIsRefreshing = false;
+        mIsLoadBeforeIdMessages = false;
 
         if (error.contains("401")) {
             getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
@@ -425,7 +416,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void successUpdateMessage(MessageModel message) {
+    public void showUpdateMessage(MessageModel message) {
         for (int i = 0; i < mMessagesArr.size(); i++) {
             MessageModel item = mMessagesArr.get(i);
             // Update message
@@ -472,15 +463,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void successLoadBeforeId(ArrayList<MessageModel> messages) {
-        if (messages.size() > 0) {
-            mMessagesArr.addAll(0, messages);
-            mMessagesAdapter.notifyItemRangeInserted(0, messages.size());
+    public void showLoadBeforeIdMessages(ArrayList<MessageModel> messages) {
+        if (messages.size() > 0 && !mIsRefreshing) {
+           // Collections.reverse(messages);
 
-            countLoadMessages += messages.size();
+            mMessagesArr.addAll(mMessagesArr.size() - 1, messages);
+            mMessagesAdapter.notifyItemRangeInserted(mMessagesArr.size() - 1, messages.size());
+
+            mCountLoadMessages += messages.size();
         }
 
         hideTopProgressBar();
+        mIsLoadBeforeIdMessages = false;
     }
 
     @Override
@@ -512,15 +506,15 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     @Override
     public void showTopProgressBar() {
-        if (mHorizontalProgressBar.getVisibility() != View.VISIBLE) {
-            mHorizontalProgressBar.setVisibility(View.VISIBLE);
+        if (mTopProgressBar.getVisibility() != View.VISIBLE) {
+            mTopProgressBar.setVisibility(View.VISIBLE);
         }
     }
 
     @Override
     public void hideTopProgressBar() {
-        if (mHorizontalProgressBar.getVisibility() == View.VISIBLE) {
-            mHorizontalProgressBar.setVisibility(View.GONE);
+        if (mTopProgressBar.getVisibility() == View.VISIBLE) {
+            mTopProgressBar.setVisibility(View.GONE);
         }
     }
 
@@ -531,7 +525,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mMessagesList.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.VISIBLE);
 
-        isRefreshing = true;
+        mIsRefreshing = true;
     }
 
     @Override
@@ -541,7 +535,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mProgressBar.setVisibility(View.GONE);
         }
 
-        isRefreshing = false;
+        mIsRefreshing = false;
     }
 
     @Override
