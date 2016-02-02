@@ -89,15 +89,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                                 }
                             });
                 }, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(mView.getAppContext().getString(R.string.error));
-                    } else {
-                        mView.showError(mView.getAppContext().getString(R.string.no_network));
-                    }
-
                     mView.showProfile(Utils.getInstance().getUserPref());
-
                 });
 
         mSubscriptions.add(sub);
