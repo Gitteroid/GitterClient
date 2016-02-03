@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -38,7 +39,6 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -99,7 +99,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mListLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, true);
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
-        mMessagesList.setScrollContainer(true);
+        mMessagesList.setItemAnimator(new DefaultItemAnimator());
+        mMessagesList.getItemAnimator().setAddDuration(300);
 
         setDataToView(savedInstanceState);
 
@@ -253,7 +254,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     mMessagesArr.add(0, model);
                     mMessagesAdapter.notifyItemInserted(0);
 
-                    if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+                    int first = mListLayoutManager.findFirstVisibleItemPosition();
+                    if (first != 1) {
                         mMessagesList.smoothScrollToPosition(0);
                     }
 
@@ -373,7 +375,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessagesArr.add(0, message.getMessage());
             mMessagesAdapter.notifyItemInserted(0);
 
-            if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+            if (mListLayoutManager.findFirstVisibleItemPosition() != 1) {
                 mMessagesList.smoothScrollToPosition(0);
             }
         }
@@ -465,10 +467,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Override
     public void showLoadBeforeIdMessages(ArrayList<MessageModel> messages) {
         if (messages.size() > 0 && !mIsRefreshing) {
-           // Collections.reverse(messages);
+            Collections.reverse(messages);
 
-            mMessagesArr.addAll(mMessagesArr.size() - 1, messages);
-            mMessagesAdapter.notifyItemRangeInserted(mMessagesArr.size() - 1, messages.size());
+            mMessagesArr.addAll(mMessagesArr.size(), messages);
+            mMessagesAdapter.notifyItemRangeInserted(mMessagesArr.size(), messages.size());
 
             mCountLoadMessages += messages.size();
         }
