@@ -32,11 +32,11 @@
             android:summary="Range of messages from 10 to 25"
             android:title="@string/count_load_mess"/>
     </PreferenceCategory>
-    <PreferenceCategory android:title="@string/app_work">
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="background_service"
-            android:summary="@string/enable_background_app_desc"
-            android:title="@string/enable_background_service"/>
-    </PreferenceCategory>
+    <!--<PreferenceCategory android:title="@string/app_work">-->
+        <!--<SwitchPreference-->
+            <!--android:defaultValue="true"-->
+            <!--android:key="background_service"-->
+            <!--android:summary="@string/enable_background_app_desc"-->
+            <!--android:title="@string/enable_background_service"/>-->
+    <!--</PreferenceCategory>-->
 </PreferenceScreen>
