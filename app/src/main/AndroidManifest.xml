@@ -59,9 +59,9 @@
         </receiver>
 
         <service
-            android:name="com.ne1c.developerstalk.services.NewMessagesService"
+            android:name=".services.NotificationService"
             android:enabled="true"
-            android:process=":NewMessagesService">
+            android:process=":NotificationService">
         </service>
         <meta-data
             android:name="io.fabric.ApiKey"

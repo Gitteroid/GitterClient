@@ -1,10 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 import javax.inject.Inject;
 
+import rx.Observable;
 import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
@@ -57,11 +58,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successLoadBeforeId, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                .subscribe(mView::showLoadBeforeIdMessages, throwable -> {
+                    mView.hideTopProgressBar();
                 });
 
         mSubscriptions.add(sub);
@@ -69,7 +67,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from network
     public void loadNetworkMessages(String roomId, int limit) {
-        mView.showListProgress();
+        mView.showListProgressBar();
 
         Subscription sub = mDataManger.getNetworkMessages(roomId, limit)
                 .subscribeOn(mSchedulersFactory.io())
@@ -79,10 +77,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     mView.hideListProgress();
                 }, throwable -> {
                     mView.hideListProgress();
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                    mView.hideTopProgressBar();
                 });
 
         mSubscriptions.add(sub);
@@ -90,22 +85,39 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from database, then load from network if possible
     public void loadMessages(String roomId, int limit) {
-        Subscription sub = mDataManger.getMessages(roomId, limit)
+        final boolean[] fromNetwork = {false};
+        final boolean[] fromDatabase = {false};
+
+        Subscription sub = Observable.concat(mDataManger.getDbMessages(roomId),
+                mDataManger.getNetworkMessages(roomId, limit))
+                .doOnNext(messages -> {
+                    if (fromDatabase[0]) {
+                        fromDatabase[0] = false;
+                        fromNetwork[0] = true;
+                    } else {
+                        fromDatabase[0] = true;
+                    }
+                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
-                    if (mDataManger.isLoadMessagesFromDatabase() && messages.size() == 0) {
-                        mView.showListProgress();
-                    } else if (mDataManger.isLoadMessagesFromDatabase() && messages.size() > 0) {
+                    if (fromDatabase[0] && messages.size() == 0) {
+                        mView.showListProgressBar();
+                    } else if (fromDatabase[0] && messages.size() > 0) {
                         mView.showTopProgressBar();
                     }
 
-                    if (mDataManger.isLoadMessagesFromNetwork()) {
+                    if (fromNetwork[0]) {
                         mView.hideListProgress();
                         mView.hideTopProgressBar();
                     }
 
-                    mView.showMessages(messages);
+                    if (messages.size() > 0) {
+                        mView.showMessages(messages);
+                    }
+                }, throwable -> {
+                    mView.hideListProgress();
+                    mView.hideTopProgressBar();
                 });
 
         mSubscriptions.add(sub);
@@ -113,7 +125,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from database
     public void loadCachedMessages(String roomId) {
-        Subscription sub = mDataManger.getCachedMessages(roomId)
+        Subscription sub = mDataManger.getDbMessages(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showMessages, throwable -> {
@@ -131,7 +143,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                     return messageModel;
                 })
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::successUpdate, throwable -> {
+                .subscribe(mView::showUpdateMessage, throwable -> {
                     mView.showError(mView.getAppContext().getString(R.string.updated_error));
                 });
 
@@ -151,8 +163,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
-                    mView.successRead(first, last, roomId, ids.length - 1);
-                });
+                    mView.successReadMessages(first, last, roomId, ids.length - 1);
+                }, throwable -> {});
 
         mSubscriptions.add(sub);
     }

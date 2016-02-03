@@ -1,7 +1,6 @@
-package com.ne1c.developerstalk.services;
+package com.ne1c.developerstalk.dataprovides;
 
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.database.ClientDatabase;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
@@ -16,13 +15,11 @@ import javax.inject.Inject;
 import retrofit.RestAdapter;
 import retrofit.client.Response;
 import rx.Observable;
+import rx.schedulers.Schedulers;
 
 public class DataManger {
     private GitterApi mApi;
     private ClientDatabase mClientDatabase;
-
-    private boolean mLoadMessagesFromNetwork = false;
-    private boolean mLoadMessagesFromDatabase = false;
 
     @Inject
     public DataManger(ClientDatabase database) {
@@ -92,10 +89,6 @@ public class DataManger {
                 roomId, limit, beforeId);
     }
 
-    public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit) {
-        return Observable.merge(getCachedMessages(roomId), getNetworkMessages(roomId, limit));
-    }
-
     public void insertMessageToDb(MessageModel model, String roomId) {
         mClientDatabase.insertMessage(model, roomId);
     }
@@ -136,10 +129,8 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
         return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
-                .doOnNext(messageModels -> mLoadMessagesFromNetwork = true)
-                .doOnCompleted(() -> mLoadMessagesFromNetwork = false)
+                .onErrorResumeNext(Observable.just(new ArrayList<>()))
                 .map(messageModels -> {
-
                     insertMessagesToDb(messageModels, roomId);
                     return messageModels;
                 });
@@ -156,17 +147,26 @@ public class DataManger {
         return mApi.sendMessage(Utils.getInstance().getBearer(), roomId, text);
     }
 
+    public Observable<ArrayList<MessageModel>> getDbMessages(String roomId) {
+        return mClientDatabase.getMessages(roomId);
+    }
+
+    public void clearCachedMessagesInRoom(String roomId) {
+        mClientDatabase.clearCachedMessages(roomId);
+    }
+
     public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
-        return mClientDatabase.getMessages(roomId)
-                .doOnNext(messageModels -> mLoadMessagesFromDatabase = true)
-                .doOnCompleted(() -> mLoadMessagesFromDatabase = false);
+        return mClientDatabase.getCachedMessagesModel(roomId);
     }
 
-    public boolean isLoadMessagesFromNetwork() {
-        return mLoadMessagesFromNetwork;
+    public void insertCachedMessages(ArrayList<MessageModel> list, String roomId) {
+        mClientDatabase.insertCachedMessages(list, roomId);
     }
 
-    public boolean isLoadMessagesFromDatabase() {
-        return mLoadMessagesFromDatabase;
+    public void insertCachedMessage(MessageModel message, String roomId) {
+        ArrayList<MessageModel> list = new ArrayList<>();
+        list.add(message);
+
+        mClientDatabase.insertCachedMessages(list, roomId);
     }
 }

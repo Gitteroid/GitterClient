@@ -4,9 +4,9 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.database.ClientDatabase;
+import com.ne1c.developerstalk.dataprovides.ClientDatabase;
 import com.ne1c.developerstalk.di.annotations.PerApplication;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.utils.Utils;
 
 import dagger.Module;

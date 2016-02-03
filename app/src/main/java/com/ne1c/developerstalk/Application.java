@@ -6,7 +6,7 @@ import com.ne1c.developerstalk.di.components.ApplicationComponent;
 import com.ne1c.developerstalk.di.components.DaggerApplicationComponent;
 import com.ne1c.developerstalk.di.modules.ApplicationModule;
 import com.ne1c.developerstalk.di.modules.DatabaseModule;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.utils.Utils;
 
 import javax.inject.Inject;

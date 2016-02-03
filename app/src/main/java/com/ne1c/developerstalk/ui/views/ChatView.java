@@ -9,11 +9,11 @@ public interface ChatView extends BaseView {
 
     void showError(String error);
 
-    void successUpdate(MessageModel message);
+    void showUpdateMessage(MessageModel message);
 
-    void successRead(int first, int last, String roomId, int i);
+    void successReadMessages(int first, int last, String roomId, int i);
 
-    void successLoadBeforeId(ArrayList<MessageModel> messages);
+    void showLoadBeforeIdMessages(ArrayList<MessageModel> messages);
 
     void deliveredMessage(MessageModel message);
 
@@ -23,7 +23,7 @@ public interface ChatView extends BaseView {
 
     void hideTopProgressBar();
 
-    void showListProgress();
+    void showListProgressBar();
 
     void hideListProgress();
 }

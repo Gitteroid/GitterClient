@@ -44,7 +44,7 @@ import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
-import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.ui.views.MainView;
@@ -104,6 +104,8 @@ public class MainActivity extends BaseActivity implements MainView {
         EventBus.getDefault().register(this);
         initView();
         initSavedInstanceState(savedInstanceState);
+
+        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
     }
 
     @Override
@@ -140,7 +142,10 @@ public class MainActivity extends BaseActivity implements MainView {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
 
             mPresenter.loadCachedRooms();
-            mPresenter.loadRooms();
+
+            if (Utils.getInstance().isNetworkConnected()) {
+                mPresenter.loadRooms();
+            }
 
             mPresenter.loadProfile();
         } else {
@@ -170,7 +175,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
             if (mRoomsList.size() > 0) {
                 // If activity open from notification
-                mActiveRoom = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+                mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
                 if (mActiveRoom == null || mActiveRoom.id == null) {
                     mActiveRoom = mRoomsList.get(selectedNavItem - 1);
@@ -194,7 +199,6 @@ public class MainActivity extends BaseActivity implements MainView {
         super.onStart();
 
         registerReceiver(unauthorizedReceiver, new IntentFilter(BROADCAST_UNAUTHORIZED));
-        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
     }
 
     @Override
@@ -203,7 +207,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         // If get intent from notification
         if (mRoomsList != null) {
-            RoomModel intentRoom = intent.getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             // If selected room not equal room id from notification, than load room
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
@@ -257,7 +261,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new DividerDrawerItem());
-        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings)
+        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings_dark)
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
@@ -286,7 +290,7 @@ public class MainActivity extends BaseActivity implements MainView {
                         startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
-                        stopService(new Intent(getApplicationContext(), NewMessagesService.class));
+                        stopService(new Intent(getApplicationContext(), NotificationService.class));
                         finish();
                     } else if (mRoomsList != null && mRoomsList.size() > 0) {
                         if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
@@ -295,7 +299,9 @@ public class MainActivity extends BaseActivity implements MainView {
                                     selectedNavItem = i + 1; // Because item "Home" in navigation menu
                                     mActiveRoom = mRoomsList.get(selectedNavItem - 1);
 
-                                    setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+                                    String drawerItemName = ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
+
+                                    setTitle(drawerItemName);
                                     EventBus.getDefault().post(mRoomsList.get(i));
                                 }
                             }
@@ -360,15 +366,15 @@ public class MainActivity extends BaseActivity implements MainView {
                     mPresenter.loadRooms();
                 }
                 break;
-            case R.id.action_leave:
-                if (mActiveRoom.oneToOne) {
-                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
-                    break;
-                }
-
-                mPresenter.leaveFromRoom(mActiveRoom.id);
-
-                break;
+//            case R.id.action_leave:
+//                if (mActiveRoom.oneToOne) {
+//                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
+//                    break;
+//                }
+//
+//                mPresenter.leaveFromRoom(mActiveRoom.id);
+//
+//                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -412,7 +418,7 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         if (mRoomsList.size() > 0) {
-            RoomModel room = getIntent().getParcelableExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+            RoomModel room = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             String roomId = room != null ? room.id : null;
 
@@ -421,7 +427,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 getIntent().removeExtra("roomId");
             } else {
                 // Not to repeat open room
-                getIntent().removeExtra(NewMessagesService.FROM_ROOM_EXTRA_KEY);
+                getIntent().removeExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
             }
 
             if (roomId != null) {
@@ -436,7 +442,10 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         mDrawer.getAdapter().notifyDataSetChanged();
-        mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+
+        if (mActiveRoom == null || !mActiveRoom.id.equals(mRoomsList.get(selectedNavItem - 1).id)) {
+            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+        }
     }
 
     @Override
@@ -445,7 +454,6 @@ public class MainActivity extends BaseActivity implements MainView {
 
         try {
             unregisterReceiver(unauthorizedReceiver);
-            unregisterReceiver(newMessageReceiver);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -454,6 +462,8 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
+
+        unregisterReceiver(newMessageReceiver);
 
         mPresenter.unbindView();
 
@@ -472,10 +482,6 @@ public class MainActivity extends BaseActivity implements MainView {
                 }
             }
         });
-    }
-
-    public void onEvent(NewMessageEvent message) {
-
     }
 
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {

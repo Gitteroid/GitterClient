@@ -9,7 +9,6 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.services.NewMessagesService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.RoomsListFragment;
 import com.ne1c.developerstalk.utils.UIUtils;
@@ -46,7 +45,7 @@ public class RoomsActivity extends AppCompatActivity {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
         }
 
-        startService(new Intent(this, NewMessagesService.class));
+        Utils.getInstance().startNotificationService();
 
         if (!Utils.getInstance().isNetworkConnected()) {
             Toast.makeText(this, R.string.no_network, Toast.LENGTH_SHORT).show();
@@ -63,6 +62,9 @@ public class RoomsActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_edit_room) {
             mRoomsListFragment.setEdit(!mRoomsListFragment.isEdit());
+        }
+        if (item.getItemId() == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
         }
 
         return true;

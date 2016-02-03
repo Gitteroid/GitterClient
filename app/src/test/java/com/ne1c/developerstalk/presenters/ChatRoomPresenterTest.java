@@ -4,8 +4,8 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
-import com.ne1c.developerstalk.services.DataManger;
 import com.ne1c.developerstalk.ui.views.ChatView;
 
 import org.junit.After;
@@ -58,7 +58,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successLoadCachedMessages() {
-        when(dataManger.getCachedMessages(anyString()))
+        when(dataManger.getDbMessages(anyString()))
                 .thenReturn(Observable.just(mock(ArrayList.class)));
 
         presenter.loadCachedMessages(ROOM_ID);
@@ -69,7 +69,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void failLoadCachedMessages() {
-        when(dataManger.getCachedMessages(anyString()))
+        when(dataManger.getDbMessages(anyString()))
                 .thenReturn(Observable.error(new Throwable(ERROR)));
 
         presenter.loadCachedMessages(anyString());
@@ -105,7 +105,7 @@ public class ChatRoomPresenterTest {
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, times(1)).successLoadBeforeId(any(ArrayList.class));
+        verify(view, times(1)).showLoadBeforeIdMessages(any(ArrayList.class));
         verify(view, never()).showError(anyString());
     }
 
@@ -116,8 +116,8 @@ public class ChatRoomPresenterTest {
 
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
-        verify(view, never()).successLoadBeforeId(any(ArrayList.class));
-        verify(view, times(1)).showError(anyString());
+        verify(view, never()).showLoadBeforeIdMessages(any(ArrayList.class));
+        verify(view, times(1)).hideTopProgressBar();
     }
 
     @Test
@@ -139,7 +139,7 @@ public class ChatRoomPresenterTest {
         presenter.loadNetworkMessages(ROOM_ID, 100500);
 
         verify(view, never()).showMessages(any(ArrayList.class));
-        verify(view, times(1)).showError(anyString());
+        verify(view, times(1)).hideListProgress();
     }
 
     @Test
@@ -152,7 +152,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, times(1)).insertMessageToDb(message, ROOM_ID);
-        verify(view, times(1)).successUpdate(message);
+        verify(view, times(1)).showUpdateMessage(message);
         verify(view, never()).showError(anyString());
     }
 
@@ -166,7 +166,7 @@ public class ChatRoomPresenterTest {
         presenter.updateMessages(ROOM_ID, ROOM_ID, MESSAGE_TEXT);
 
         verify(dataManger, never()).insertMessageToDb(message, ROOM_ID);
-        verify(view, never()).successUpdate(message);
+        verify(view, never()).showUpdateMessage(message);
         verify(view, times(1)).showError(anyString());
     }
 
@@ -179,7 +179,7 @@ public class ChatRoomPresenterTest {
 
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
-        verify(view, times(1)).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, times(1)).successReadMessages(anyInt(), anyInt(), anyString(), anyInt());
     }
 
     @Test
@@ -194,7 +194,7 @@ public class ChatRoomPresenterTest {
             assertTrue(e instanceof rx.exceptions.OnErrorNotImplementedException);
         }
 
-        verify(view, never()).successRead(anyInt(), anyInt(), anyString(), anyInt());
+        verify(view, never()).successReadMessages(anyInt(), anyInt(), anyString(), anyInt());
     }
 
     @After

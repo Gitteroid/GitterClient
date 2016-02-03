@@ -5,7 +5,7 @@ import android.content.Context;
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.di.annotations.PerApplication;
 import com.ne1c.developerstalk.di.modules.ApplicationModule;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 
 import dagger.Component;

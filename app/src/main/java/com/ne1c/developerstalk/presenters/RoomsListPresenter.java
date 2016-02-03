@@ -1,7 +1,7 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 

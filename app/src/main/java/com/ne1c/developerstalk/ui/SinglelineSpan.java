@@ -41,7 +41,7 @@ public class SinglelineSpan implements LineBackgroundSpan {
             lengthText = measureText(paint, text, mStart, end);
         } else if (start == mStart && end < mEnd) {
             lengthText = measureText(paint, text, start, end);
-        } else if (mStart > start && end > mEnd) {
+        } else if (mStart > start && end >= mEnd) {
             lengthText = measureText(paint, text, mStart, mEnd);
         } else {
             lengthText = measureText(paint, text, start, end);

@@ -4,7 +4,7 @@ import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.MainView;
 
 import org.junit.After;
@@ -70,7 +70,6 @@ public class MainPresenterTest {
         presenter.loadRooms();
 
         verify(view, never()).showRooms(any(ArrayList.class));
-        verify(view, times(1)).showError(anyString());
     }
 
     @Test
@@ -109,7 +108,6 @@ public class MainPresenterTest {
         presenter.loadProfile();
 
         verify(view, times(1)).showProfile(any(UserModel.class));
-        verify(view, times(1)).showError(anyString());
     }
 
     @Test

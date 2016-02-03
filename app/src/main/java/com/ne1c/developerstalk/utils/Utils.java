@@ -3,13 +3,15 @@ package com.ne1c.developerstalk.utils;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.services.NotificationService;
 
 /**
  * Helper class
@@ -29,9 +31,9 @@ public class Utils {
     public static final String EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN";
     public static final String TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE";
     public final String USERINFO_PREF = "userinfo";
-    
+
     private static Utils mInstance;
-    
+
     private Context mContext;
 
     private Utils(Context context) {
@@ -78,12 +80,7 @@ public class Utils {
 
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (ni == null) {
-            // There are no active networks.
-            return false;
-        } else
-            return true;
+        return cm.getActiveNetworkInfo() != null;
     }
 
     public String getBearer() {
@@ -111,5 +108,21 @@ public class Utils {
         clipboard.setPrimaryClip(clip);
 
         Toast.makeText(mContext, "Copied", Toast.LENGTH_SHORT).show();
+    }
+
+    public void startNotificationService() {
+        mContext.startService(getServiceIntentWithPrefs());
+    }
+
+    public Intent getServiceIntentWithPrefs() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+
+        Intent intent = new Intent(mContext, NotificationService.class);
+        intent.putExtra("enable_notif", prefs.getBoolean("enable_notif", true));
+        intent.putExtra("notif_sound", prefs.getBoolean("notif_sound", true));
+        intent.putExtra("notif_vibro", prefs.getBoolean("notif_vibro", true));
+        intent.putExtra("notif_username", prefs.getBoolean("notif_username", false));
+
+        return intent;
     }
 }

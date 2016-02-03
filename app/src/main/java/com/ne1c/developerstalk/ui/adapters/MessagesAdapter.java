@@ -17,7 +17,9 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.text.util.Linkify;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,11 +34,11 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;
-import com.ne1c.developerstalk.services.DataManger;
-import com.ne1c.developerstalk.services.NewMessagesService;
+import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.SinglelineSpan;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.ui.fragments.EditMessageFragment;
@@ -281,18 +283,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         ImageView image = views.getLinkImage();
-                        image.setScaleType(ImageView.ScaleType.FIT_XY);
                         image.setOnClickListener(v -> mActivity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))));
 
+                        holder.messageLayout.addView(image, 256, 192);
+
                         //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
-                        Glide.with(mActivity).load(previewUrl).into(image);
+                        Glide.with(mActivity).load(previewUrl).crossFade(500).into(image);
 
-                        holder.messageLayout.addView(image);
 
-                        ViewGroup.LayoutParams params = image.getLayoutParams();
-                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                        image.setLayoutParams(params);
+//                        ViewGroup.LayoutParams params = image.getLayoutParams();
+//                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                        image.setLayoutParams(params);
 
                         break;
                     case "{8}": // Issue
@@ -328,7 +330,6 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
                             holder.messageLayout.addView(textView);
                         }
-
 
                         break;
                     default: // Text
@@ -498,9 +499,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             mMessages.get(position).sent = StatusMessage.SENDING.name();
 
                             // Repeat send
-                            mActivity.sendBroadcast(new Intent(NewMessagesService.BROADCAST_SEND_MESSAGE)
-                                    .putExtra(NewMessagesService.SEND_MESSAGE_EXTRA_KEY, message.text)
-                                    .putExtra(NewMessagesService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
+                            mActivity.sendBroadcast(new Intent(NotificationService.BROADCAST_SEND_MESSAGE)
+                                    .putExtra(NotificationService.SEND_MESSAGE_EXTRA_KEY, message.text)
+                                    .putExtra(NotificationService.TO_ROOM_MESSAGE_EXTRA_KEY, mRoom.id));
 
                             notifyItemChanged(position);
                         }
@@ -671,11 +672,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
         public Spannable getLinksSpannableText(String text, String link) {
             Spannable span = new SpannableString(text);
-            span.setSpan(new UnderlineSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            span.setSpan(new URLSpan(link), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             span.setSpan(new ClickableSpan() {
                 @Override
                 public void onClick(View widget) {
-                    mActivity.startActivity(
+                    widget.getContext().startActivity(
                             new Intent(Intent.ACTION_VIEW, Uri.parse(link)));
                 }
             }, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -698,6 +699,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         public TextView getTextView() {
             TextView view = new TextView(mActivity);
             view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
+            view.setAutoLinkMask(Linkify.WEB_URLS);
+            view.setLinksClickable(true);
             return view;
         }
 

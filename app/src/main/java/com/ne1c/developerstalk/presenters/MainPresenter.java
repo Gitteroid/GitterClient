@@ -8,7 +8,7 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.services.DataManger;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -89,15 +89,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                                 }
                             });
                 }, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(mView.getAppContext().getString(R.string.error));
-                    } else {
-                        mView.showError(mView.getAppContext().getString(R.string.no_network));
-                    }
-
                     mView.showProfile(Utils.getInstance().getUserPref());
-
                 });
 
         mSubscriptions.add(sub);
@@ -134,12 +126,7 @@ public class MainPresenter extends BasePresenter<MainView> {
 
                     return visibleList;
                 })
-                .subscribe(mView::showRooms, throwable -> {
-                    if (throwable.getMessage().contains("Unable to resolve") ||
-                            throwable.getMessage().contains("timeout")) {
-                        mView.showError(mView.getAppContext().getString(R.string.no_network));
-                    }
-                });
+                .subscribe(mView::showRooms, throwable -> {});
 
         mSubscriptions.add(sub);
     }
