@@ -443,9 +443,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         mDrawer.getAdapter().notifyDataSetChanged();
 
-        if (mActiveRoom == null || !mActiveRoom.id.equals(mRoomsList.get(selectedNavItem - 1).id)) {
-            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-        }
+        mDrawer.setSelectionAtPosition(selectedNavItem + 1);
     }
 
     @Override

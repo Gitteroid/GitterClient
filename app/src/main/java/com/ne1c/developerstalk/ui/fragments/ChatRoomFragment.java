@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -38,7 +39,6 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -99,7 +99,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mListLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, true);
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
-        mMessagesList.setScrollContainer(true);
+        mMessagesList.setItemAnimator(new DefaultItemAnimator());
+        mMessagesList.getItemAnimator().setAddDuration(300);
 
         setDataToView(savedInstanceState);
 
@@ -198,10 +199,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 }
 
                 int lastMessage = mMessagesArr.size() - 1;
-                int lastPrevMessage = lastMessage - 1;
 
-                if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage ||
-                        mListLayoutManager.findLastVisibleItemPosition() == lastPrevMessage) {
+                if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage) {
                     if (mMessagesArr.size() > 0 && !mMessagesArr.get(lastMessage).id.isEmpty()) {
                         if (!mIsLoadBeforeIdMessages) {
                             mIsLoadBeforeIdMessages = true;
@@ -231,9 +230,17 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             ArrayList<MessageModel> messages = savedInstanceState.getParcelableArrayList("messages");
             savedInstanceState.remove("messages");
 
-            if (messages != null && messages.size() > 0) {
-                showMessages((ArrayList<MessageModel>) messages.clone());
+//            if (messages != null && messages.size() > 0) {
+//                mMessagesArr.clear();
+//                mMessagesArr.addAll(messages);
+//
+//                mMessagesAdapter.notifyDataSetChanged();
+
+            if (mMessageListSavedState != null) {
+                mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
+                mMessageListSavedState = null;
             }
+            //}
         }
 
         if (mIsRefreshing) {
@@ -242,7 +249,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         }
 
         if (mIsLoadBeforeIdMessages) {
-            showListProgressBar();
+            showTopProgressBar();
         }
 
         mSendButton.setOnClickListener(v -> {
@@ -253,7 +260,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                     mMessagesArr.add(0, model);
                     mMessagesAdapter.notifyItemInserted(0);
 
-                    if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+                    int first = mListLayoutManager.findFirstVisibleItemPosition();
+                    if (first != 1) {
                         mMessagesList.smoothScrollToPosition(0);
                     }
 
@@ -373,7 +381,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessagesArr.add(0, message.getMessage());
             mMessagesAdapter.notifyItemInserted(0);
 
-            if (mListLayoutManager.findFirstVisibleItemPosition() != 0) {
+            if (mListLayoutManager.findFirstVisibleItemPosition() != 1) {
                 mMessagesList.smoothScrollToPosition(0);
             }
         }
@@ -395,9 +403,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessagesList.scrollToPosition(0);
         }
 
-        if (mIsRefreshing) {
-            mIsRefreshing = false;
-        }
+        mIsRefreshing = false;
     }
 
     @Override
@@ -465,10 +471,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Override
     public void showLoadBeforeIdMessages(ArrayList<MessageModel> messages) {
         if (messages.size() > 0 && !mIsRefreshing) {
-           // Collections.reverse(messages);
+            Collections.reverse(messages);
 
-            mMessagesArr.addAll(mMessagesArr.size() - 1, messages);
-            mMessagesAdapter.notifyItemRangeInserted(mMessagesArr.size() - 1, messages.size());
+            mMessagesArr.addAll(mMessagesArr.size(), messages);
+            mMessagesAdapter.notifyItemRangeInserted(mMessagesArr.size(), messages.size());
 
             mCountLoadMessages += messages.size();
         }
@@ -536,12 +542,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         }
 
         mIsRefreshing = false;
-    }
-
-    @Override
-    public void onDestroyView() {
-        mPresenter.unbindView();
-        super.onDestroyView();
     }
 
     @Override

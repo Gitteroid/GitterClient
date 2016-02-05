@@ -9,8 +9,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.text.Spannable;
@@ -54,29 +54,6 @@ public class NotificationService extends Service {
     // Get messages only with user name
     private boolean mWithUserName = false;
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        if (intent != null) {
-            mEnableNotif = intent.getBooleanExtra("enable_notif", true);
-            mSound = intent.getBooleanExtra("notif_sound", true);
-            mVibrate = intent.getBooleanExtra("notif_vibro", true);
-            mWithUserName = intent.getBooleanExtra("notif_username", false);
-        }
-
-        if (mRoomsSubscription != null && !mRoomsSubscription.isUnsubscribed()) {
-            mRoomsSubscription.unsubscribe();
-        }
-
-        mRoomsSubscription = mDataManger.getDbRooms()
-                .subscribe(roomModels -> {
-                    mRooms = roomModels;
-
-                    createSubscribers();
-                });
-
-        return new Binder();
-    }
-
     private DataManger mDataManger;
 
     @Override
@@ -112,15 +89,6 @@ public class NotificationService extends Service {
                 });
 
         return START_STICKY;
-    }
-
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        unsubscribeAll();
-        unregisterReceiver(networkChangeReceiver);
-
-        return super.onUnbind(intent);
     }
 
     private void createSubscribers() {
@@ -162,6 +130,12 @@ public class NotificationService extends Service {
         unregisterReceiver(networkChangeReceiver);
 
         super.onDestroy();
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
     private void unsubscribeAll() {
