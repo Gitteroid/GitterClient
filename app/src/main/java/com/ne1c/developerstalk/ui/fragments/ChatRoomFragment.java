@@ -324,6 +324,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         hideTopProgressBar();
 
         mCountLoadMessages = 0;
+
+        mMessagesArr.clear();
+        mMessagesAdapter.notifyDataSetChanged();
+
         mMessagesAdapter.setRoom(model);
 
         if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
