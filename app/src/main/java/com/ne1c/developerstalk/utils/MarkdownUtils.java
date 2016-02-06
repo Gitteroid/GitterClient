@@ -72,12 +72,10 @@ public class MarkdownUtils {
         message = message.replaceAll(ITALICS_PATTERN.pattern(), "{" + String.valueOf(ITALICS) + "}");
         message = message.replaceAll(STRIKETHROUGH_PATTERN.pattern(), "{" + String.valueOf(STRIKETHROUGH) + "}");
         message = message.replaceAll(QUOTE_PATTERN.pattern(), "{" + String.valueOf(QUOTE) + "}");
-        //message = message.replaceAll(ISSUE_PATTERN.pattern(), "{" + String.valueOf(ISSUE) + "}");
         message = message.replaceAll(PREVIEW_IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(IMAGE_LINK_PATTERN.pattern(), "{" + String.valueOf(IMAGE_LINK) + "}");
         message = message.replaceAll(GITTER_LINK_PATTERN.pattern(), "{" + String.valueOf(GITTER_LINK) + "}");
         message = message.replaceAll(MENTION_PATTERN.pattern(), "{" + String.valueOf(MENTIONS) + "}");
-        message = message.replaceAll(LINK_PATTERN.pattern(), "{" + String.valueOf(LINK) + "}");
 
         Matcher matcher = Pattern.compile("\\{\\d+\\}").matcher(message);
         String[] splitted = message.split("\\{\\d+\\}");
@@ -426,8 +424,7 @@ public class MarkdownUtils {
                 getItalics().size() > 0 ||
                 getImageLinks().size() > 0 ||
                 getGitterLinks().size() > 0 ||
-                getLinks().size() > 0 ||
-                getMentions().size() > 0;
+                getLinks().size() > 0;
     }
 
     public static class PreviewImageModel {

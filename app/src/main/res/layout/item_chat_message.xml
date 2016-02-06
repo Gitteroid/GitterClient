@@ -61,6 +61,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:autoLink="all"
+            android:linksClickable="true"
             android:textColor="@color/primary_text_default_material_light"
             tools:text="Test text"/>
     </LinearLayout>

@@ -314,24 +314,24 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         }
 
                         break;
-                    case "{10}": // Links
-                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
-                            String url = markdown.getLinks().get(++counterLinks);
-
-                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
-                            textView.append(views.getLinksSpannableText(url, url));
-                            textView.setMovementMethod(LinkMovementMethod.getInstance());
-                        } else {
-                            TextView textView = views.getTextView();
-                            String url = markdown.getLinks().get(++counterLinks);
-
-                            textView.setText(views.getLinksSpannableText(url, url));
-                            textView.setMovementMethod(LinkMovementMethod.getInstance());
-
-                            holder.messageLayout.addView(textView);
-                        }
-
-                        break;
+//                    case "{10}": // Links
+//                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
+//                            String url = markdown.getLinks().get(++counterLinks);
+//
+//                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
+//                            textView.append(views.getLinksSpannableText(url, url));
+//                            textView.setMovementMethod(LinkMovementMethod.getInstance());
+//                        } else {
+//                            TextView textView = views.getTextView();
+//                            String url = markdown.getLinks().get(++counterLinks);
+//
+//                            textView.setText(views.getLinksSpannableText(url, url));
+//                            textView.setMovementMethod(LinkMovementMethod.getInstance());
+//
+//                            holder.messageLayout.addView(textView);
+//                        }
+//
+//                        break;
                     default: // Text
                         if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
                             ((TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1))
@@ -699,7 +699,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         public TextView getTextView() {
             TextView view = new TextView(mActivity);
             view.setTextColor(mActivity.getResources().getColor(R.color.primary_text_default_material_light));
-            view.setAutoLinkMask(Linkify.WEB_URLS);
+            view.setAutoLinkMask(Linkify.ALL);
             view.setLinksClickable(true);
             return view;
         }
