@@ -7,9 +7,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -66,6 +68,12 @@ public class NotificationService extends Service {
 
         mStreaming = new GitterStreaming();
         mDataManger = ((Application) getApplication()).getDataManager();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mEnableNotif = prefs.getBoolean("enable_notif", true);
+        mSound = prefs.getBoolean("notif_sound", true);
+        mVibrate = prefs.getBoolean("notif_vibro", true);
+        mWithUserName = prefs.getBoolean("notif_username", false);
     }
 
     @Override
