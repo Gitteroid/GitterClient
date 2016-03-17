@@ -3,6 +3,7 @@ package com.ne1c.developerstalk.ui.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -55,6 +56,10 @@ public class RoomsActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_room, menu);
+
+//        SearchView searchView = (SearchView) menu.findItem(R.id.action_search_room);
+     //   searchView.
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -63,6 +68,7 @@ public class RoomsActivity extends AppCompatActivity {
         if (item.getItemId() == R.id.action_edit_room) {
             mRoomsListFragment.setEdit(!mRoomsListFragment.isEdit());
         }
+
         if (item.getItemId() == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
         }

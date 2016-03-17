@@ -4,7 +4,9 @@ import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.Utils;
 
-import retrofit.RestAdapter;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -42,8 +44,10 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     }
 
     public void loadAccessToken(String code) {
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_URL)
+        Retrofit adapter = new Retrofit.Builder()
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(Utils.GITTER_URL)
                 .build();
 
         GitterApi api = adapter.create(GitterApi.class);

@@ -7,17 +7,17 @@ import com.ne1c.developerstalk.models.UserModel;
 
 import java.util.ArrayList;
 
-import retrofit.client.Response;
-import retrofit.http.DELETE;
-import retrofit.http.Field;
-import retrofit.http.FormUrlEncoded;
-import retrofit.http.GET;
-import retrofit.http.Header;
-import retrofit.http.POST;
-import retrofit.http.PUT;
-import retrofit.http.Path;
-import retrofit.http.Query;
-import retrofit.http.Streaming;
+import okhttp3.ResponseBody;
+import retrofit2.http.DELETE;
+import retrofit2.http.Field;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
+import retrofit2.http.Streaming;
 import rx.Observable;
 
 public interface GitterApi {
@@ -62,11 +62,11 @@ public interface GitterApi {
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
-    Observable<Response> readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
-                                      @Path("roomId") String roomId, @Field("chat") String[] chat);
+    Observable<ResponseBody> readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
+                                          @Path("roomId") String roomId, @Field("chat") String[] chat);
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
-    Observable<Response> leaveRoom(@Header("Authorization") String access_token,
+    Observable<ResponseBody> leaveRoom(@Header("Authorization") String access_token,
                                    @Path("roomId") String roomId,
                                    @Path("userId") String userId);
 
@@ -76,20 +76,24 @@ public interface GitterApi {
                                    @Field("uri") String roomUri);
 
     @GET("/v1/rooms")
-    Observable<Response> searchRooms(@Header("Authorization") String access_token,
+    Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
                                      @Query("q") String searchTerm);
 
     @GET("/v1/rooms")
-    Observable<Response> searchRooms(@Header("Authorization") String access_token,
+    Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
                                      @Query("q") String searchTerm,
                                      @Query("limit") int limit);
 
     @GET("/v1/user")
-    Observable<Response> searchUsers(@Header("Authorization") String access_token,
+    Observable<ResponseBody> searchUsers(@Header("Authorization") String access_token,
                                      @Query("q") String searchTerm);
 
     @Streaming
     @GET("/v1/rooms/{roomId}/chatMessages")
-    Observable<Response> getRoomStream(@Header("Authorization") String access_token,
+    Observable<ResponseBody> getRoomStream(@Header("Authorization") String access_token,
                                        @Path("roomId") String roomId);
+
+    @POST("/v1/rooms")
+    Observable<ArrayList<RoomModel>> getSearchableRooms(@Header("Authorization") String access_token,
+                                                        @Field("q") String query);
 }

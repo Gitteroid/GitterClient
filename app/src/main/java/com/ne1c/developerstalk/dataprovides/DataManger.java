@@ -12,10 +12,11 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import retrofit.RestAdapter;
-import retrofit.client.Response;
+import okhttp3.ResponseBody;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
-import rx.schedulers.Schedulers;
 
 public class DataManger {
     private GitterApi mApi;
@@ -23,8 +24,10 @@ public class DataManger {
 
     @Inject
     public DataManger(ClientDatabase database) {
-        mApi = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
+        mApi = new Retrofit.Builder()
+                .baseUrl(Utils.GITTER_API_URL)
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(GitterApi.class);
 
@@ -76,7 +79,7 @@ public class DataManger {
         mClientDatabase.insertRooms(rooms);
     }
 
-    public Observable<Response> leaveFromRoom(String roomId) {
+    public Observable<ResponseBody> leaveFromRoom(String roomId) {
         return mApi.leaveRoom(Utils.getInstance().getAccessToken(), roomId, Utils.getInstance().getUserPref().id);
     }
 
@@ -136,7 +139,7 @@ public class DataManger {
                 });
     }
 
-    public Observable<Response> readMessages(String roomId, String[] ids) {
+    public Observable<ResponseBody> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
                 Utils.getInstance().getUserPref().id,
                 roomId,
@@ -168,5 +171,9 @@ public class DataManger {
         list.add(message);
 
         mClientDatabase.insertCachedMessages(list, roomId);
+    }
+
+    public Observable<ArrayList<RoomModel>> searchRooms(String query) {
+        return mApi.getSearchableRooms(Utils.getInstance().getBearer(), query);
     }
 }

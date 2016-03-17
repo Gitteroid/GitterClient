@@ -3,85 +3,83 @@ package com.ne1c.developerstalk.api;
 import com.google.gson.Gson;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.utils.Utils;
-import com.squareup.okhttp.OkHttpClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
-import retrofit.RestAdapter;
-import retrofit.client.OkClient;
+import okhttp3.OkHttpClient;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
-import rx.observables.AbstractOnSubscribe;
+import rx.observables.SyncOnSubscribe;
 
 public class GitterStreaming {
     private GitterApi mApiMethods;
 
     public GitterStreaming() {
-        OkHttpClient client = new OkHttpClient();
-        client.setReadTimeout(7, TimeUnit.DAYS);
-        client.setConnectTimeout(7, TimeUnit.DAYS);
-
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setClient(new OkClient(client))
-                .setEndpoint("https://stream.gitter.im")
+        OkHttpClient client = new OkHttpClient.Builder()
+                .readTimeout(7, TimeUnit.DAYS)
+                .connectTimeout(7, TimeUnit.DAYS)
                 .build();
+
+        Retrofit adapter = new Retrofit.Builder()
+                .baseUrl(Utils.GITTER_API_URL)
+                .client(client)
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
         mApiMethods = adapter.create(GitterApi.class);
     }
 
     public Observable<MessageModel> getMessageStream(String roomId) {
         return mApiMethods.getRoomStream(Utils.getInstance().getBearer(), roomId)
                 .flatMap(response -> {
-                    try {
-                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody().in()));
-                        return Observable.create(new OnSubscribeBufferedReader(bufferedReader));
-                    } catch (IOException e) {
-                        return Observable.error(e);
-                    }
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.byteStream()));
+                    return Observable.create(new OnSubscribeBufferedReader(bufferedReader));
                 }).filter(s -> s != null && !s.trim().isEmpty())
                 .map(s -> new Gson().fromJson(s, MessageModel.class));
     }
 
-    public class OnSubscribeBufferedReader extends AbstractOnSubscribe<String, BufferedReader> {
+    public class OnSubscribeBufferedReader extends SyncOnSubscribe<BufferedReader, String> {
         private final BufferedReader reader;
 
         public OnSubscribeBufferedReader(BufferedReader reader) {
             this.reader = reader;
         }
 
+
         @Override
-        protected BufferedReader onSubscribe(Subscriber<? super String> subscriber) {
+        protected BufferedReader generateState() {
             return reader;
         }
 
         @Override
-        protected void next(SubscriptionState<String, BufferedReader> state) {
-            BufferedReader reader = state.state();
+        protected BufferedReader next(BufferedReader state, Observer<? super String> observer) {
+            BufferedReader reader = state;
+            String line;
             try {
-                String line = reader.readLine();
+                line = reader.readLine();
                 if (line == null) {
-                    state.onCompleted();
+                    observer.onCompleted();
                 } else {
-                    state.onNext(line);
+                    observer.onNext(line);
                 }
             } catch (IOException e) {
-                state.onError(e);
-            }
-        }
-
-        @Override
-        protected void onTerminated(BufferedReader state) {
-            super.onTerminated(state);
-
-            if (state != null) {
                 try {
-                    state.close();
-                } catch (IOException e) {
-                    // Ignore this exception
+                    reader.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
                 }
+                observer.onError(e);
             }
+
+            return reader;
         }
     }
 }

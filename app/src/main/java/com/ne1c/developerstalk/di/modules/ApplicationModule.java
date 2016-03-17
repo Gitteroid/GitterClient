@@ -11,7 +11,9 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import dagger.Module;
 import dagger.Provides;
-import retrofit.RestAdapter;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 @Module(includes = {DatabaseModule.class, RxSchedulersModule.class})
 public class ApplicationModule {
@@ -30,8 +32,10 @@ public class ApplicationModule {
     @PerApplication
     @Provides
     public GitterApi provideApi() {
-        return new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
+        return new Retrofit.Builder()
+                .baseUrl(Utils.GITTER_API_URL)
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(GitterApi.class);
     }

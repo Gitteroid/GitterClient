@@ -126,7 +126,7 @@ public class NotificationService extends Service {
                         }
                     }
                 }
-            });
+            }, throwable -> {});
 
             mMessagesSubscriptions.add(sub);
         }
