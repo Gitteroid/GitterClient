@@ -18,6 +18,7 @@ import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
+import retrofit2.http.Url;
 import rx.Observable;
 
 public interface GitterApi {
@@ -67,8 +68,8 @@ public interface GitterApi {
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
     Observable<ResponseBody> leaveRoom(@Header("Authorization") String access_token,
-                                   @Path("roomId") String roomId,
-                                   @Path("userId") String userId);
+                                       @Path("roomId") String roomId,
+                                       @Path("userId") String userId);
 
     @POST("/v1/rooms")
     @FormUrlEncoded
@@ -77,21 +78,16 @@ public interface GitterApi {
 
     @GET("/v1/rooms")
     Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
-                                     @Query("q") String searchTerm);
+                                         @Query("q") String searchTerm);
 
     @GET("/v1/rooms")
     Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
-                                     @Query("q") String searchTerm,
-                                     @Query("limit") int limit);
+                                         @Query("q") String searchTerm,
+                                         @Query("limit") int limit);
 
     @GET("/v1/user")
     Observable<ResponseBody> searchUsers(@Header("Authorization") String access_token,
-                                     @Query("q") String searchTerm);
-
-    @Streaming
-    @GET("/v1/rooms/{roomId}/chatMessages")
-    Observable<ResponseBody> getRoomStream(@Header("Authorization") String access_token,
-                                       @Path("roomId") String roomId);
+                                         @Query("q") String searchTerm);
 
     @POST("/v1/rooms")
     Observable<ArrayList<RoomModel>> getSearchableRooms(@Header("Authorization") String access_token,
