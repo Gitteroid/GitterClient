@@ -6,22 +6,24 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
 import rx.Observer;
-import rx.Subscriber;
 import rx.observables.SyncOnSubscribe;
 
-public class GitterStreaming {
-    private GitterApi mApiMethods;
+public class GitterStreamer {
+    private GitterStreamApi mApiMethods;
 
-    public GitterStreaming() {
+    public GitterStreamer() {
+        HttpLoggingInterceptor logger = new HttpLoggingInterceptor();
+        logger.setLevel(HttpLoggingInterceptor.Level.BODY);
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .readTimeout(7, TimeUnit.DAYS)
                 .connectTimeout(7, TimeUnit.DAYS)
@@ -34,37 +36,34 @@ public class GitterStreaming {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        mApiMethods = adapter.create(GitterApi.class);
+        mApiMethods = adapter.create(GitterStreamApi.class);
     }
 
     public Observable<MessageModel> getMessageStream(String roomId) {
-        return mApiMethods.getRoomStream(Utils.getInstance().getBearer(), roomId)
-                .flatMap(response -> {
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.byteStream()));
-                    return Observable.create(new OnSubscribeBufferedReader(bufferedReader));
-                }).filter(s -> s != null && !s.trim().isEmpty())
+        String streamUrl = String.format("https://stream.gitter.im/v1/rooms/%s/chatMessages", roomId);
+        return mApiMethods.getMessagesStream(streamUrl, Utils.getInstance().getBearer())
+                .flatMap(response -> Observable.create(new OnSubscribeBufferedReader(new BufferedReader(response.charStream())))).filter(s -> s != null && !s.trim().isEmpty())
                 .map(s -> new Gson().fromJson(s, MessageModel.class));
     }
 
     public class OnSubscribeBufferedReader extends SyncOnSubscribe<BufferedReader, String> {
-        private final BufferedReader reader;
+        private final BufferedReader mReader;
 
         public OnSubscribeBufferedReader(BufferedReader reader) {
-            this.reader = reader;
+            mReader = reader;
         }
 
 
         @Override
         protected BufferedReader generateState() {
-            return reader;
+            return mReader;
         }
 
         @Override
         protected BufferedReader next(BufferedReader state, Observer<? super String> observer) {
-            BufferedReader reader = state;
             String line;
             try {
-                line = reader.readLine();
+                line = state.readLine();
                 if (line == null) {
                     observer.onCompleted();
                 } else {
@@ -72,14 +71,14 @@ public class GitterStreaming {
                 }
             } catch (IOException e) {
                 try {
-                    reader.close();
+                    state.close();
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
                 observer.onError(e);
             }
 
-            return reader;
+            return state;
         }
     }
 }
