@@ -73,7 +73,7 @@ public class DataManger {
     }
 
     public Observable<ResponseBody> leaveFromRoom(String roomId) {
-        return mApi.leaveRoom(Utils.getInstance().getAccessToken(), roomId, Utils.getInstance().getUserPref().id);
+        return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id);
     }
 
     public Observable<ArrayList<UserModel>> getProfile() {

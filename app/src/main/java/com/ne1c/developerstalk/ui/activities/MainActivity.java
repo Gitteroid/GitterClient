@@ -366,15 +366,15 @@ public class MainActivity extends BaseActivity implements MainView {
                     mPresenter.loadRooms();
                 }
                 break;
-//            case R.id.action_leave:
-//                if (mActiveRoom.oneToOne) {
-//                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
-//                    break;
-//                }
-//
-//                mPresenter.leaveFromRoom(mActiveRoom.id);
-//
-//                break;
+            case R.id.action_leave:
+                if (mActiveRoom.oneToOne) {
+                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
+                    break;
+                }
+
+                mPresenter.leaveFromRoom(mActiveRoom.id);
+
+                break;
         }
 
         return super.onOptionsItemSelected(item);

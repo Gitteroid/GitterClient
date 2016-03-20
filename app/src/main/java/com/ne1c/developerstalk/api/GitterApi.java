@@ -64,8 +64,10 @@ public interface GitterApi {
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
-    Observable<ResponseBody> readMessages(@Header("Authorization") String access_token, @Path("userId") String userId,
-                                          @Path("roomId") String roomId, @Field("chat") String[] chat);
+    Observable<ResponseBody> readMessages(@Header("Authorization") String access_token,
+                                          @Path("userId") String userId,
+                                          @Path("roomId") String roomId,
+                                          @Field("chat") String[] chat);
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
     Observable<ResponseBody> leaveRoom(@Header("Authorization") String access_token,

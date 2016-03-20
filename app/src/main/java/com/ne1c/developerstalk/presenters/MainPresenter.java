@@ -96,7 +96,8 @@ public class MainPresenter extends BasePresenter<MainView> {
     }
 
     public void leaveFromRoom(String roomId) {
-        Subscription sub = mDataManger.leaveFromRoom(roomId).subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.leaveFromRoom(roomId)
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
                     mView.leavedFromRoom();
