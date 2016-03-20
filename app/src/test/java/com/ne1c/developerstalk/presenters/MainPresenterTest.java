@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 
-import retrofit.client.Response;
+import okhttp3.ResponseBody;
 import rx.Observable;
 
 import static org.mockito.Matchers.any;
@@ -112,7 +112,7 @@ public class MainPresenterTest {
 
     @Test
     public void leaveFromRoom() {
-        Response response = any(Response.class);
+        ResponseBody response = any(ResponseBody.class);
 
         when(dataManger.leaveFromRoom("room_id")).thenReturn(Observable.just(response));
 
