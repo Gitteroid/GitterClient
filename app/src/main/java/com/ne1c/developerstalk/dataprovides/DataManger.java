@@ -23,14 +23,8 @@ public class DataManger {
     private ClientDatabase mClientDatabase;
 
     @Inject
-    public DataManger(ClientDatabase database) {
-        mApi = new Retrofit.Builder()
-                .baseUrl(Utils.GITTER_API_URL)
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(GitterApi.class);
-
+    public DataManger(GitterApi api, ClientDatabase database) {
+        mApi = api;
         mClientDatabase = database;
     }
 

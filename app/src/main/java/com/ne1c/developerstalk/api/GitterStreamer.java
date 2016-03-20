@@ -6,42 +6,26 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
+import javax.inject.Inject;
+
 import rx.Observable;
 import rx.Observer;
 import rx.observables.SyncOnSubscribe;
 
 public class GitterStreamer {
-    private GitterStreamApi mApiMethods;
+    private final String STREAM_URL = "https://stream.gitter.im/v1/rooms/%s/chatMessages";
 
-    public GitterStreamer() {
-        HttpLoggingInterceptor logger = new HttpLoggingInterceptor();
-        logger.setLevel(HttpLoggingInterceptor.Level.BODY);
+    private GitterStreamApi mStreamApi;
 
-        OkHttpClient client = new OkHttpClient.Builder()
-                .readTimeout(7, TimeUnit.DAYS)
-                .connectTimeout(7, TimeUnit.DAYS)
-                .build();
-
-        Retrofit adapter = new Retrofit.Builder()
-                .baseUrl(Utils.GITTER_API_URL)
-                .client(client)
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        mApiMethods = adapter.create(GitterStreamApi.class);
+    @Inject
+    public GitterStreamer(GitterStreamApi api) {
+        mStreamApi = api;
     }
 
     public Observable<MessageModel> getMessageStream(String roomId) {
-        String streamUrl = String.format("https://stream.gitter.im/v1/rooms/%s/chatMessages", roomId);
-        return mApiMethods.getMessagesStream(streamUrl, Utils.getInstance().getBearer())
+        String streamUrl = String.format(STREAM_URL, roomId);
+        return mStreamApi.getMessagesStream(streamUrl, Utils.getInstance().getBearer())
                 .flatMap(response -> Observable.create(new OnSubscribeBufferedReader(new BufferedReader(response.charStream())))).filter(s -> s != null && !s.trim().isEmpty())
                 .map(s -> new Gson().fromJson(s, MessageModel.class));
     }

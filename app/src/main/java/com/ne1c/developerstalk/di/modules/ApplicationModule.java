@@ -15,7 +15,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-@Module(includes = {DatabaseModule.class, RxSchedulersModule.class})
+@Module(includes = {DatabaseModule.class, NetworkModule.class, RxSchedulersModule.class})
 public class ApplicationModule {
     private Application mApp;
 
@@ -25,19 +25,8 @@ public class ApplicationModule {
 
     @PerApplication
     @Provides
-    public DataManger provideDataManager(ClientDatabase database) {
-        return new DataManger(database);
-    }
-
-    @PerApplication
-    @Provides
-    public GitterApi provideApi() {
-        return new Retrofit.Builder()
-                .baseUrl(Utils.GITTER_API_URL)
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(GitterApi.class);
+    public DataManger provideDataManager(GitterApi api, ClientDatabase database) {
+        return new DataManger(api, database);
     }
 
     @PerApplication

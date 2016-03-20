@@ -20,8 +20,8 @@ import org.robolectric.annotation.Config;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import retrofit.client.Response;
-import retrofit.mime.TypedInput;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 import rx.Observable;
 
 import static junit.framework.Assert.assertTrue;
@@ -172,7 +172,7 @@ public class ChatRoomPresenterTest {
 
     @Test
     public void successMarkMessageAsRead() {
-        Response resp = new Response("", 200, "", Collections.emptyList(), mock(TypedInput.class));
+        ResponseBody resp = ResponseBody.create(MediaType.parse(""), "");
         String[] ids = new String[5];
 
         when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.just(resp));
@@ -188,11 +188,7 @@ public class ChatRoomPresenterTest {
 
         when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.error(new Throwable(ERROR)));
 
-        try {
-            presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
-        } catch (Exception e) {
-            assertTrue(e instanceof rx.exceptions.OnErrorNotImplementedException);
-        }
+        presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 
         verify(view, never()).successReadMessages(anyInt(), anyInt(), anyString(), anyInt());
     }

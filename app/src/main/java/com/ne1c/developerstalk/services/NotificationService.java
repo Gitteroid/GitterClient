@@ -51,7 +51,7 @@ public class NotificationService extends Service {
 
     private Subscription mRoomsSubscription;
 
-    private GitterStreamer mStreaming;
+    private GitterStreamer mStreamer;
 
     private boolean mEnableNotif = true;
     private boolean mSound = true;
@@ -61,16 +61,17 @@ public class NotificationService extends Service {
 
     private DataManger mDataManger;
 
+
     @Override
     public void onCreate() {
         super.onCreate();
 
+        mDataManger = ((Application) getApplication()).getDataManager();
+        mStreamer = ((Application) getApplication()).getStreamer();
+
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
-
-        mStreaming = new GitterStreamer();
-        mDataManger = ((Application) getApplication()).getDataManager();
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         mEnableNotif = prefs.getBoolean("enable_notif", true);
@@ -111,7 +112,7 @@ public class NotificationService extends Service {
 
         mMessagesSubscriptions = new CompositeSubscription();
         for (final RoomModel room : mRooms) {
-            Subscription sub = mStreaming.getMessageStream(room.id)
+            Subscription sub = mStreamer.getMessageStream(room.id)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(message -> {
@@ -134,12 +135,8 @@ public class NotificationService extends Service {
                             }
                         }
                     }, throwable -> {
-                        try {
-                            Log.e("streaming_exc", throwable.getMessage());
-                        } catch (Throwable e) {
-                            Log.e("streaming_exc", e.getMessage());
-                        }
-                    }, () -> Log.e("streaming", "createSubscribers: onComplete"));
+                    }, () -> {
+                    });
 
             mMessagesSubscriptions.add(sub);
         }
