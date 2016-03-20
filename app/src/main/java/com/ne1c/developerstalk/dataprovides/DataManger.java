@@ -1,8 +1,10 @@
 package com.ne1c.developerstalk.dataprovides;
 
 import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.SearchRoomsResponse;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -13,9 +15,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import okhttp3.ResponseBody;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
 
 public class DataManger {
@@ -167,7 +166,15 @@ public class DataManger {
         mClientDatabase.insertCachedMessages(list, roomId);
     }
 
-    public Observable<ArrayList<RoomModel>> searchRooms(String query) {
-        return mApi.getSearchableRooms(Utils.getInstance().getBearer(), query);
+    public Observable<SearchRoomsResponse> searchRooms(String query) {
+        return mApi.searchRooms(Utils.getInstance().getBearer(), query, 30, 0);
+    }
+
+    public Observable<SearchRoomsResponse> searchRoomsWithOffset(String query, int offset) {
+        return mApi.searchRooms(Utils.getInstance().getBearer(), query, 10, offset);
+    }
+
+    public Observable<AuthResponseModel> authorization(String client_id, String client_secret, String code, String grant_type, String redirect_url) {
+        return mApi.authorization(client_id, client_secret, code, grant_type, redirect_url);
     }
 }

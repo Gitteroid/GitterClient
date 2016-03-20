@@ -3,6 +3,7 @@ package com.ne1c.developerstalk.api;
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.SearchRoomsResponse;
 import com.ne1c.developerstalk.models.UserModel;
 
 import java.util.ArrayList;
@@ -76,20 +77,13 @@ public interface GitterApi {
     Observable<RoomModel> joinRoom(@Header("Authorization") String access_token,
                                    @Field("uri") String roomUri);
 
-    @GET("/v1/rooms")
-    Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
-                                         @Query("q") String searchTerm);
-
-    @GET("/v1/rooms")
-    Observable<ResponseBody> searchRooms(@Header("Authorization") String access_token,
-                                         @Query("q") String searchTerm,
-                                         @Query("limit") int limit);
-
     @GET("/v1/user")
     Observable<ResponseBody> searchUsers(@Header("Authorization") String access_token,
                                          @Query("q") String searchTerm);
 
-    @POST("/v1/rooms")
-    Observable<ArrayList<RoomModel>> getSearchableRooms(@Header("Authorization") String access_token,
-                                                        @Field("q") String query);
+    @GET("/v1/rooms")
+    Observable<SearchRoomsResponse> searchRooms(@Header("Authorization") String access_token,
+                                                @Query("q") String query,
+                                                @Query("limit") int limit,
+                                                @Query("offset") int offset); // Offset not working
 }

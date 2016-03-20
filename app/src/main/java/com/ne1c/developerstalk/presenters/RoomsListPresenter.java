@@ -7,10 +7,12 @@ import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
 import rx.Subscription;
+import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
 
 public class RoomsListPresenter extends BasePresenter<RoomsListView> {
@@ -24,6 +26,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     private RxSchedulersFactory mSchedulersFactory;
 
     private CompositeSubscription mSubscriptions;
+    private PublishSubject<String> mSearchRoomSubject = PublishSubject.create();
 
     @Inject
     public RoomsListPresenter(RxSchedulersFactory factory, DataManger dataManger) {
@@ -35,6 +38,21 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     public void bindView(RoomsListView view) {
         mView = view;
         mSubscriptions = new CompositeSubscription();
+
+        Subscription sub = mSearchRoomSubject
+                .asObservable()
+                .throttleLast(1, TimeUnit.SECONDS)
+                .flatMap(query -> mDataManger.searchRooms(query))
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .subscribe(response -> {
+                    mView.dismissDialog();
+                    mView.resultSearch(response.getResult());
+                }, throwable -> {
+                    mView.errorSearch();
+                });
+
+        mSubscriptions.add(sub);
     }
 
     @Override
@@ -110,5 +128,34 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 });
 
         mSubscriptions.add(sub);
+    }
+
+    public void searchRooms(String query) {
+        if (!query.isEmpty()) {
+            mView.showDialog();
+            mSearchRoomSubject.onNext(query);
+        } else {
+            mView.resultSearch(new ArrayList<>());
+            mView.dismissDialog();
+        }
+    }
+
+    public void searchRoomsWithOffset(String query, int offset) {
+            mDataManger.searchRoomsWithOffset(query, offset)
+                    .subscribeOn(mSchedulersFactory.io())
+                    .observeOn(mSchedulersFactory.androidMainThread())
+                    .subscribe(response -> {
+                        mView.resultSearchWithOffset(response.getResult());
+                    }, throwable -> {});
+    }
+
+    private class SearchModel {
+        String query;
+        int offset;
+
+        public SearchModel(String query, int offset) {
+            this.query = query;
+            this.offset = offset;
+        }
     }
 }

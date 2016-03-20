@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -11,6 +10,7 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
@@ -33,12 +33,17 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     private SwipeRefreshLayout mRefreshLayout;
     private RecyclerView mRoomsList;
     private RoomsAdapter mAdapter;
+    private RoomsAdapter mSearchableAdapter;
     private ItemTouchHelper mItemTouchHelper;
-    private ProgressDialog mProgressDialog;
+    private ProgressBar mProgressBar;
 
     private ArrayList<RoomModel> mRooms = new ArrayList<>();
+    private ArrayList<RoomModel> mSearchedRooms = new ArrayList<>();
 
     private boolean mIsEdit = false;
+    private boolean mIsSearchMode = false;
+    private String mSearchQuery = "";
+    private int mSearchOffset = 10;
 
     private RoomsListComponent mComponent;
 
@@ -60,8 +65,25 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         LinearLayoutManager manager = new LinearLayoutManager(getActivity());
         mRoomsList.setLayoutManager(manager);
         mRoomsList.setItemAnimator(new DefaultItemAnimator());
+
         mAdapter = new RoomsAdapter(mRooms, getActivity(), this);
         mRoomsList.setAdapter(mAdapter);
+        mRoomsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+
+//                if (mIsSearchMode && !mSearchQuery.isEmpty()) {
+//                    LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+//
+//                    if (layoutManager.findLastVisibleItemPosition() == mSearchedRooms.size() - 2) {
+//                        mPresenter.searchRoomsWithOffset(mSearchQuery, mSearchOffset);
+//                    }
+//                }
+            }
+        });
+
+        mSearchableAdapter = new RoomsAdapter(mSearchedRooms, getActivity(), this);
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
@@ -74,6 +96,9 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
                 mRefreshLayout.setRefreshing(false);
             }
         });
+
+        mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
+        mProgressBar.setIndeterminate(true);
 
         mPresenter.bindView(this);
         mPresenter.loadCachedRooms();
@@ -150,20 +175,49 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
 
     @Override
     public void showDialog() {
-        if (mProgressDialog == null) {
-            mProgressDialog = new ProgressDialog(getActivity());
-            mProgressDialog.setIndeterminate(true);
-            mProgressDialog.setMessage(getString(R.string.loading));
+        if (mProgressBar.getVisibility() == View.GONE) {
+            mRefreshLayout.setVisibility(View.GONE);
+            mProgressBar.setVisibility(View.VISIBLE);
         }
-
-        mProgressDialog.show();
     }
 
     @Override
     public void dismissDialog() {
-        if (mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
+        if (mProgressBar.getVisibility() == View.VISIBLE) {
+            mRefreshLayout.setVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public void errorSearch() {
+        mSearchedRooms.clear();
+        mSearchableAdapter.notifyDataSetChanged();
+
+        Toast.makeText(getActivity(), R.string.error, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void resultSearch(ArrayList<RoomModel> rooms) {
+        mSearchedRooms.clear();
+        mSearchedRooms.addAll(rooms);
+        mSearchableAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void resultSearchWithOffset(ArrayList<RoomModel> rooms) {
+        if (mIsSearchMode) {
+            int startPosition = mSearchedRooms.size();
+            mSearchedRooms.addAll(rooms);
+            mSearchableAdapter.notifyItemRangeInserted(startPosition, 10);
+
+            mSearchOffset += 10; // Increment offset, after get result of previous offset request
+        }
+    }
+
+    public void searchRoomsQuery(String text) {
+        mSearchQuery = text;
+        mPresenter.searchRooms(text);
     }
 
     @Override
@@ -186,5 +240,18 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
                 .build();
 
         mComponent.inject(this);
+    }
+
+    public void startSearch() {
+        mIsSearchMode = true;
+        mRoomsList.setAdapter(mSearchableAdapter);
+    }
+
+    public void endSearch() {
+        dismissDialog();
+        mRoomsList.setAdapter(mAdapter);
+        mIsSearchMode = false;
+        mSearchQuery = "";
+        mSearchOffset = 0;
     }
 }
