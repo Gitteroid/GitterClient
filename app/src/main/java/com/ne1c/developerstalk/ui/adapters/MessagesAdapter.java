@@ -432,11 +432,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
             if (!message.sent.equals(StatusMessage.NO_SEND.name())
                     && !message.sent.equals(StatusMessage.SENDING.name())) {
-                statusMessage.setImageResource(R.mipmap.ic_deliver_mess);
+                statusMessage.setImageResource(R.drawable.ic_deliver_mess);
             } else if (message.sent.equals(StatusMessage.NO_SEND.name())) {
-                statusMessage.setImageResource(R.mipmap.ic_error_mess);
+                statusMessage.setImageResource(R.drawable.ic_error_mess);
             } else if (message.sent.equals(StatusMessage.SENDING.name())) {
-                statusMessage.setImageResource(R.mipmap.ic_sending_mess);
+                statusMessage.setImageResource(R.drawable.ic_sending_mess);
             }
         } else {
             statusMessage.setVisibility(View.INVISIBLE);

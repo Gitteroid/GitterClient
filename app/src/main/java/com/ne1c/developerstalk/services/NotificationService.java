@@ -199,7 +199,7 @@ public class NotificationService extends Service {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setContentIntent(pendingIntent)
-                        .setSmallIcon(R.mipmap.ic_notif_message)
+                        .setSmallIcon(R.drawable.ic_notif_message)
                         .setTicker(text)
                         .setContentText(text)
                         .setContentTitle(room.name);
