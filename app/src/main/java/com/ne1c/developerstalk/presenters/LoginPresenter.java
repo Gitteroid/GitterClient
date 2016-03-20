@@ -1,15 +1,11 @@
 package com.ne1c.developerstalk.presenters;
 
-import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.ui.views.LoginView;
+import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
 public class LoginPresenter extends BasePresenter<LoginView> {
@@ -25,7 +21,13 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     private LoginView mView;
 
     private CompositeSubscription mSubscriptions;
+    private DataManger mDataManager;
+    private RxSchedulersFactory mFactory;
 
+    public LoginPresenter(RxSchedulersFactory factory, DataManger dataManager) {
+        mDataManager = dataManager;
+        mFactory = factory;
+    }
 
     @Override
     public void bindView(LoginView view) {
@@ -44,20 +46,12 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     }
 
     public void loadAccessToken(String code) {
-        Retrofit adapter = new Retrofit.Builder()
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
-                .baseUrl(Utils.GITTER_URL)
-                .build();
-
-        GitterApi api = adapter.create(GitterApi.class);
-
         mView.showProgress();
 
-        Subscription sub = api.authorization(CLIENT_ID, CLIENT_SECRET, code,
+        Subscription sub = mDataManager.authorization(CLIENT_ID, CLIENT_SECRET, code,
                 GRANT_TYPE, REDIRECT_URL)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mFactory.io())
+                .observeOn(mFactory.androidMainThread())
                 .subscribe(authResponseModel -> {
                     // Write access token to preferences
                     Utils.getInstance().writeAuthResponsePref(authResponseModel);

@@ -18,12 +18,17 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.di.components.DaggerLoginComponent;
+import com.ne1c.developerstalk.di.components.LoginComponent;
 import com.ne1c.developerstalk.presenters.LoginPresenter;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.UIUtils;
 import com.ne1c.developerstalk.utils.Utils;
+
+import javax.inject.Inject;
 
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
@@ -33,12 +38,21 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
     private WebView mAuthWebView;
     private MaterialProgressBar mProgressBar;
 
-    private LoginPresenter mPresenter;
+    private LoginComponent mComponent;
+
+    @Inject
+    LoginPresenter mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        mComponent = DaggerLoginComponent.builder()
+                .applicationComponent(((Application) getApplication()).getComponent())
+                .build();
+
+        mComponent.inject(this);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -70,7 +84,6 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
             }
         });
 
-        mPresenter = new LoginPresenter();
         mPresenter.bindView(this);
     }
 
@@ -132,8 +145,9 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         mPresenter.unbindView();
+        mComponent = null;
+        super.onDestroy();
     }
 
     private class MyWebViewClient extends WebViewClient {
