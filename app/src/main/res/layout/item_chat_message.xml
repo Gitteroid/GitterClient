@@ -19,7 +19,7 @@
         android:layout_marginLeft="4dp"
         android:layout_weight="0"
         android:adjustViewBounds="true"
-        android:src="@mipmap/ic_avatar"/>
+        android:src="@drawable/ic_avatar"/>
 
     <LinearLayout
         android:id="@+id/message_layout"
@@ -82,7 +82,7 @@
             android:layout_marginTop="2dp"
             android:background="?android:attr/selectableItemBackground"
             android:scaleType="fitCenter"
-            android:src="@mipmap/ic_menu"/>
+            android:src="@drawable/ic_menu"/>
 
         <View
             android:layout_width="0dp"
@@ -94,7 +94,7 @@
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:scaleType="centerCrop"
-            android:src="@mipmap/ic_sending_mess"/>
+            android:src="@drawable/ic_sending_mess"/>
     </LinearLayout>
 
     <ImageView
