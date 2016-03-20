@@ -50,4 +50,5 @@
     </string>
     <string name="enable_background_service">Work in backround</string>
     <string name="app_work">Work applications</string>
+    <string name="search_room">Search rooms</string>
 </resources>
