@@ -26,4 +26,6 @@ public interface ChatView extends BaseView {
     void showListProgressBar();
 
     void hideListProgress();
+
+    void joinToRoom();
 }

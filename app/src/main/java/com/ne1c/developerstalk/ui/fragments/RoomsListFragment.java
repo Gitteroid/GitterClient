@@ -68,20 +68,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
 
         mAdapter = new RoomsAdapter(mRooms, getActivity(), this);
         mRoomsList.setAdapter(mAdapter);
-        mRoomsList.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-//                if (mIsSearchMode && !mSearchQuery.isEmpty()) {
-//                    LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-//
-//                    if (layoutManager.findLastVisibleItemPosition() == mSearchedRooms.size() - 2) {
-//                        mPresenter.searchRoomsWithOffset(mSearchQuery, mSearchOffset);
-//                    }
-//                }
-            }
-        });
 
         mSearchableAdapter = new RoomsAdapter(mSearchedRooms, getActivity(), this);
 
@@ -122,11 +108,11 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         if (edit) {
             mRooms.clear();
             mRooms.addAll(mPresenter.getAllRooms());
-            mAdapter.setEdit(true);
+            mAdapter.setEditMode(true);
 
             mItemTouchHelper.attachToRecyclerView(mRoomsList);
         } else {
-            mAdapter.setEdit(false);
+            mAdapter.setEditMode(false);
 
             mPresenter.saveRooms(mRooms);
             ArrayList<RoomModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
@@ -245,13 +231,16 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     public void startSearch() {
         mIsSearchMode = true;
         mRoomsList.setAdapter(mSearchableAdapter);
+        mSearchableAdapter.setSearchMode(true);
     }
 
     public void endSearch() {
         dismissDialog();
         mRoomsList.setAdapter(mAdapter);
+        mSearchableAdapter.setSearchMode(false);
+
         mIsSearchMode = false;
         mSearchQuery = "";
-        mSearchOffset = 0;
+        mSearchOffset = 10;
     }
 }

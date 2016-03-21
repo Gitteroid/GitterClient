@@ -1,5 +1,7 @@
 package com.ne1c.developerstalk.presenters;
 
+import android.widget.Toast;
+
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataprovides.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
@@ -179,5 +181,20 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         message.urls = new ArrayList<>();
 
         return message;
+    }
+
+    public void joinToRoom(String roomUri) {
+        mDataManger.joinToRoom(roomUri)
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .subscribe(responseBody -> {
+                    if (responseBody.getError() == null) {
+                        mView.joinToRoom();
+                    } else {
+                        mView.showError(responseBody.getError());
+                    }
+                }, throwable -> {
+                    mView.showError(throwable.getMessage());
+                });
     }
 }

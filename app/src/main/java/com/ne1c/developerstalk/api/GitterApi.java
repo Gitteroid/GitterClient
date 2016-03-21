@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk.api;
 
+import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -18,8 +19,6 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
-import retrofit2.http.Streaming;
-import retrofit2.http.Url;
 import rx.Observable;
 
 public interface GitterApi {
@@ -76,8 +75,8 @@ public interface GitterApi {
 
     @POST("/v1/rooms")
     @FormUrlEncoded
-    Observable<RoomModel> joinRoom(@Header("Authorization") String access_token,
-                                   @Field("uri") String roomUri);
+    Observable<JoinRoomResponse> joinRoom(@Header("Authorization") String access_token,
+                                          @Field("uri") String roomUri);
 
     @GET("/v1/user")
     Observable<ResponseBody> searchUsers(@Header("Authorization") String access_token,

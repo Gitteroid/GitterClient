@@ -17,6 +17,7 @@ import android.widget.TextView;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
+import com.ne1c.developerstalk.ui.activities.OverviewRoomActivity;
 import com.ne1c.developerstalk.ui.adapters.helper.ItemTouchHelperAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
 
@@ -27,7 +28,8 @@ import java.util.List;
 public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
     private List<RoomModel> mRooms;
     private Context mContext;
-    private boolean mIsEdit = false;
+    private boolean mIsEditMode = false;
+    private boolean mIsSearchMode = false;
 
     private OnStartDragListener mDragStartListener;
 
@@ -106,7 +108,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             holderConf.counterMess.setVisibility(View.INVISIBLE);
         }
 
-        if (mIsEdit) {
+        if (mIsEditMode) {
             holderConf.editRoom.setVisibility(View.VISIBLE);
         } else {
             holderConf.editRoom.setVisibility(View.GONE);
@@ -122,7 +124,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         holderConf.editRoom.setOnTouchListener((v, event) -> {
-            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEdit) {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEditMode) {
                 mDragStartListener.onStartDrag(holder);
             }
             return false;
@@ -158,14 +160,14 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             holderOne.counterMess.setVisibility(View.INVISIBLE);
         }
 
-        if (mIsEdit) {
+        if (mIsEditMode) {
             holderOne.editRoom.setVisibility(View.VISIBLE);
         } else {
             holderOne.editRoom.setVisibility(View.GONE);
         }
 
         holderOne.editRoom.setOnTouchListener((v, event) -> {
-            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEdit) {
+            if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN && mIsEditMode) {
                 mDragStartListener.onStartDrag(holder);
             }
             return false;
@@ -180,7 +182,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        if (mIsEdit) {
+        if (mIsEditMode) {
             mRooms.get(fromPosition).listPosition = toPosition;
             mRooms.get(toPosition).listPosition = fromPosition;
             Collections.swap(mRooms, fromPosition, toPosition);
@@ -198,13 +200,17 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         notifyItemChanged(position);
     }
 
-    public void setEdit(boolean edit) {
-        mIsEdit = edit;
+    public void setEditMode(boolean edit) {
+        mIsEditMode = edit;
         notifyDataSetChanged();
     }
 
+    public void setSearchMode(boolean searchMode) {
+        mIsSearchMode = searchMode;
+    }
+
     public boolean isEdit() {
-        return mIsEdit;
+        return mIsEditMode;
     }
 
     public class ViewHolderConf extends RecyclerView.ViewHolder {
@@ -228,9 +234,13 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
 
             itemView.setOnClickListener(v -> {
-                if (!isEdit()) {
+                if (!mIsEditMode && !mIsSearchMode) {
                     Intent intent = new Intent(mContext, MainActivity.class);
                     intent.putExtra("roomId", mRooms.get(getAdapterPosition()).id);
+                    mContext.startActivity(intent);
+                } else if (mIsSearchMode) {
+                    Intent intent = new Intent(mContext, OverviewRoomActivity.class);
+                    intent.putExtra("room", mRooms.get(getAdapterPosition()));
                     mContext.startActivity(intent);
                 }
             });
@@ -254,8 +264,12 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             parentLayout = (LinearLayout) itemView.findViewById(R.id.parent_layout);
 
             itemView.setOnClickListener(v -> {
-                if (!isEdit()) {
+                if (!mIsEditMode && !mIsSearchMode) {
                     Intent intent = new Intent(mContext, MainActivity.class);
+                    intent.putExtra("roomId", mRooms.get(getAdapterPosition()).id);
+                    mContext.startActivity(intent);
+                } else if (mIsSearchMode) {
+                    Intent intent = new Intent(mContext, OverviewRoomActivity.class);
                     intent.putExtra("roomId", mRooms.get(getAdapterPosition()).id);
                     mContext.startActivity(intent);
                 }

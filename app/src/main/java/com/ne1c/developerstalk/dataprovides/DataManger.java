@@ -1,6 +1,7 @@
 package com.ne1c.developerstalk.dataprovides;
 
 import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -176,5 +177,9 @@ public class DataManger {
 
     public Observable<AuthResponseModel> authorization(String client_id, String client_secret, String code, String grant_type, String redirect_url) {
         return mApi.authorization(client_id, client_secret, code, grant_type, redirect_url);
+    }
+
+    public Observable<JoinRoomResponse> joinToRoom(String roomUri) {
+        return mApi.joinRoom(Utils.getInstance().getBearer(), roomUri);
     }
 }

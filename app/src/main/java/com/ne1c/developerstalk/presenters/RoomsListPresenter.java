@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.models.SearchRoomsResponse;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import rx.Subscription;
+import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
 
@@ -43,11 +45,34 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 .asObservable()
                 .throttleLast(1, TimeUnit.SECONDS)
                 .flatMap(query -> mDataManger.searchRooms(query))
+                .map(response -> {
+                    ArrayList<RoomModel> responseRooms = response.getResult();
+                    ArrayList<RoomModel> filterRooms = new ArrayList<>();
+
+                    boolean existInDb;
+
+                    for (RoomModel responseRoom : responseRooms) {
+                        existInDb = false;
+
+                        for (RoomModel dbRoom : mAllRooms) {
+                            if (responseRoom.id.equals(dbRoom.id)) {
+                                existInDb = true;
+                                break;
+                            }
+                        }
+
+                        if (!existInDb) {
+                            filterRooms.add(responseRoom);
+                        }
+                    }
+
+                    return filterRooms;
+                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
                     mView.dismissDialog();
-                    mView.resultSearch(response.getResult());
+                    mView.resultSearch(response);
                 }, throwable -> {
                     mView.errorSearch();
                 });

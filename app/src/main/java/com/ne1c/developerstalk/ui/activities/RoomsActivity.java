@@ -62,8 +62,14 @@ public class RoomsActivity extends AppCompatActivity {
         MenuItemCompat.setOnActionExpandListener(menu.findItem(R.id.action_search_room), new MenuItemCompat.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem item) {
-                mRoomsListFragment.startSearch();
-                return true;
+                if (!mRoomsListFragment.isEdit()) {
+                    mRoomsListFragment.startSearch();
+                    return true;
+                } else {
+                    Toast.makeText(getApplicationContext(), R.string.end_edit_list, Toast.LENGTH_SHORT).show();
+                }
+
+                return false;
             }
 
             @Override
@@ -75,7 +81,6 @@ public class RoomsActivity extends AppCompatActivity {
 
         SearchView searchView = (SearchView) menu.findItem(R.id.action_search_room).getActionView();
 
-        //searchView.setOnSearchClickListener(v -> mRoomsListFragment.startSearch());
         searchView.setQueryHint(getString(R.string.search));
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -101,6 +106,12 @@ public class RoomsActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_edit_room) {
             mRoomsListFragment.setEdit(!mRoomsListFragment.isEdit());
+
+            if (mRoomsListFragment.isEdit()) {
+                item.setTitle(R.string.save_list_room);
+            } else {
+                item.setTitle(R.string.edit_list_room);
+            }
         }
 
         if (item.getItemId() == R.id.action_settings) {
