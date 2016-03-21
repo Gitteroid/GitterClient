@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:name="com.ne1c.developerstalk.Application"
+        android:name=".Application"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -46,7 +46,8 @@
         <activity
             android:name=".ui.activities.SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:theme="@style/SettingsTheme"/>
+            android:theme="@style/SettingsTheme" />
+        <activity android:name=".ui.activities.OverviewRoomActivity" />
 
         <receiver
             android:name=".services.OnBootBroadcastReceiver"
@@ -59,9 +60,12 @@
         <service
             android:name=".services.NotificationService"
             android:enabled="true"
-            android:process=":NotificationService"/>
+            android:process=":NotificationService" />
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="e903f4d992f51fdf223014886b051f314a5c16fe" />
+
     </application>
+
 </manifest>
