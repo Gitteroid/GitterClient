@@ -1,6 +1,6 @@
 # Developers Talk
 
-[![Build Status](https://travis-ci.org/Ne1c/GitterClient.svg?branch=master)](https://travis-ci.org/Ne1c/GitterClient)
+<!--[![Build Status](https://travis-ci.org/Ne1c/GitterClient.svg?branch=master)](https://travis-ci.org/Ne1c/GitterClient)-->
 
 <a href="https://play.google.com/store/apps/details?id=com.ne1c.developerstalk&utm_source=global_co&utm_medium=prtnr&utm_content=Mar2515&utm_campaign=PartBadge&pcampaignid=MKT-AC-global-none-all-co-pr-py-PartBadges-Oct1515-1"><img alt="Get it on Google Play" width="180" src="https://play.google.com/intl/en_us/badges/images/apps/en-play-badge.png" /></a>
 <br>Unofficial Gitter.im Android Client
