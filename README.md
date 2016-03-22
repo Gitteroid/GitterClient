@@ -8,9 +8,9 @@
 <h2>ToDo:</h2>
 <ul>
 <li>Refactoring!</li>
-<li>Add "Join to room"</li>
-<li>Add "Leave from room"</li>
-<li>Add "Search rooms"</li>
+<li><strike>Add "Join to room"</strike></li>
+<li><strike>Add "Leave from room"</strike></li>
+<li><strike>Add "Search rooms"</strike></li>
 <li>Add "Search messages in room"</li>
 <li>Add button for navigation to bottom of messages list</li>
 </ul>
