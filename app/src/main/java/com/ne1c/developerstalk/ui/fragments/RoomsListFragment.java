@@ -67,9 +67,13 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mRoomsList.setItemAnimator(new DefaultItemAnimator());
 
         mAdapter = new RoomsAdapter(mRooms, getActivity(), this);
-        mRoomsList.setAdapter(mAdapter);
-
         mSearchableAdapter = new RoomsAdapter(mSearchedRooms, getActivity(), this);
+
+        if (mIsSearchMode) {
+            mRoomsList.setAdapter(mSearchableAdapter);
+        } else {
+            mRoomsList.setAdapter(mAdapter);
+        }
 
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(mAdapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
