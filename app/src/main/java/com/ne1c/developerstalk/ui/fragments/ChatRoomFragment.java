@@ -430,18 +430,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void showError(String error) {
+    public void showError(int resId) {
         hideListProgress();
         hideTopProgressBar();
 
         mIsRefreshing = false;
         mIsLoadBeforeIdMessages = false;
 
-        if (error.contains("401")) {
-            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
-        }
+//        if (error.contains("401")) {
+//            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
+//        }
 
-        Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), resId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -580,11 +580,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 .build();
 
         mComponent.inject(this);
-    }
-
-    @Override
-    public Context getAppContext() {
-        return getActivity();
     }
 
     public static ChatRoomFragment newInstance(RoomModel overviewRoom) {

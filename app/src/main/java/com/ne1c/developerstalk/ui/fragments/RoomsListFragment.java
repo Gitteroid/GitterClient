@@ -155,12 +155,12 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     }
 
     @Override
-    public void showError(String text) {
+    public void showError(int resId) {
         if (mRefreshLayout.isRefreshing()) {
             mRefreshLayout.setRefreshing(false);
         }
 
-        Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), resId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -208,11 +208,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     public void searchRoomsQuery(String text) {
         mSearchQuery = text;
         mPresenter.searchRooms(text);
-    }
-
-    @Override
-    public Context getAppContext() {
-        return getActivity().getApplicationContext();
     }
 
     @Override
