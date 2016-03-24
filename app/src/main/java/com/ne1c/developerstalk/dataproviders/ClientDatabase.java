@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk.dataprovides;
+package com.ne1c.developerstalk.dataproviders;
 
 import android.content.ContentValues;
 import android.content.Context;

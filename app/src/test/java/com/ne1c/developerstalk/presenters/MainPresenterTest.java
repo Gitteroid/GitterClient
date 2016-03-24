@@ -4,7 +4,7 @@ import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.MainView;
 
 import org.junit.After;

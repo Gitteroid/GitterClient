@@ -1,6 +1,6 @@
 package com.ne1c.developerstalk.di.modules;
 
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.di.annotations.PerActivity;
 import com.ne1c.developerstalk.presenters.LoginPresenter;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;

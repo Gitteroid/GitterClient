@@ -4,7 +4,7 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.ui.views.ChatView;
 
@@ -18,7 +18,6 @@ import org.robolectric.RobolectricGradleTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;

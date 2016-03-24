@@ -4,16 +4,12 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.dataprovides.ClientDatabase;
+import com.ne1c.developerstalk.dataproviders.ClientDatabase;
 import com.ne1c.developerstalk.di.annotations.PerApplication;
-import com.ne1c.developerstalk.dataprovides.DataManger;
-import com.ne1c.developerstalk.utils.Utils;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 
 import dagger.Module;
 import dagger.Provides;
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 @Module(includes = {DatabaseModule.class, NetworkModule.class, RxSchedulersModule.class})
 public class ApplicationModule {

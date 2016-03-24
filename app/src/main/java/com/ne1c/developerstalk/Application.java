@@ -2,7 +2,7 @@ package com.ne1c.developerstalk;
 
 import com.crashlytics.android.Crashlytics;
 import com.ne1c.developerstalk.api.GitterStreamer;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.di.HasComponent;
 import com.ne1c.developerstalk.di.components.ApplicationComponent;
 import com.ne1c.developerstalk.di.components.DaggerApplicationComponent;

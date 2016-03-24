@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk.dataprovides;
+package com.ne1c.developerstalk.dataproviders;
 
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.api.responses.JoinRoomResponse;

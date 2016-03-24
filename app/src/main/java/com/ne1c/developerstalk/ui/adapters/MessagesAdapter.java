@@ -34,7 +34,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.StatusMessage;

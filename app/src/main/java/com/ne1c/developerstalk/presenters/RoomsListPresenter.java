@@ -1,8 +1,7 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.dataprovides.DataManger;
-import com.ne1c.developerstalk.models.SearchRoomsResponse;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 
@@ -13,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import rx.Subscription;
-import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
 
