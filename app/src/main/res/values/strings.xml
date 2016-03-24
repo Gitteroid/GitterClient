@@ -46,8 +46,11 @@
     <string name="type_to_compose">Type to compose</string>
     <string name="refreshing">REFRESHING</string>
     <string name="complete">COMPLETE</string>
-    <string name="enable_background_app_desc">Leave to work messages service in the background
-    </string>
-    <string name="enable_background_service">Work in backround</string>
+    <string name="enable_background_app_desc">Leave to work messages service in the background</string>
+    <string name="enable_background_service">Work in background</string>
     <string name="app_work">Work applications</string>
+    <string name="search_room">Search rooms</string>
+    <string name="save_list_room">Save list rooms</string>
+    <string name="end_edit_list">You need end editing list rooms</string>
+    <string name="join_room">Join room</string>
 </resources>

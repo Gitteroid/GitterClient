@@ -1,16 +1,20 @@
 package com.ne1c.developerstalk.presenters;
 
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
+import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
 import rx.Subscription;
+import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
 
 public class RoomsListPresenter extends BasePresenter<RoomsListView> {
@@ -24,6 +28,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     private RxSchedulersFactory mSchedulersFactory;
 
     private CompositeSubscription mSubscriptions;
+    private PublishSubject<String> mSearchRoomSubject = PublishSubject.create();
 
     @Inject
     public RoomsListPresenter(RxSchedulersFactory factory, DataManger dataManger) {
@@ -35,6 +40,44 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     public void bindView(RoomsListView view) {
         mView = view;
         mSubscriptions = new CompositeSubscription();
+
+        Subscription sub = mSearchRoomSubject
+                .asObservable()
+                .throttleLast(1, TimeUnit.SECONDS)
+                .flatMap(query -> mDataManger.searchRooms(query))
+                .map(response -> {
+                    ArrayList<RoomModel> responseRooms = response.getResult();
+                    ArrayList<RoomModel> filterRooms = new ArrayList<>();
+
+                    boolean existInDb;
+
+                    for (RoomModel responseRoom : responseRooms) {
+                        existInDb = false;
+
+                        for (RoomModel dbRoom : mAllRooms) {
+                            if (responseRoom.id.equals(dbRoom.id)) {
+                                existInDb = true;
+                                break;
+                            }
+                        }
+
+                        if (!existInDb) {
+                            filterRooms.add(responseRoom);
+                        }
+                    }
+
+                    return filterRooms;
+                })
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .subscribe(response -> {
+                    mView.dismissDialog();
+                    mView.resultSearch(response);
+                }, throwable -> {
+                    mView.errorSearch();
+                });
+
+        mSubscriptions.add(sub);
     }
 
     @Override
@@ -48,8 +91,13 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadRooms() {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getRooms()
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
 
@@ -63,12 +111,10 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                        mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
@@ -90,7 +136,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getDbRooms()
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
@@ -101,14 +147,41 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                        mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
+    }
+
+    public void searchRooms(String query) {
+        if (!query.isEmpty()) {
+            mView.showDialog();
+            mSearchRoomSubject.onNext(query);
+        } else {
+            mView.resultSearch(new ArrayList<>());
+            mView.dismissDialog();
+        }
+    }
+
+    public void searchRoomsWithOffset(String query, int offset) {
+            mDataManger.searchRoomsWithOffset(query, offset)
+                    .subscribeOn(mSchedulersFactory.io())
+                    .observeOn(mSchedulersFactory.androidMainThread())
+                    .subscribe(response -> {
+                        mView.resultSearchWithOffset(response.getResult());
+                    }, throwable -> {});
+    }
+
+    private class SearchModel {
+        String query;
+        int offset;
+
+        public SearchModel(String query, int offset) {
+            this.query = query;
+            this.offset = offset;
+        }
     }
 }

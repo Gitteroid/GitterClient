@@ -1,9 +1,13 @@
 package com.ne1c.developerstalk.ui.views;
 
-public interface LoginView extends BaseView {
+import android.support.annotation.StringRes;
+
+public interface LoginView {
     void showProgress();
 
     void hideProgress();
+
     void successAuth();
-    void errorAuth(String error);
+
+    void errorAuth(@StringRes int resId);
 }

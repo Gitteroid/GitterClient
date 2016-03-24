@@ -4,7 +4,7 @@ import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.models.UserModel;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.MainView;
 
 import org.junit.After;
@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 
-import retrofit.client.Response;
+import okhttp3.ResponseBody;
 import rx.Observable;
 
 import static org.mockito.Matchers.any;
@@ -112,9 +112,9 @@ public class MainPresenterTest {
 
     @Test
     public void leaveFromRoom() {
-        Response response = any(Response.class);
+        ResponseBody response = any(ResponseBody.class);
 
-        when(dataManger.leaveFromRoom("room_id")).thenReturn(Observable.just(response));
+        //when(dataManger.leaveFromRoom("room_id")).thenReturn(Observable.just(response));
 
         presenter.leaveFromRoom("room_id");
 

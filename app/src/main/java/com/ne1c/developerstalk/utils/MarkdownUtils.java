@@ -127,13 +127,13 @@ public class MarkdownUtils {
 
             do {
                 String code = matcher.group().replace("```", "");
-                code = code.substring(1, code.length() - 1); // remove \n
+
+                if (!code.equals("\n")) {
+                    code = code.substring(1, code.length() - 1); // remove \n
+                }
+
                 mMultilineCode.add(code);
             } while (matcher.find());
-
-            // remove new line
-
-
             return mMultilineCode;
         }
 

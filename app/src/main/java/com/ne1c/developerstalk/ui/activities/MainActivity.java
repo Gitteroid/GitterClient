@@ -159,14 +159,14 @@ public class MainActivity extends BaseActivity implements MainView {
             for (RoomModel room : mRoomsList) {
                 if (room.unreadItems > 0) {
                     String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-                    mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
+                    mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
                             .withBadge(badgeText)
                             .withBadgeStyle(badgeStyle)
                             .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
                 } else {
                     mDrawer.addItemAtPosition(
                             new PrimaryDrawerItem()
-                                    .withIcon(R.mipmap.ic_room)
+                                    .withIcon(R.drawable.ic_room)
                                     .withName(room.name)
                                     .withBadgeStyle(badgeStyle)
                                     .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -244,7 +244,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         mAccountHeader = new AccountHeaderBuilder()
                 .withActivity(this)
-                .withHeaderBackground(R.mipmap.header)
+                .withHeaderBackground(R.drawable.header)
                 .withProfileImagesClickable(true)
                 .withSelectionListEnabledForSingleProfile(false)
                 .addProfiles(mMainProfile)
@@ -257,14 +257,14 @@ public class MainActivity extends BaseActivity implements MainView {
 
         mAccountHeader.setActiveProfile(mMainProfile);
 
-        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_home).withName(getString(R.string.home))
+        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.drawable.ic_home).withName(getString(R.string.home))
                 .withSelectable(false)
                 .withSetSelected(false));
         mDrawerItems.add(new DividerDrawerItem());
-        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.mipmap.ic_settings_dark)
+        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.drawable.ic_settings_dark)
                 .withSelectable(false)
                 .withSetSelected(false));
-        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.mipmap.ic_logout).withName(getString(R.string.signout)));
+        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.drawable.ic_logout).withName(getString(R.string.signout)));
 
         mDrawer = new DrawerBuilder().withActivity(this)
                 .withTranslucentStatusBar(false)
@@ -366,15 +366,15 @@ public class MainActivity extends BaseActivity implements MainView {
                     mPresenter.loadRooms();
                 }
                 break;
-//            case R.id.action_leave:
-//                if (mActiveRoom.oneToOne) {
-//                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
-//                    break;
-//                }
-//
-//                mPresenter.leaveFromRoom(mActiveRoom.id);
-//
-//                break;
+            case R.id.action_leave:
+                if (mActiveRoom.oneToOne) {
+                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
+                    break;
+                }
+
+                mPresenter.leaveFromRoom(mActiveRoom.id);
+
+                break;
         }
 
         return super.onOptionsItemSelected(item);
@@ -403,14 +403,14 @@ public class MainActivity extends BaseActivity implements MainView {
         for (RoomModel room : mRoomsList) {
             if (room.unreadItems > 0) {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-                mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.mipmap.ic_room).withName(room.name)
+                mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
                         .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
             } else {
                 mDrawer.addItemAtPosition(
                         new PrimaryDrawerItem()
-                                .withIcon(R.mipmap.ic_room)
+                                .withIcon(R.drawable.ic_room)
                                 .withName(room.name)
                                 .withBadgeStyle(badgeStyle)
                                 .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -549,11 +549,8 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     @Override
-    public void showError(String text) {
-        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-        if (text.contains("401")) {
-            mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
-        }
+    public void showError(int resId) {
+        Toast.makeText(getApplicationContext(), resId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -567,10 +564,5 @@ public class MainActivity extends BaseActivity implements MainView {
         mMainProfile.withIcon(photo);
         mAccountHeader.addProfiles(mMainProfile);
         loadAvatarFromNetworkFlag = true;
-    }
-
-    @Override
-    public Context getAppContext() {
-        return getApplicationContext();
     }
 }

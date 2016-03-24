@@ -1,13 +1,12 @@
 package com.ne1c.developerstalk.presenters;
 
-import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.R;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.LoginView;
+import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
-import retrofit.RestAdapter;
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
 public class LoginPresenter extends BasePresenter<LoginView> {
@@ -23,7 +22,13 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     private LoginView mView;
 
     private CompositeSubscription mSubscriptions;
+    private DataManger mDataManager;
+    private RxSchedulersFactory mFactory;
 
+    public LoginPresenter(RxSchedulersFactory factory, DataManger dataManager) {
+        mDataManager = dataManager;
+        mFactory = factory;
+    }
 
     @Override
     public void bindView(LoginView view) {
@@ -42,27 +47,26 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     }
 
     public void loadAccessToken(String code) {
-        RestAdapter adapter = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_URL)
-                .build();
-
-        GitterApi api = adapter.create(GitterApi.class);
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.errorAuth(R.string.no_network);
+            return;
+        }
 
         mView.showProgress();
 
-        Subscription sub = api.authorization(CLIENT_ID, CLIENT_SECRET, code,
+        Subscription sub = mDataManager.authorization(CLIENT_ID, CLIENT_SECRET, code,
                 GRANT_TYPE, REDIRECT_URL)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(mFactory.io())
+                .observeOn(mFactory.androidMainThread())
                 .subscribe(authResponseModel -> {
                     // Write access token to preferences
                     Utils.getInstance().writeAuthResponsePref(authResponseModel);
                     mView.hideProgress();
                     mView.successAuth();
-                }, error -> {
+                }, throwable -> {
                     // If error, then set visible "Sign In" button
                     mView.hideProgress();
-                    mView.errorAuth(error.getMessage());
+                    mView.errorAuth(R.string.error);
                 });
 
         mSubscriptions.add(sub);

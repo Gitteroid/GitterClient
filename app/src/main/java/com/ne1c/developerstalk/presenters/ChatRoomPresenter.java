@@ -1,7 +1,7 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.dataprovides.DataManger;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.StatusMessage;
 import com.ne1c.developerstalk.models.UserModel;
@@ -44,6 +44,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     }
 
     public void sendMessage(String roomId, String text) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         Subscription sub = mDataManger.sendMessage(roomId, text)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
@@ -55,6 +60,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
 
     public void loadMessagesBeforeId(String roomId, int limit, String beforeId) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
@@ -67,6 +77,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from network
     public void loadNetworkMessages(String roomId, int limit) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         mView.showListProgressBar();
 
         Subscription sub = mDataManger.getNetworkMessages(roomId, limit)
@@ -129,22 +144,27 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showMessages, throwable -> {
-                    mView.showError(throwable.getMessage());
+                    mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
     }
 
     public void updateMessages(String roomId, String messageId, String text) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         Subscription sub = mDataManger.updateMessage(roomId, messageId, text)
-                .subscribeOn(mSchedulersFactory.io())
                 .map(messageModel -> {
                     mDataManger.insertMessageToDb(messageModel, roomId);
                     return messageModel;
                 })
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showUpdateMessage, throwable -> {
-                    mView.showError(mView.getAppContext().getString(R.string.updated_error));
+                    mView.showError(R.string.updated_error);
                 });
 
         mSubscriptions.add(sub);
@@ -163,7 +183,9 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
-                    mView.successReadMessages(first, last, roomId, ids.length - 1);
+                    if (response.success) {
+                        mView.successReadMessages(first, last, roomId, ids.length - 1);
+                    }
                 }, throwable -> {});
 
         mSubscriptions.add(sub);
@@ -179,5 +201,25 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         message.urls = new ArrayList<>();
 
         return message;
+    }
+
+    public void joinToRoom(String roomUri) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
+        mDataManger.joinToRoom(roomUri)
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .subscribe(responseBody -> {
+                    if (responseBody.getError() == null) {
+                        mView.joinToRoom();
+                    } else {
+                        mView.showError(R.string.error);
+                    }
+                }, throwable -> {
+                    mView.showError(R.string.error);
+                });
     }
 }

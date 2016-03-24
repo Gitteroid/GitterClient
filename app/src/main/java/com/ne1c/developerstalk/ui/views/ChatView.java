@@ -1,13 +1,15 @@
 package com.ne1c.developerstalk.ui.views;
 
+import android.support.annotation.StringRes;
+
 import com.ne1c.developerstalk.models.MessageModel;
 
 import java.util.ArrayList;
 
-public interface ChatView extends BaseView {
+public interface ChatView{
     void showMessages(ArrayList<MessageModel> messages);
 
-    void showError(String error);
+    void showError(@StringRes int resId);
 
     void showUpdateMessage(MessageModel message);
 
@@ -26,4 +28,6 @@ public interface ChatView extends BaseView {
     void showListProgressBar();
 
     void hideListProgress();
+
+    void joinToRoom();
 }

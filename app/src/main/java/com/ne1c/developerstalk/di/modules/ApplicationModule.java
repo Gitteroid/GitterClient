@@ -4,16 +4,14 @@ import android.content.Context;
 
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.api.GitterApi;
-import com.ne1c.developerstalk.dataprovides.ClientDatabase;
+import com.ne1c.developerstalk.dataproviders.ClientDatabase;
 import com.ne1c.developerstalk.di.annotations.PerApplication;
-import com.ne1c.developerstalk.dataprovides.DataManger;
-import com.ne1c.developerstalk.utils.Utils;
+import com.ne1c.developerstalk.dataproviders.DataManger;
 
 import dagger.Module;
 import dagger.Provides;
-import retrofit.RestAdapter;
 
-@Module(includes = {DatabaseModule.class, RxSchedulersModule.class})
+@Module(includes = {DatabaseModule.class, NetworkModule.class, RxSchedulersModule.class})
 public class ApplicationModule {
     private Application mApp;
 
@@ -23,17 +21,8 @@ public class ApplicationModule {
 
     @PerApplication
     @Provides
-    public DataManger provideDataManager(ClientDatabase database) {
-        return new DataManger(database);
-    }
-
-    @PerApplication
-    @Provides
-    public GitterApi provideApi() {
-        return new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
-                .build()
-                .create(GitterApi.class);
+    public DataManger provideDataManager(GitterApi api, ClientDatabase database) {
+        return new DataManger(api, database);
     }
 
     @PerApplication

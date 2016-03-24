@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk.ui.fragments;
 
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -70,6 +72,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private boolean mIsLoadBeforeIdMessages = false;
     private boolean mIsRefreshing = false;
 
+    private RoomModel mOverviewRoom = null;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +81,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         mStartNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
+
+        if (getArguments() != null) {
+            mOverviewRoom = getArguments().getParcelable("overviewRoom");
+        }
 
         EventBus.getDefault().register(this);
     }
@@ -111,6 +119,17 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         });
 
         mPresenter.bindView(this);
+
+        if (mOverviewRoom != null) {
+            v.findViewById(R.id.input_layout).setVisibility(View.GONE);
+
+            onEvent(mOverviewRoom);
+
+            Button joinRoomButton = (Button) v.findViewById(R.id.join_room_button);
+            joinRoomButton.setVisibility(View.VISIBLE);
+            joinRoomButton.setOnClickListener(v1 -> mPresenter.joinToRoom(mOverviewRoom.name));
+        }
+
 
         return v;
     }
@@ -411,18 +430,18 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void showError(String error) {
+    public void showError(int resId) {
         hideListProgress();
         hideTopProgressBar();
 
         mIsRefreshing = false;
         mIsLoadBeforeIdMessages = false;
 
-        if (error.contains("401")) {
-            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
-        }
+//        if (error.contains("401")) {
+//            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
+//        }
 
-        Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), resId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -549,6 +568,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
+    public void joinToRoom() {
+        getActivity().onBackPressed();
+    }
+
+    @Override
     protected void initDiComponent() {
         mComponent = DaggerChatRoomComponent.builder()
                 .applicationComponent(getAppComponent())
@@ -558,9 +582,14 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mComponent.inject(this);
     }
 
-    @Override
-    public Context getAppContext() {
-        return getActivity();
+    public static ChatRoomFragment newInstance(RoomModel overviewRoom) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("overviewRoom", overviewRoom);
+
+        ChatRoomFragment fragment = new ChatRoomFragment();
+        fragment.setArguments(bundle);
+
+        return fragment;
     }
 
     // Callback for adapter

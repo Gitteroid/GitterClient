@@ -1,8 +1,12 @@
-package com.ne1c.developerstalk.dataprovides;
+package com.ne1c.developerstalk.dataproviders;
 
 import com.ne1c.developerstalk.api.GitterApi;
+import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
+import com.ne1c.developerstalk.api.responses.StatusResponse;
+import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.SearchRoomsResponse;
 import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.utils.Utils;
 
@@ -12,22 +16,15 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import retrofit.RestAdapter;
-import retrofit.client.Response;
 import rx.Observable;
-import rx.schedulers.Schedulers;
 
 public class DataManger {
     private GitterApi mApi;
     private ClientDatabase mClientDatabase;
 
     @Inject
-    public DataManger(ClientDatabase database) {
-        mApi = new RestAdapter.Builder()
-                .setEndpoint(Utils.GITTER_API_URL)
-                .build()
-                .create(GitterApi.class);
-
+    public DataManger(GitterApi api, ClientDatabase database) {
+        mApi = api;
         mClientDatabase = database;
     }
 
@@ -76,8 +73,8 @@ public class DataManger {
         mClientDatabase.insertRooms(rooms);
     }
 
-    public Observable<Response> leaveFromRoom(String roomId) {
-        return mApi.leaveRoom(Utils.getInstance().getAccessToken(), roomId, Utils.getInstance().getUserPref().id);
+    public Observable<StatusResponse> leaveFromRoom(String roomId) {
+        return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id);
     }
 
     public Observable<ArrayList<UserModel>> getProfile() {
@@ -136,7 +133,7 @@ public class DataManger {
                 });
     }
 
-    public Observable<Response> readMessages(String roomId, String[] ids) {
+    public Observable<StatusResponse> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
                 Utils.getInstance().getUserPref().id,
                 roomId,
@@ -168,5 +165,21 @@ public class DataManger {
         list.add(message);
 
         mClientDatabase.insertCachedMessages(list, roomId);
+    }
+
+    public Observable<SearchRoomsResponse> searchRooms(String query) {
+        return mApi.searchRooms(Utils.getInstance().getBearer(), query, 30, 0);
+    }
+
+    public Observable<SearchRoomsResponse> searchRoomsWithOffset(String query, int offset) {
+        return mApi.searchRooms(Utils.getInstance().getBearer(), query, 10, offset);
+    }
+
+    public Observable<AuthResponseModel> authorization(String client_id, String client_secret, String code, String grant_type, String redirect_url) {
+        return mApi.authorization(client_id, client_secret, code, grant_type, redirect_url);
+    }
+
+    public Observable<JoinRoomResponse> joinToRoom(String roomUri) {
+        return mApi.joinRoom(Utils.getInstance().getBearer(), roomUri);
     }
 }
