@@ -1,9 +1,11 @@
 package com.ne1c.developerstalk.presenters;
 
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.models.RoomModel;
 import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
+import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,8 +91,13 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadRooms() {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.showError(R.string.no_network);
+            return;
+        }
+
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getRooms()
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
 
@@ -104,12 +111,10 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                        mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
@@ -131,7 +136,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms().subscribeOn(mSchedulersFactory.io())
+        Subscription sub = mDataManger.getDbRooms()
                 .map(roomModels -> {
                     ArrayList<RoomModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
@@ -142,12 +147,10 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
                     return visibleList;
                 })
+                .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
-                    if (!throwable.getMessage().contains("Unable to resolve") &&
-                            !throwable.getMessage().contains("timeout")) {
-                        mView.showError(throwable.getMessage());
-                    }
+                        mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);

@@ -127,8 +127,8 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
     }
 
     @Override
-    public void errorAuth(String error) {
-        Toast.makeText(getApplicationContext(), error, Toast.LENGTH_SHORT).show();
+    public void errorAuth(int resId) {
+        Toast.makeText(getApplicationContext(), resId, Toast.LENGTH_SHORT).show();
 
         if (mAuthWebView.getVisibility() == View.VISIBLE) {
             mAuthBut.setVisibility(View.VISIBLE);
@@ -136,11 +136,6 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
 
             mAuthWebView.setVisibility(View.GONE);
         }
-    }
-
-    @Override
-    public Context getAppContext() {
-        return getApplicationContext();
     }
 
     @Override

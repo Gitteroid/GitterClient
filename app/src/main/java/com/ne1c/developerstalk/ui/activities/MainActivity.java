@@ -549,11 +549,8 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     @Override
-    public void showError(String text) {
-        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
-        if (text.contains("401")) {
-            mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
-        }
+    public void showError(int resId) {
+        Toast.makeText(getApplicationContext(), resId, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -567,10 +564,5 @@ public class MainActivity extends BaseActivity implements MainView {
         mMainProfile.withIcon(photo);
         mAccountHeader.addProfiles(mMainProfile);
         loadAvatarFromNetworkFlag = true;
-    }
-
-    @Override
-    public Context getAppContext() {
-        return getApplicationContext();
     }
 }

@@ -4,15 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class UserModel implements Parcelable {
-    public static final Parcelable.Creator<UserModel> CREATOR = new Parcelable.Creator<UserModel>() {
-        public UserModel createFromParcel(Parcel source) {
-            return new UserModel(source);
-        }
-
-        public UserModel[] newArray(int size) {
-            return new UserModel[size];
-        }
-    };
     public String id = "";
     public String username = "";
     public String displayName = "";
@@ -31,6 +22,16 @@ public class UserModel implements Parcelable {
         this.avatarUrlSmall = in.readString();
         this.avatarUrlMedium = in.readString();
     }
+
+    public static final Parcelable.Creator<UserModel> CREATOR = new Parcelable.Creator<UserModel>() {
+        public UserModel createFromParcel(Parcel source) {
+            return new UserModel(source);
+        }
+
+        public UserModel[] newArray(int size) {
+            return new UserModel[size];
+        }
+    };
 
     @Override
     public int describeContents() {

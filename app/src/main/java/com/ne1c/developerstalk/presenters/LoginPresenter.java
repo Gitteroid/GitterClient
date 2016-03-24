@@ -1,5 +1,6 @@
 package com.ne1c.developerstalk.presenters;
 
+import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.ui.views.LoginView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
@@ -46,6 +47,11 @@ public class LoginPresenter extends BasePresenter<LoginView> {
     }
 
     public void loadAccessToken(String code) {
+        if (!Utils.getInstance().isNetworkConnected()) {
+            mView.errorAuth(R.string.no_network);
+            return;
+        }
+
         mView.showProgress();
 
         Subscription sub = mDataManager.authorization(CLIENT_ID, CLIENT_SECRET, code,
@@ -57,10 +63,10 @@ public class LoginPresenter extends BasePresenter<LoginView> {
                     Utils.getInstance().writeAuthResponsePref(authResponseModel);
                     mView.hideProgress();
                     mView.successAuth();
-                }, error -> {
+                }, throwable -> {
                     // If error, then set visible "Sign In" button
                     mView.hideProgress();
-                    mView.errorAuth(error.getMessage());
+                    mView.errorAuth(R.string.error);
                 });
 
         mSubscriptions.add(sub);

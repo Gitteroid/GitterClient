@@ -1,6 +1,7 @@
 package com.ne1c.developerstalk.api;
 
 import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
+import com.ne1c.developerstalk.api.responses.StatusResponse;
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -63,13 +64,13 @@ public interface GitterApi {
 
     @FormUrlEncoded
     @POST("/v1/user/{userId}/rooms/{roomId}/unreadItems")
-    Observable<ResponseBody> readMessages(@Header("Authorization") String access_token,
-                                          @Path("userId") String userId,
-                                          @Path("roomId") String roomId,
-                                          @Field("chat") String[] chat);
+    Observable<StatusResponse> readMessages(@Header("Authorization") String access_token,
+                                            @Path("userId") String userId,
+                                            @Path("roomId") String roomId,
+                                            @Field("chat") String[] chat);
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
-    Observable<ResponseBody> leaveRoom(@Header("Authorization") String access_token,
+    Observable<StatusResponse> leaveRoom(@Header("Authorization") String access_token,
                                        @Path("roomId") String roomId,
                                        @Path("userId") String userId);
 

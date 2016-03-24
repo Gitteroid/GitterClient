@@ -114,7 +114,7 @@ public class MainPresenterTest {
     public void leaveFromRoom() {
         ResponseBody response = any(ResponseBody.class);
 
-        when(dataManger.leaveFromRoom("room_id")).thenReturn(Observable.just(response));
+        //when(dataManger.leaveFromRoom("room_id")).thenReturn(Observable.just(response));
 
         presenter.leaveFromRoom("room_id");
 

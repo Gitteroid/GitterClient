@@ -2,6 +2,7 @@ package com.ne1c.developerstalk.dataproviders;
 
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
+import com.ne1c.developerstalk.api.responses.StatusResponse;
 import com.ne1c.developerstalk.models.AuthResponseModel;
 import com.ne1c.developerstalk.models.MessageModel;
 import com.ne1c.developerstalk.models.RoomModel;
@@ -15,7 +16,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import okhttp3.ResponseBody;
 import rx.Observable;
 
 public class DataManger {
@@ -73,7 +73,7 @@ public class DataManger {
         mClientDatabase.insertRooms(rooms);
     }
 
-    public Observable<ResponseBody> leaveFromRoom(String roomId) {
+    public Observable<StatusResponse> leaveFromRoom(String roomId) {
         return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id);
     }
 
@@ -133,7 +133,7 @@ public class DataManger {
                 });
     }
 
-    public Observable<ResponseBody> readMessages(String roomId, String[] ids) {
+    public Observable<StatusResponse> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
                 Utils.getInstance().getUserPref().id,
                 roomId,

@@ -174,7 +174,7 @@ public class ChatRoomPresenterTest {
         ResponseBody resp = ResponseBody.create(MediaType.parse(""), "");
         String[] ids = new String[5];
 
-        when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.just(resp));
+        //when(dataManger.readMessages(ROOM_ID, ids)).thenReturn(Observable.just(resp));
 
         presenter.markMessageAsRead(100500, 100500, ROOM_ID, ids);
 

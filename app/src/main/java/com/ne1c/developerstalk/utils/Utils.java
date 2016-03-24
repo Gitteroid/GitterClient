@@ -48,6 +48,10 @@ public class Utils {
         return mInstance;
     }
 
+    public Context getContext() {
+        return mContext;
+    }
+
     public void writeUserToPref(UserModel model) {
         mContext.getSharedPreferences(USERINFO_PREF, Context.MODE_PRIVATE)
                 .edit()
