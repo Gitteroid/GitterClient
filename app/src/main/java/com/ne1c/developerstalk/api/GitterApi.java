@@ -20,6 +20,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.Url;
 import rx.Observable;
 
 public interface GitterApi {
@@ -55,8 +56,9 @@ public interface GitterApi {
                                                             @Query("beforeId") String beforeId);
 
     @FormUrlEncoded
-    @POST("/login/oauth/token")
-    Observable<AuthResponseModel> authorization(@Field("client_id") String client_id,
+    @POST
+    Observable<AuthResponseModel> authorization(@Url String authUrl,
+                                                @Field("client_id") String client_id,
                                                 @Field("client_secret") String client_secret,
                                                 @Field("code") String code,
                                                 @Field("grant_type") String grant_type,
@@ -71,8 +73,8 @@ public interface GitterApi {
 
     @DELETE("/v1/rooms/{roomId}/users/{userId}")
     Observable<StatusResponse> leaveRoom(@Header("Authorization") String access_token,
-                                       @Path("roomId") String roomId,
-                                       @Path("userId") String userId);
+                                         @Path("roomId") String roomId,
+                                         @Path("userId") String userId);
 
     @POST("/v1/rooms")
     @FormUrlEncoded
