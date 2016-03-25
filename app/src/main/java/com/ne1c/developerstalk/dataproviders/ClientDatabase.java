@@ -126,16 +126,14 @@ public class ClientDatabase {
                 int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
                 int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
 
-                do {
-                    UserModel model = new UserModel();
-                    model.id = cursor.getString(columnUserId);
-                    model.username = cursor.getString(columnUsername);
-                    model.displayName = cursor.getString(columnDisplayName);
-                    model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
-                    model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
+                UserModel model = new UserModel();
+                model.id = cursor.getString(columnUserId);
+                model.username = cursor.getString(columnUsername);
+                model.displayName = cursor.getString(columnDisplayName);
+                model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
+                model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
 
-                    return model;
-                } while (cursor.moveToNext());
+                return model;
             }
         } finally {
             cursor.close();

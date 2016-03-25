@@ -56,17 +56,20 @@ public class LoginPresenter extends BasePresenter<LoginView> {
 
         Subscription sub = mDataManager.authorization(CLIENT_ID, CLIENT_SECRET, code,
                 GRANT_TYPE, REDIRECT_URL)
+                .map(authResponseModel -> {
+                    Utils.getInstance().writeAuthResponsePref(authResponseModel);
+                    return authResponseModel;
+                })
                 .subscribeOn(mFactory.io())
                 .observeOn(mFactory.androidMainThread())
                 .subscribe(authResponseModel -> {
                     // Write access token to preferences
-                    Utils.getInstance().writeAuthResponsePref(authResponseModel);
                     mView.hideProgress();
                     mView.successAuth();
                 }, throwable -> {
                     // If error, then set visible "Sign In" button
                     mView.hideProgress();
-                    mView.errorAuth(R.string.error);
+                    mView.errorAuth(R.string.error_auth);
                 });
 
         mSubscriptions.add(sub);
