@@ -176,7 +176,12 @@ public class DataManger {
     }
 
     public Observable<AuthResponseModel> authorization(String client_id, String client_secret, String code, String grant_type, String redirect_url) {
-        return mApi.authorization(client_id, client_secret, code, grant_type, redirect_url);
+        return mApi.authorization("https://gitter.im/login/oauth/token",
+                client_id,
+                client_secret,
+                code,
+                grant_type,
+                redirect_url);
     }
 
     public Observable<JoinRoomResponse> joinToRoom(String roomUri) {
