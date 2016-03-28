@@ -7,6 +7,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -53,6 +54,8 @@ public class LoginActivity extends BaseActivity implements LoginView {
         mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
 
         mProgressBar.setUseIntrinsicPadding(false);
+
+        mAuthWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         mAuthBut.setOnClickListener(v -> {
             if (Utils.getInstance().isNetworkConnected()) {

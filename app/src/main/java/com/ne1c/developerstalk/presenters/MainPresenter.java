@@ -14,10 +14,13 @@ import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.inject.Inject;
 
+import rx.Observable;
 import rx.Subscription;
+import rx.functions.Func1;
 import rx.subscriptions.CompositeSubscription;
 
 public class MainPresenter extends BasePresenter<MainView> {
@@ -65,12 +68,12 @@ public class MainPresenter extends BasePresenter<MainView> {
     }
 
     public void loadProfile() {
-        if (!Utils.getInstance().isNetworkConnected()) {
-            mView.showError(R.string.no_network);
-            return;
-        }
-
         Subscription sub = mDataManger.getProfile()
+                .onErrorResumeNext(throwable -> {
+                    ArrayList<UserModel> user = new ArrayList<UserModel>();
+                    user.add(Utils.getInstance().getUserPref());
+                    return Observable.just(user);
+                })
                 .map(userModels -> {
                     UserModel user = userModels.get(0);
                     Utils.getInstance().writeUserToPref(user);
@@ -87,7 +90,9 @@ public class MainPresenter extends BasePresenter<MainView> {
                             .into(new SimpleTarget<Bitmap>() {
                                 @Override
                                 public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                    mView.updatePhoto(resource);
+                                    if (mView != null) {
+                                        mView.updatePhoto(resource);
+                                    }
                                 }
                             });
                 }, throwable -> {
@@ -138,6 +143,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                     return visibleList;
                 })
                 .subscribe(mView::showRooms, throwable -> {
+                    mView.showError(R.string.error_load_rooms);
                 });
 
         mSubscriptions.add(sub);
