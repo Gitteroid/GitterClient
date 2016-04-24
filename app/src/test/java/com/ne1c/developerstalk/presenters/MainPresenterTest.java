@@ -2,9 +2,9 @@ package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.models.UserModel;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.data.UserModel;
 import com.ne1c.developerstalk.ui.views.MainView;
 
 import org.junit.After;
@@ -14,7 +14,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.RobolectricGradleTestRunner;
-import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ import okhttp3.ResponseBody;
 import rx.Observable;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -45,8 +44,6 @@ public class MainPresenterTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        when(view.getAppContext()).thenReturn(RuntimeEnvironment.application);
-
         presenter = new MainPresenter(new MockRxSchedulersFactory(), dataManger);
         presenter.bindView(view);
     }
@@ -60,7 +57,7 @@ public class MainPresenterTest {
         presenter.loadRooms();
 
         verify(view, times(1)).showRooms(rooms);
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -81,7 +78,7 @@ public class MainPresenterTest {
         presenter.loadCachedRooms();
 
         verify(view, times(1)).showRooms(rooms);
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -98,7 +95,7 @@ public class MainPresenterTest {
         presenter.loadProfile();
 
         verify(view, times(1)).showProfile(users.get(0));
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test

@@ -1,11 +1,9 @@
 package com.ne1c.developerstalk.presenters;
 
-import android.content.Context;
-
 import com.ne1c.developerstalk.BuildConfig;
 import com.ne1c.developerstalk.MockRxSchedulersFactory;
 import com.ne1c.developerstalk.dataproviders.DataManger;
-import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.ui.views.ChatView;
 
 import org.junit.After;
@@ -23,7 +21,6 @@ import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import rx.Observable;
 
-import static junit.framework.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
@@ -39,6 +36,7 @@ public class ChatRoomPresenterTest {
     private static final String ROOM_ID = "jf9w4j3fmn389f394n";
     private static final String MESSAGE_TEXT = "message";
     private static final String ERROR = "text_with_error";
+
     @Mock
     ChatView view;
     @Mock
@@ -51,8 +49,6 @@ public class ChatRoomPresenterTest {
 
         presenter = new ChatRoomPresenter(new MockRxSchedulersFactory(), dataManger);
         presenter.bindView(view);
-
-        when(view.getAppContext()).thenReturn(mock(Context.class));
     }
 
     @Test
@@ -63,7 +59,7 @@ public class ChatRoomPresenterTest {
         presenter.loadCachedMessages(ROOM_ID);
 
         verify(view, times(1)).showMessages(any(ArrayList.class));
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -73,7 +69,7 @@ public class ChatRoomPresenterTest {
 
         presenter.loadCachedMessages(anyString());
 
-        verify(view, times(1)).showError(anyString());
+        verify(view, times(1)).showError(anyInt());
     }
 
     @Test
@@ -84,7 +80,7 @@ public class ChatRoomPresenterTest {
         presenter.sendMessage(ROOM_ID, MESSAGE_TEXT);
 
         verify(view, times(1)).deliveredMessage(any(MessageModel.class));
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -105,7 +101,7 @@ public class ChatRoomPresenterTest {
         presenter.loadMessagesBeforeId(ROOM_ID, 100500, ROOM_ID);
 
         verify(view, times(1)).showLoadBeforeIdMessages(any(ArrayList.class));
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -127,7 +123,7 @@ public class ChatRoomPresenterTest {
         presenter.loadNetworkMessages(ROOM_ID, 100500);
 
         verify(view, times(1)).showMessages(any(ArrayList.class));
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -152,7 +148,7 @@ public class ChatRoomPresenterTest {
 
         verify(dataManger, times(1)).insertMessageToDb(message, ROOM_ID);
         verify(view, times(1)).showUpdateMessage(message);
-        verify(view, never()).showError(anyString());
+        verify(view, never()).showError(anyInt());
     }
 
     @Test
@@ -166,7 +162,7 @@ public class ChatRoomPresenterTest {
 
         verify(dataManger, never()).insertMessageToDb(message, ROOM_ID);
         verify(view, never()).showUpdateMessage(message);
-        verify(view, times(1)).showError(anyString());
+        verify(view, times(1)).showError(anyInt());
     }
 
     @Test
