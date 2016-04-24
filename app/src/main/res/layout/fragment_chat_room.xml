@@ -1,10 +1,10 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".ui.fragments.ChatRoomFragment">
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                tools:context=".ui.fragments.ChatRoomFragment">
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/messages_list"
@@ -13,7 +13,7 @@
         android:layout_above="@+id/bottom_bar"
         android:scrollbars="vertical"
         android:transcriptMode="alwaysScroll"
-        android:visibility="visible" />
+        android:visibility="visible"/>
 
     <ProgressBar
         android:id="@+id/progress_bar"
@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:layout_gravity="center"
-        android:visibility="gone" />
+        android:visibility="gone"/>
 
     <me.zhanghai.android.materialprogressbar.MaterialProgressBar
         android:id="@+id/top_progress_bar"
@@ -32,7 +32,7 @@
         android:background="@null"
         android:indeterminate="true"
         android:visibility="gone"
-        app:mpb_progressStyle="horizontal" />
+        app:mpb_progressStyle="horizontal"/>
 
 
     <FrameLayout
@@ -54,7 +54,7 @@
                 android:text="@string/join_room"
                 android:textColor="@android:color/white"
                 android:textSize="18sp"
-                android:visibility="gone" />
+                android:visibility="gone"/>
         </LinearLayout>
 
         <LinearLayout
@@ -68,7 +68,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackground"
-                android:src="@drawable/ic_layout" />
+                android:src="@drawable/ic_layout"/>
 
             <EditText
                 android:id="@+id/message_edit_text"
@@ -80,15 +80,28 @@
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="@string/type_to_compose"
-                android:maxLines="3" />
+                android:maxLines="3"/>
 
             <ImageButton
                 android:id="@+id/send_button"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackground"
-                android:src="@drawable/ic_send" />
+                android:src="@drawable/ic_send"/>
         </LinearLayout>
-
     </FrameLayout>
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_to_bottom"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_alignParentRight="true"
+        android:layout_above="@id/bottom_bar"
+        android:layout_margin="@dimen/fab_margin"
+        android:clickable="true"
+        app:backgroundTint="@color/fabBackground"
+        app:borderWidth="0dp"
+        app:srcCompat="@drawable/arrow_down"
+        app:elevation="0dp"/>
 </RelativeLayout>
