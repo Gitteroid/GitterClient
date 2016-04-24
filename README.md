@@ -8,11 +8,16 @@
 <h2>ToDo:</h2>
 <ul>
 <li>Refactoring!</li>
+<li>Add more Material Design and more similarity with web version</li>
+<li>Add introductory pages</li>
+<li>Add show users of room</li>
+<li>Add screen of specific user</li>
+<li>Add opportunity to disable NotificationService in background</li>
 <li><strike>Add "Join to room"</strike></li>
 <li><strike>Add "Leave from room"</strike></li>
 <li><strike>Add "Search rooms"</strike></li>
 <li>Add "Search messages in room"</li>
-<li>Add button for navigation to bottom of messages list</li>
+<li><strike>Add button for navigation to bottom of messages list</strike></li>
 </ul>
 <h2>
     <a id="user-content-license" class="anchor" href="#license" aria-hidden="true">
