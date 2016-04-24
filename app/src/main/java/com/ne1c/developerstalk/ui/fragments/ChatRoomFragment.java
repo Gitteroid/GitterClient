@@ -1,12 +1,12 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -29,11 +29,10 @@ import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
-import com.ne1c.developerstalk.models.MessageModel;
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.models.StatusMessage;
+import com.ne1c.developerstalk.models.data.MessageModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.data.StatusMessage;
 import com.ne1c.developerstalk.presenters.ChatRoomPresenter;
-import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.adapters.MessagesAdapter;
 import com.ne1c.developerstalk.ui.views.ChatView;
 import com.ne1c.developerstalk.utils.MarkdownUtils;
@@ -55,6 +54,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private MessagesAdapter mMessagesAdapter;
     private ProgressBar mProgressBar;
     private MaterialProgressBar mTopProgressBar;
+    private FloatingActionButton mFabToBottom;
 
     private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
     private RoomModel mRoom;
@@ -110,6 +110,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mMessagesList.setItemAnimator(new DefaultItemAnimator());
         mMessagesList.getItemAnimator().setAddDuration(300);
 
+        mFabToBottom = (FloatingActionButton) v.findViewById(R.id.fab_to_bottom);
+        mFabToBottom.setOnClickListener(v1 -> mMessagesList.smoothScrollToPosition(0));
+        mFabToBottom.hide();
+
         setDataToView(savedInstanceState);
 
         v.findViewById(R.id.markdown_button).setOnClickListener(v1 -> {
@@ -129,7 +133,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             joinRoomButton.setVisibility(View.VISIBLE);
             joinRoomButton.setOnClickListener(v1 -> mPresenter.joinToRoom(mOverviewRoom.name));
         }
-
 
         return v;
     }
@@ -214,14 +217,21 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             public void onScrollStateChanged(final RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    markMessagesAsRead(recyclerView);
+                    markMessagesAsRead();
+
+                    int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
+                    if (firstVisible >= 10) {
+                        mFabToBottom.show();
+                    } else {
+                        mFabToBottom.hide();
+                    }
                 }
 
                 int lastMessage = mMessagesArr.size() - 1;
 
                 if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage) {
                     if (mMessagesArr.size() > 0 && !mMessagesArr.get(lastMessage).id.isEmpty()) {
-                        if (!mIsLoadBeforeIdMessages) {
+                        if (!mIsLoadBeforeIdMessages && mTopProgressBar.getVisibility() != View.VISIBLE) {
                             mIsLoadBeforeIdMessages = true;
 
                             showTopProgressBar();
@@ -305,7 +315,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         super.onDestroy();
     }
 
-    private void markMessagesAsRead(final RecyclerView recyclerView) {
+    private void markMessagesAsRead() {
         final int first = mListLayoutManager.findFirstVisibleItemPosition();
         final int last = mListLayoutManager.findLastVisibleItemPosition();
 
@@ -404,7 +414,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessagesArr.add(0, message.getMessage());
             mMessagesAdapter.notifyItemInserted(0);
 
-            if (mListLayoutManager.findFirstVisibleItemPosition() != 1) {
+            int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
+            if (firstVisible > 1 && firstVisible <= 5) {
                 mMessagesList.smoothScrollToPosition(0);
             }
         }
