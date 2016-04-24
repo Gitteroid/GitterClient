@@ -53,4 +53,7 @@
     <string name="save_list_room">Save list rooms</string>
     <string name="end_edit_list">You need end editing list rooms</string>
     <string name="join_room">Join room</string>
+    <string name="error_auth">Error authorization</string>
+    <string name="pref_header_notifications">Notifications</string>
+    <string name="title_activity_settings">Settings</string>
 </resources>

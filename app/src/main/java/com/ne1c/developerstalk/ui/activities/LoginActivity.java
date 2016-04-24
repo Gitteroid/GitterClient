@@ -1,24 +1,19 @@
 package com.ne1c.developerstalk.ui.activities;
 
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerLoginComponent;
 import com.ne1c.developerstalk.di.components.LoginComponent;
@@ -32,7 +27,7 @@ import javax.inject.Inject;
 
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
-public class LoginActivity extends AppCompatActivity implements LoginView {
+public class LoginActivity extends BaseActivity implements LoginView {
     private Button mAuthBut;
     private ImageView mLogoImg;
     private WebView mAuthWebView;
@@ -48,10 +43,6 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        mComponent = DaggerLoginComponent.builder()
-                .applicationComponent(((Application) getApplication()).getComponent())
-                .build();
-
         mComponent.inject(this);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -63,6 +54,8 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
 
         mProgressBar.setUseIntrinsicPadding(false);
+
+        mAuthWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         mAuthBut.setOnClickListener(v -> {
             if (Utils.getInstance().isNetworkConnected()) {
@@ -79,12 +72,18 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
             } else {
                 Snackbar.make(getWindow().getDecorView().findViewById(android.R.id.content),
                         R.string.no_network,
-                        Snackbar.LENGTH_SHORT)
-                        .show();
+                        Snackbar.LENGTH_SHORT).show();
             }
         });
 
         mPresenter.bindView(this);
+    }
+
+    @Override
+    protected void initDiComponent() {
+        mComponent = DaggerLoginComponent.builder()
+                .applicationComponent(getAppComponent())
+                .build();
     }
 
     @Override
@@ -105,7 +104,7 @@ public class LoginActivity extends AppCompatActivity implements LoginView {
         if (mAuthWebView.getVisibility() == View.VISIBLE && mAuthWebView.canGoBack()) {
             mAuthWebView.goBack();
         } else {
-            super.onBackPressed();
+            onBackPressed();
         }
     }
 

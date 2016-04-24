@@ -73,7 +73,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private Drawer mDrawer;
     private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
     private AccountHeader mAccountHeader;
-    private IProfile mMainProfile;
+    private IProfile mMainProfile = new ProfileDrawerItem();
 
     private ArrayList<RoomModel> mRoomsList = new ArrayList<>();
     private RoomModel mActiveRoom;
@@ -234,13 +234,7 @@ public class MainActivity extends BaseActivity implements MainView {
         DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
         mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
 
-        UserModel model = Utils.getInstance().getUserPref();
-        if (!model.id.isEmpty()) {
-            mMainProfile = new ProfileDrawerItem().withName(model.username);
-            loadImageFromCache();
-        } else {
-            mMainProfile = new ProfileDrawerItem().withName("Anonymous");
-        }
+        mPresenter.loadProfile();
 
         mAccountHeader = new AccountHeaderBuilder()
                 .withActivity(this)
@@ -543,9 +537,12 @@ public class MainActivity extends BaseActivity implements MainView {
     public void showProfile(UserModel user) {
         // Update profile
         // updateProfileByIdentifier() not working
-        mAccountHeader.removeProfile(mMainProfile);
         mMainProfile.withName(user.username);
-        mAccountHeader.addProfiles(mMainProfile);
+        mAccountHeader.updateProfile(mMainProfile);
+
+//        mAccountHeader.removeProfile(mMainProfile);
+//        mMainProfile.withName(user.username);
+//        mAccountHeader.addProfiles(mMainProfile);
     }
 
     @Override
@@ -560,9 +557,12 @@ public class MainActivity extends BaseActivity implements MainView {
 
     @Override
     public void updatePhoto(Bitmap photo) {
-        mAccountHeader.removeProfile(mMainProfile);
         mMainProfile.withIcon(photo);
-        mAccountHeader.addProfiles(mMainProfile);
+        mAccountHeader.updateProfile(mMainProfile);
+//
+//        mAccountHeader.removeProfile(mMainProfile);
+//        mMainProfile.withIcon(photo);
+//        mAccountHeader.addProfiles(mMainProfile);
         loadAvatarFromNetworkFlag = true;
     }
 }
