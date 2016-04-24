@@ -9,8 +9,8 @@ import android.net.ConnectivityManager;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
-import com.ne1c.developerstalk.models.AuthResponseModel;
-import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.models.data.AuthResponseModel;
+import com.ne1c.developerstalk.models.data.UserModel;
 import com.ne1c.developerstalk.services.NotificationService;
 
 /**

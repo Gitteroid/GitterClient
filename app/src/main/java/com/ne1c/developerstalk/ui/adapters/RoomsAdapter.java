@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.activities.OverviewRoomActivity;
 import com.ne1c.developerstalk.ui.adapters.helper.ItemTouchHelperAdapter;

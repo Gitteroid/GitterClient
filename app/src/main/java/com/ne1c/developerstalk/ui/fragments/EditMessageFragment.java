@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.os.Bundle;
@@ -13,7 +12,7 @@ import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
-import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
 
 import de.greenrobot.event.EventBus;
 
@@ -39,7 +38,9 @@ public class EditMessageFragment extends DialogFragment {
             if (!TextUtils.isEmpty(mEditText.getText().toString())) {
                 UpdateMessageEvent message = new UpdateMessageEvent();
                 model.text = mEditText.getText().toString();
+
                 message.setMessageModel(model);
+
                 EventBus.getDefault().post(message);
 
                 getDialog().dismiss();

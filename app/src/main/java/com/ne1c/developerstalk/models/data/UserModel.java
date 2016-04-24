@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk.models;
+package com.ne1c.developerstalk.models.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;

@@ -1,6 +1,6 @@
 package com.ne1c.developerstalk.events;
 
-import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
 
 public class RefreshMessagesRoomEvent {
     private RoomModel mRoomModel;

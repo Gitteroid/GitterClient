@@ -2,11 +2,11 @@ package com.ne1c.developerstalk.api;
 
 import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
 import com.ne1c.developerstalk.api.responses.StatusResponse;
-import com.ne1c.developerstalk.models.AuthResponseModel;
-import com.ne1c.developerstalk.models.MessageModel;
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.models.SearchRoomsResponse;
-import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.models.data.AuthResponseModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.data.SearchRoomsResponse;
+import com.ne1c.developerstalk.models.data.UserModel;
 
 import java.util.ArrayList;
 

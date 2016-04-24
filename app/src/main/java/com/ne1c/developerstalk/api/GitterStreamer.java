@@ -1,7 +1,7 @@
 package com.ne1c.developerstalk.api;
 
 import com.google.gson.Gson;
-import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.io.BufferedReader;

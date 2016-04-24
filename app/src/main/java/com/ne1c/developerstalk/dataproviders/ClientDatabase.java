@@ -6,9 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.ne1c.developerstalk.models.MessageModel;
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.data.UserModel;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -4,10 +4,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
-import android.view.View;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.utils.UIUtils;

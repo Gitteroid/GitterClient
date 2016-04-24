@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.fragments;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -17,7 +16,7 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
 import com.ne1c.developerstalk.di.components.RoomsListComponent;
 import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
-import com.ne1c.developerstalk.models.RoomModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
@@ -42,8 +41,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
 
     private boolean mIsEdit = false;
     private boolean mIsSearchMode = false;
-    private String mSearchQuery = "";
-    private int mSearchOffset = 10;
 
     private RoomsListComponent mComponent;
 
@@ -201,12 +198,11 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mSearchedRooms.addAll(rooms);
             mSearchableAdapter.notifyItemRangeInserted(startPosition, 10);
 
-            mSearchOffset += 10; // Increment offset, after get result of previous offset request
+            //mSearchOffset += 10; // Increment offset, after get result of previous offset request
         }
     }
 
     public void searchRoomsQuery(String text) {
-        mSearchQuery = text;
         mPresenter.searchRooms(text);
     }
 
@@ -239,7 +235,5 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mSearchableAdapter.setSearchMode(false);
 
         mIsSearchMode = false;
-        mSearchQuery = "";
-        mSearchOffset = 10;
     }
 }

@@ -1,6 +1,6 @@
 package com.ne1c.developerstalk.events;
 
-import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
 
 public class UpdateMessageEvent {
     private MessageModel mMessageModel;

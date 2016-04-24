@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk.models;
+package com.ne1c.developerstalk.models.data;
 
 public class MarkdownTextModel {
     private String mText;

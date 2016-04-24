@@ -3,8 +3,8 @@ package com.ne1c.developerstalk.ui.views;
 import android.graphics.Bitmap;
 import android.support.annotation.StringRes;
 
-import com.ne1c.developerstalk.models.RoomModel;
-import com.ne1c.developerstalk.models.UserModel;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.data.UserModel;
 
 import java.util.ArrayList;
 

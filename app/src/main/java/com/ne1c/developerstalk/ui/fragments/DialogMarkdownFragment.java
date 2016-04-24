@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
@@ -20,13 +19,6 @@ public class DialogMarkdownFragment extends DialogFragment {
 
     private final String[] namesMarkdown = {"Singline code", "Multiline code", "Bold", "Italic", "Strikethrough", "Quote", "Link", "Image"};
 
-    private GridView mMarkdownGrid;
-
-    public DialogMarkdownFragment() {
-        // Required empty public constructor
-    }
-
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -34,15 +26,10 @@ public class DialogMarkdownFragment extends DialogFragment {
 
         getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 
-        mMarkdownGrid = (GridView) v.findViewById(R.id.markdown_gridview);
-        mMarkdownGrid.setAdapter(new GridAdapter());
+        GridView markdownGrid = (GridView) v.findViewById(R.id.markdown_gridview);
+        markdownGrid.setAdapter(new GridAdapter());
 
-        mMarkdownGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                sendData(position);
-            }
-        });
+        markdownGrid.setOnItemClickListener((parent, view, position, id) -> sendData(position));
 
         return v;
     }

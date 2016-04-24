@@ -2,7 +2,7 @@ package com.ne1c.developerstalk.ui.views;
 
 import android.support.annotation.StringRes;
 
-import com.ne1c.developerstalk.models.MessageModel;
+import com.ne1c.developerstalk.models.data.MessageModel;
 
 import java.util.ArrayList;
 

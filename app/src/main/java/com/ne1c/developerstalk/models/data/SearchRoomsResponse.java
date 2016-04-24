@@ -1,4 +1,4 @@
-package com.ne1c.developerstalk.models;
+package com.ne1c.developerstalk.models.data;
 
 import com.google.gson.annotations.SerializedName;
 
