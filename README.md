@@ -13,10 +13,10 @@
 <li>Add show users of room</li>
 <li>Add screen of specific user</li>
 <li>Add opportunity to disable NotificationService in background</li>
+<li>Add "Search messages in room"</li>
 <li><strike>Add "Join to room"</strike></li>
 <li><strike>Add "Leave from room"</strike></li>
 <li><strike>Add "Search rooms"</strike></li>
-<li>Add "Search messages in room"</li>
 <li><strike>Add button for navigation to bottom of messages list</strike></li>
 </ul>
 <h2>
