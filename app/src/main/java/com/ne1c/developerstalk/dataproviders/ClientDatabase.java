@@ -65,54 +65,55 @@ public class ClientDatabase {
     }
 
     public Observable<ArrayList<RoomModel>> getRooms() {
-        return Observable.create(subscriber -> {
-            ArrayList<RoomModel> list = new ArrayList<>();
+        return Observable.fromCallable(this::getSyncRooms);
+    }
 
-            Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
-            try {
-                if (cursor.moveToFirst()) {
-                    int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
-                    int columnName = cursor.getColumnIndex(COLUMN_NAME);
-                    int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
-                    int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
-                    int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
-                    int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
-                    int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
-                    int columnUrl = cursor.getColumnIndex(COLUMN_URL);
-                    int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
-                    int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
-                    int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
+    public ArrayList<RoomModel> getSyncRooms() {
+        ArrayList<RoomModel> list = new ArrayList<>();
 
-                    do {
-                        RoomModel model = new RoomModel();
-                        model.id = cursor.getString(columnId);
-                        model.name = cursor.getString(columnName);
-                        model.topic = cursor.getString(columnTopic);
-                        model.oneToOne = cursor.getInt(columnOneToOne) == 1;
-                        model.userCount = cursor.getInt(columnUsersCount);
-                        model.unreadItems = cursor.getInt(columnUnreadItems);
-                        model.url = cursor.getString(columnUrl);
-                        model.v = cursor.getInt(columnVersion);
-                        model.hide = cursor.getInt(columnHide) == 1;
-                        model.listPosition = cursor.getInt(columnListPos);
+        Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
+        try {
+            if (cursor.moveToFirst()) {
+                int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
+                int columnName = cursor.getColumnIndex(COLUMN_NAME);
+                int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
+                int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
+                int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
+                int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
+                int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
+                int columnUrl = cursor.getColumnIndex(COLUMN_URL);
+                int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+                int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
+                int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
 
-                        String idsStr = cursor.getString(columnUsersIds);
-                        String[] idsArr = getUsersIds(idsStr);
-                        model.users = getUsers(idsArr);
+                do {
+                    RoomModel model = new RoomModel();
+                    model.id = cursor.getString(columnId);
+                    model.name = cursor.getString(columnName);
+                    model.topic = cursor.getString(columnTopic);
+                    model.oneToOne = cursor.getInt(columnOneToOne) == 1;
+                    model.userCount = cursor.getInt(columnUsersCount);
+                    model.unreadItems = cursor.getInt(columnUnreadItems);
+                    model.url = cursor.getString(columnUrl);
+                    model.v = cursor.getInt(columnVersion);
+                    model.hide = cursor.getInt(columnHide) == 1;
+                    model.listPosition = cursor.getInt(columnListPos);
 
-                        list.add(model);
-                    } while (cursor.moveToNext());
+                    String idsStr = cursor.getString(columnUsersIds);
+                    String[] idsArr = getUsersIds(idsStr);
+                    model.users = getUsers(idsArr);
 
-                }
-            } finally {
-                cursor.close();
+                    list.add(model);
+                } while (cursor.moveToNext());
+
             }
+        } finally {
+            cursor.close();
+        }
 
-            Collections.sort(list, new RoomModel.SortedByPosition());
+        Collections.sort(list, new RoomModel.SortedByPosition());
 
-            subscriber.onNext(list);
-            subscriber.onCompleted();
-        });
+        return list;
     }
 
     public UserModel getUser(String userId) {
@@ -456,6 +457,10 @@ public class ClientDatabase {
             mDatabase.setTransactionSuccessful();
             mDatabase.endTransaction();
         });
+    }
+
+    public void updateRooms(ArrayList<RoomModel> synchronizedRooms) {
+
     }
 
     private class DBWorker extends SQLiteOpenHelper {
