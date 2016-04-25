@@ -2,7 +2,6 @@ package com.ne1c.developerstalk.dataproviders;
 
 import com.ne1c.developerstalk.api.GitterApi;
 import com.ne1c.developerstalk.api.responses.JoinRoomResponse;
-import com.ne1c.developerstalk.api.responses.StatusResponse;
 import com.ne1c.developerstalk.models.data.AuthResponseModel;
 import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.RoomModel;
@@ -12,7 +11,9 @@ import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -22,47 +23,73 @@ public class DataManger {
     private GitterApi mApi;
     private ClientDatabase mClientDatabase;
 
+    // Primary cache in memory
+    private ArrayList<RoomModel> mCachedRooms = new ArrayList<>();
+    private Map<String, ArrayList<MessageModel>> mCachedMessages = new HashMap<>();
+    private UserModel mCurrentUser;
+
     @Inject
     public DataManger(GitterApi api, ClientDatabase database) {
         mApi = api;
         mClientDatabase = database;
     }
 
-    public Observable<ArrayList<RoomModel>> getRooms() {
+    public Observable<ArrayList<RoomModel>> getRooms(boolean fresh) {
         Observable<ArrayList<RoomModel>> serverRooms = mApi.getCurrentUserRooms(Utils.getInstance().getBearer())
                 .onErrorResumeNext(Observable.just(new ArrayList<>()));
 
         Observable<ArrayList<RoomModel>> dbRooms = mClientDatabase.getRooms();
 
-        return Observable.combineLatest(serverRooms, dbRooms, (server, db) -> {
-            // Data exist in db ang get from server
-            if (db.size() > 0 && server.size() > 0) {
-                for (RoomModel r1 : db) {
-                    for (RoomModel r2 : server) {
-                        if (r1.id.equals(r2.id)) {
-                            r2.hide = r1.hide;
-                            r2.listPosition = r1.listPosition;
-                        }
+        if (fresh) {
+             return Observable.zip(serverRooms, dbRooms, (server, db) -> {
+                ArrayList<RoomModel> synchronizedRooms = getSynchronizedRooms(server, db);
+
+                mClientDatabase.updateRooms(synchronizedRooms);
+                return synchronizedRooms;
+            });
+        } else {
+            if (mCachedRooms.size() == 0) {
+                return mClientDatabase.getRooms()
+                        .map(roomModels -> {
+                            mCachedRooms.clear();
+                            mCachedRooms.addAll(roomModels);
+
+                            return roomModels;
+                        });
+            } else {
+                return Observable.just(mCachedRooms);
+            }
+        }
+    }
+
+    // Return new ArrayList that will synchronized with database
+    private ArrayList<RoomModel> getSynchronizedRooms(ArrayList<RoomModel> fromNetworkRooms, ArrayList<RoomModel> dbRooms) {
+        ArrayList<RoomModel> synchronizedRooms = (ArrayList<RoomModel>) fromNetworkRooms.clone();
+
+        // Data exist in db ang get from server
+        if (dbRooms.size() > 0 && fromNetworkRooms.size() > 0) {
+            for (RoomModel r1 : dbRooms) {
+                for (RoomModel r2 : synchronizedRooms) {
+                    if (r1.id.equals(r2.id)) {
+                        r2.hide = r1.hide;
+                        r2.listPosition = r1.listPosition;
                     }
                 }
-
-                Collections.sort(server, new RoomModel.SortedByPosition());
-                mClientDatabase.insertRooms(server);
-
-                return server;
-            } else if (db.size() > 0 && server.size() == 0) { // If data exist only in db
-                Collections.sort(db, new RoomModel.SortedByPosition());
-
-                return db;
-            } else if (db.size() == 0 && server.size() > 0) { // If data  not exist in db, only server
-                sortByName(server);
-                mClientDatabase.insertRooms(server);
-
-                return server;
             }
 
-            return new ArrayList<>();
-        });
+            Collections.sort(synchronizedRooms, new RoomModel.SortedByPosition());
+
+        } else if (dbRooms.size() > 0 && fromNetworkRooms.size() == 0) { // If data exist only in db
+            Collections.sort(dbRooms, new RoomModel.SortedByPosition());
+
+            return dbRooms;
+        } else if (dbRooms.size() == 0 && fromNetworkRooms.size() > 0) { // If data  not exist in db, only server
+            sortByTypes(fromNetworkRooms);
+
+            return fromNetworkRooms;
+        }
+
+        return synchronizedRooms;
     }
 
     public Observable<ArrayList<RoomModel>> getDbRooms() {
@@ -73,12 +100,28 @@ public class DataManger {
         mClientDatabase.insertRooms(rooms);
     }
 
-    public Observable<StatusResponse> leaveFromRoom(String roomId) {
-        return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id);
+    public Observable<Boolean> leaveFromRoom(String roomId) {
+        return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id)
+                .map(statusResponse -> statusResponse.success);
     }
 
-    public Observable<ArrayList<UserModel>> getProfile() {
-        return mApi.getCurrentUser(Utils.getInstance().getBearer());
+    public Observable<UserModel> getProfile() {
+        if (mCurrentUser == null) {
+            mCurrentUser = Utils.getInstance().getUserPref();
+
+            Observable<UserModel> currentUserFromNetwork = mApi.getCurrentUser(Utils.getInstance().getBearer())
+                    .map(userModels -> userModels.get(0))
+                    .map(userModel -> {
+                        Utils.getInstance().writeUserToPref(userModel);
+                        mCurrentUser = userModel;
+
+                        return userModel;
+                    });
+
+            return Observable.concat(Observable.just(mCurrentUser), currentUserFromNetwork);
+        }
+
+        return Observable.just(mCurrentUser);
     }
 
     public Observable<ArrayList<MessageModel>> getMessagesBeforeId(String roomId, int limit, String beforeId) {
@@ -105,19 +148,26 @@ public class DataManger {
         }
     }
 
-    private void sortByName(List<RoomModel> rooms) {
-        List<RoomModel> multi = new ArrayList<>();
+    private ArrayList<RoomModel> sortByTypes(ArrayList<RoomModel> rooms) {
+        ArrayList<RoomModel> multi = new ArrayList<>();
         ArrayList<RoomModel> one = new ArrayList<>();
+
         for (RoomModel room : rooms) {
-            if (room.oneToOne) one.add(room);
-            else multi.add(room);
+            if (room.oneToOne) {
+                one.add(room);
+            } else {
+                multi.add(room);
+            }
         }
 
         Collections.sort(multi, new RoomModel.SortedByName());
         Collections.sort(one, new RoomModel.SortedByName());
-        rooms.clear();
-        rooms.addAll(multi);
-        rooms.addAll(one);
+
+        ArrayList<RoomModel> roomModels = new ArrayList<>(multi.size() + one.size());
+        roomModels.addAll(multi);
+        roomModels.addAll(one);
+
+        return roomModels;
     }
 
     public Observable<MessageModel> updateMessage(String roomId, String messageId, String text) {
@@ -133,11 +183,10 @@ public class DataManger {
                 });
     }
 
-    public Observable<StatusResponse> readMessages(String roomId, String[] ids) {
+    public Observable<Boolean> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
-                Utils.getInstance().getUserPref().id,
-                roomId,
-                ids);
+                Utils.getInstance().getUserPref().id, roomId, ids)
+                .map(statusResponse -> statusResponse.success);
     }
 
     public Observable<MessageModel> sendMessage(String roomId, String text) {
@@ -146,25 +195,6 @@ public class DataManger {
 
     public Observable<ArrayList<MessageModel>> getDbMessages(String roomId) {
         return mClientDatabase.getMessages(roomId);
-    }
-
-    public void clearCachedMessagesInRoom(String roomId) {
-        mClientDatabase.clearCachedMessages(roomId);
-    }
-
-    public Observable<ArrayList<MessageModel>> getCachedMessages(String roomId) {
-        return mClientDatabase.getCachedMessagesModel(roomId);
-    }
-
-    public void insertCachedMessages(ArrayList<MessageModel> list, String roomId) {
-        mClientDatabase.insertCachedMessages(list, roomId);
-    }
-
-    public void insertCachedMessage(MessageModel message, String roomId) {
-        ArrayList<MessageModel> list = new ArrayList<>();
-        list.add(message);
-
-        mClientDatabase.insertCachedMessages(list, roomId);
     }
 
     public Observable<SearchRoomsResponse> searchRooms(String query) {
@@ -177,14 +207,14 @@ public class DataManger {
 
     public Observable<AuthResponseModel> authorization(String client_id, String client_secret, String code, String grant_type, String redirect_url) {
         return mApi.authorization("https://gitter.im/login/oauth/token",
-                client_id,
-                client_secret,
-                code,
-                grant_type,
-                redirect_url);
+                client_id, client_secret, code, grant_type, redirect_url);
     }
 
     public Observable<JoinRoomResponse> joinToRoom(String roomUri) {
-        return mApi.joinRoom(Utils.getInstance().getBearer(), roomUri);
+        return mApi.joinRoom(Utils.getInstance().getBearer(), roomUri)
+                .map(joinRoomResponse -> {
+                    writeRoomsToDb(Collections.singletonList((RoomModel) joinRoomResponse));
+                    return joinRoomResponse;
+                });
     }
 }
