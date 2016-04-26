@@ -1,8 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.RoomMapper;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -20,7 +22,7 @@ import rx.subscriptions.CompositeSubscription;
 public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     // All rooms for edit
     // Set this list to adapter if user will edit
-    private ArrayList<RoomModel> mAllRooms = new ArrayList<>();
+    private ArrayList<RoomViewModel> mAllRooms = new ArrayList<>();
 
     private RoomsListView mView;
 
@@ -45,15 +47,16 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 .throttleLast(1, TimeUnit.SECONDS)
                 .flatMap(query -> mDataManger.searchRooms(query))
                 .map(response -> {
+                    // Show without exist in db
                     ArrayList<RoomModel> responseRooms = response.getResult();
-                    ArrayList<RoomModel> filterRooms = new ArrayList<>();
+                    ArrayList<RoomViewModel> filterRooms = new ArrayList<>();
 
                     boolean existInDb;
 
                     for (RoomModel responseRoom : responseRooms) {
                         existInDb = false;
 
-                        for (RoomModel dbRoom : mAllRooms) {
+                        for (RoomViewModel dbRoom : mAllRooms) {
                             if (responseRoom.id.equals(dbRoom.id)) {
                                 existInDb = true;
                                 break;
@@ -61,7 +64,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                         }
 
                         if (!existInDb) {
-                            filterRooms.add(responseRoom);
+                            filterRooms.add(RoomMapper.mapToView(responseRoom));
                         }
                     }
 
@@ -94,7 +97,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         mSubscriptions.unsubscribe();
     }
 
-    public List<RoomModel> getAllRooms() {
+    public List<RoomViewModel> getAllRooms() {
         return mAllRooms;
     }
 
@@ -106,13 +109,13 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         @SuppressWarnings("unchecked")
         Subscription sub = mDataManger.getRooms(fresh)
                 .map(roomModels -> {
-                    mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
+                    mAllRooms = (ArrayList<RoomViewModel>) roomModels.clone();
 
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
+                    ArrayList<RoomViewModel> visibleList = new ArrayList<>();
 
                     for (RoomModel room : roomModels) {
                         if (!room.hide) {
-                            visibleList.add(room);
+                            visibleList.add(RoomMapper.mapToView(room));
                         }
                     }
 
@@ -127,13 +130,13 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         mSubscriptions.add(sub);
     }
 
-    public void saveRooms(ArrayList<RoomModel> rooms) {
-        mDataManger.updateRooms(rooms);
+    public void saveRooms(ArrayList<RoomViewModel> rooms) {
+        mDataManger.updateRooms(rooms, true);
     }
 
-    public ArrayList<RoomModel> getOnlyVisibleRooms(ArrayList<RoomModel> rooms) {
-        ArrayList<RoomModel> visibleList = new ArrayList<>();
-        for (RoomModel room : rooms) {
+    public ArrayList<RoomViewModel> getOnlyVisibleRooms(ArrayList<RoomViewModel> rooms) {
+        ArrayList<RoomViewModel> visibleList = new ArrayList<>();
+        for (RoomViewModel room : rooms) {
             if (!room.hide) {
                 visibleList.add(room);
             }

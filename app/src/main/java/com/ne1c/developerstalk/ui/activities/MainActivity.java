@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
@@ -40,9 +40,10 @@ import com.ne1c.developerstalk.di.modules.MainPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
-import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.UserModel;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
 import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
@@ -75,8 +76,8 @@ public class MainActivity extends BaseActivity implements MainView {
     private AccountHeader mAccountHeader;
     private IProfile mMainProfile = new ProfileDrawerItem();
 
-    private ArrayList<RoomModel> mRoomsList = new ArrayList<>();
-    private RoomModel mActiveRoom;
+    private ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
+    private RoomViewModel mActiveRoom;
 
     private int selectedNavItem = -1; // Default, item not selected
     private boolean loadAvatarFromNetworkFlag;
@@ -141,10 +142,10 @@ public class MainActivity extends BaseActivity implements MainView {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
 
-            mPresenter.loadCachedRooms();
+            mPresenter.loadRooms(false);
 
             if (Utils.getInstance().isNetworkConnected()) {
-                mPresenter.loadRooms();
+                mPresenter.loadRooms(true);
             }
 
             mPresenter.loadProfile();
@@ -156,7 +157,7 @@ public class MainActivity extends BaseActivity implements MainView {
                     getResources().getColor(R.color.md_green_700));
             badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
-            for (RoomModel room : mRoomsList) {
+            for (RoomViewModel room : mRoomsList) {
                 if (room.unreadItems > 0) {
                     String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                     mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
@@ -207,7 +208,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         // If get intent from notification
         if (mRoomsList != null) {
-            RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
+            RoomViewModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             // If selected room not equal room id from notification, than load room
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
@@ -266,6 +267,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withActionBarDrawerToggle(mDrawerToggle)
                 .withActionBarDrawerToggle(true)
                 .withActionBarDrawerToggleAnimated(true)
+                .withSliderBackgroundColorRes(R.color.navDrawerBackground)
                 .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
                 .withOnDrawerItemClickListener((view, position, iDrawerItem) -> {
                     if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
@@ -357,7 +359,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 if (mActiveRoom != null) {
                     EventBus.getDefault().post(new RefreshMessagesRoomEvent(mActiveRoom));
 
-                    mPresenter.loadRooms();
+                    mPresenter.loadRooms(true);
                 }
                 break;
             case R.id.action_leave:
@@ -380,7 +382,7 @@ public class MainActivity extends BaseActivity implements MainView {
         return super.onCreateOptionsMenu(menu);
     }
 
-    private void setItemsDrawer(ArrayList<RoomModel> data) {
+    private void setItemsDrawer(ArrayList<RoomViewModel> data) {
         mRoomsList.clear();
         mRoomsList.addAll(data);
 
@@ -394,10 +396,12 @@ public class MainActivity extends BaseActivity implements MainView {
                 getResources().getColor(R.color.md_green_700));
         badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
-        for (RoomModel room : mRoomsList) {
+        for (RoomViewModel room : mRoomsList) {
             if (room.unreadItems > 0) {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                 mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
+                        .withIconColor(Color.WHITE)
+                        .withTextColor(Color.WHITE)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
                         .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -405,6 +409,8 @@ public class MainActivity extends BaseActivity implements MainView {
                 mDrawer.addItemAtPosition(
                         new PrimaryDrawerItem()
                                 .withIcon(R.drawable.ic_room)
+                                .withIconColor(Color.WHITE)
+                                .withTextColor(Color.WHITE)
                                 .withName(room.name)
                                 .withBadgeStyle(badgeStyle)
                                 .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -489,7 +495,7 @@ public class MainActivity extends BaseActivity implements MainView {
         public void onReceive(Context context, Intent intent) {
             for (int i = 0; i < mRoomsList.size(); i++) {
                 String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
-                MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
+                MessageViewModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
 
                 if (mRoomsList.get(i).id.equals(roomId)) {
                     mRoomsList.get(i).unreadItems += 1;
@@ -529,20 +535,16 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     @Override
-    public void showRooms(ArrayList<RoomModel> rooms) {
+    public void showRooms(ArrayList<RoomViewModel> rooms) {
         setItemsDrawer(rooms);
     }
 
     @Override
     public void showProfile(UserModel user) {
-        // Update profile
-        // updateProfileByIdentifier() not working
         mMainProfile.withName(user.username);
-        mAccountHeader.updateProfile(mMainProfile);
-
-//        mAccountHeader.removeProfile(mMainProfile);
-//        mMainProfile.withName(user.username);
-//        mAccountHeader.addProfiles(mMainProfile);
+        mMainProfile.withEmail(user.displayName);
+        mMainProfile.withIcon(user.url);
+        mAccountHeader.updateProfileByIdentifier(mMainProfile);
     }
 
     @Override
@@ -553,16 +555,5 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void leavedFromRoom() {
         finish();
-    }
-
-    @Override
-    public void updatePhoto(Bitmap photo) {
-        mMainProfile.withIcon(photo);
-        mAccountHeader.updateProfile(mMainProfile);
-//
-//        mAccountHeader.removeProfile(mMainProfile);
-//        mMainProfile.withIcon(photo);
-//        mAccountHeader.addProfiles(mMainProfile);
-        loadAvatarFromNetworkFlag = true;
     }
 }

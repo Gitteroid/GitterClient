@@ -93,7 +93,7 @@ public class NotificationService extends Service {
             mRoomsSubscription.unsubscribe();
         }
 
-        mRoomsSubscription = mDataManger.getDbRooms()
+        mRoomsSubscription = mDataManger.getRooms(false)
                 .subscribe(roomModels -> {
                     mRooms = roomModels;
 
@@ -117,7 +117,7 @@ public class NotificationService extends Service {
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(message -> {
                         if (message.text != null) {
-                            mDataManger.insertMessageToDb(message, room.id);
+                            mDataManger.addSingleMessage(room.id, message);
 
                             sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
                                     .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)

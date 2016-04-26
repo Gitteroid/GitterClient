@@ -35,9 +35,9 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
-import com.ne1c.developerstalk.models.data.MessageModel;
-import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.StatusMessage;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.SinglelineSpan;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
@@ -59,13 +59,13 @@ import rx.schedulers.Schedulers;
 
 public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements
         ChatRoomFragment.ReadMessageCallback {
-    private RoomModel mRoom;
-    private ArrayList<MessageModel> mMessages;
+    private RoomViewModel mRoom;
+    private ArrayList<MessageViewModel> mMessages;
     private Activity mActivity;
     private EditText mMessageEditText;
     private DataManger mDataManager;
 
-    public MessagesAdapter(DataManger dataManger, Activity activity, ArrayList<MessageModel> messages, EditText editText) {
+    public MessagesAdapter(DataManger dataManger, Activity activity, ArrayList<MessageViewModel> messages, EditText editText) {
         mActivity = activity;
         mMessages = messages;
         mMessageEditText = editText;
@@ -97,7 +97,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        MessageModel message = mMessages.get(position);
+        MessageViewModel message = mMessages.get(position);
 
         if (getItemViewType(position) == 0) {
             DynamicViewHolder dynamicHolder = (DynamicViewHolder) holder;
@@ -357,7 +357,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         holder.messageLayout.requestLayout();
     }
 
-    private String getUsername(MessageModel message) {
+    private String getUsername(MessageViewModel message) {
         if (!message.fromUser.username.isEmpty()) {
             return message.fromUser.username;
         } else {
@@ -365,7 +365,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    private void processingIndicator(ImageView indicator, MessageModel message) {
+    private void processingIndicator(ImageView indicator, MessageViewModel message) {
         if (message.unread) {
             if (!message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
                 indicator.setImageResource(R.color.unreadMessage);
@@ -375,7 +375,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    private String getTimeMessage(MessageModel message) {
+    private String getTimeMessage(MessageViewModel message) {
         if (message.sent.equals(StatusMessage.SENDING.name()) ||
                 message.sent.equals(StatusMessage.NO_SEND.name())) {
             return "";
@@ -424,7 +424,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     }
 
     // Set icon status for message: send, sending or no send
-    private void setIconMessage(ImageView statusMessage, MessageModel message) {
+    private void setIconMessage(ImageView statusMessage, MessageViewModel message) {
         if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
             if (statusMessage.getVisibility() == View.INVISIBLE) {
                 statusMessage.setVisibility(View.VISIBLE);
@@ -443,17 +443,17 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
-    private View.OnClickListener getParentLayoutClick(final MessageModel message) {
+    private View.OnClickListener getParentLayoutClick(final MessageViewModel message) {
         return v -> mMessageEditText.append("@" + message.fromUser.username + " ");
     }
 
-    private View.OnClickListener getAvatarImageClick(final MessageModel message) {
+    private View.OnClickListener getAvatarImageClick(final MessageViewModel message) {
         return v -> mActivity.startActivity(new Intent(Intent.ACTION_VIEW,
                 Uri.parse(Utils.GITHUB_URL + "/" + message.fromUser.username))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
 
-    private View.OnClickListener getMenuClick(final MessageModel message, final int position) {
+    private View.OnClickListener getMenuClick(final MessageViewModel message, final int position) {
         return v -> {
             final PopupMenu menu = new PopupMenu(mActivity, v);
             if (message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
@@ -466,7 +466,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         };
     }
 
-    private void showMenuUser(PopupMenu menu, final MessageModel message, final int position) {
+    private void showMenuUser(PopupMenu menu, final MessageViewModel message, final int position) {
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.edit_message_menu:
@@ -534,7 +534,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         menu.show();
     }
 
-    private void showMenuAll(final PopupMenu menu, final MessageModel message) {
+    private void showMenuAll(final PopupMenu menu, final MessageViewModel message) {
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.copy_text_menu:
@@ -565,13 +565,13 @@ public class MessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return mMessages.size();
     }
 
-    public void setRoom(RoomModel model) {
+    public void setRoom(RoomViewModel model) {
         mRoom = model;
     }
 
     // Use for set new message, because if used notifyItemChanged, then call draw
     // bad animation
-    public void setMessage(int position, MessageModel message) {
+    public void setMessage(int position, MessageViewModel message) {
         mMessages.set(position, message);
     }
 

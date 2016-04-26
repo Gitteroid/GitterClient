@@ -1,6 +1,5 @@
 package com.ne1c.developerstalk.ui.views;
 
-import android.graphics.Bitmap;
 import android.support.annotation.StringRes;
 
 import com.ne1c.developerstalk.models.data.UserModel;
@@ -16,6 +15,4 @@ public interface MainView {
     void showError(@StringRes int resId);
 
     void leavedFromRoom();
-
-    void updatePhoto(Bitmap photo);
 }

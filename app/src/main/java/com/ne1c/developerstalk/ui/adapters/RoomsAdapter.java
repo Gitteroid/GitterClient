@@ -15,30 +15,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.activities.MainActivity;
 import com.ne1c.developerstalk.ui.activities.OverviewRoomActivity;
 import com.ne1c.developerstalk.ui.adapters.helper.ItemTouchHelperAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
-    private List<RoomModel> mRooms;
+    private List<RoomViewModel> mRooms;
     private Context mContext;
     private boolean mIsEditMode = false;
     private boolean mIsSearchMode = false;
 
     private OnStartDragListener mDragStartListener;
 
-    public RoomsAdapter(ArrayList<RoomModel> rooms, Context context) {
-        this.mRooms = rooms;
-        this.mContext = context;
-    }
-
-    public RoomsAdapter(List<RoomModel> rooms, Context context, OnStartDragListener dragStartListener) {
+    public RoomsAdapter(List<RoomViewModel> rooms, Context context, OnStartDragListener dragStartListener) {
         this.mRooms = rooms;
         this.mContext = context;
 
@@ -69,7 +63,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position) {
-        final RoomModel room = mRooms.get(position);
+        final RoomViewModel room = mRooms.get(position);
 
         if (holder.getItemViewType() == 0) {
             confHolderBehavior(holder, room);
@@ -79,7 +73,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     }
 
-    private void confHolderBehavior(RecyclerView.ViewHolder holder, RoomModel room) {
+    private void confHolderBehavior(RecyclerView.ViewHolder holder, RoomViewModel room) {
         ViewHolderConf holderConf = (ViewHolderConf) holder;
         if (room.hide) {
             holderConf.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
@@ -92,7 +86,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         holderConf.roomName.setText(room.name);
-        if (room.mentions > 0) {
+        if (room.mention) {
             holderConf.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
             holderConf.counterMess.setText("@");
 
@@ -131,7 +125,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         });
     }
 
-    private void oneHolderBehavior(RecyclerView.ViewHolder holder, RoomModel room) {
+    private void oneHolderBehavior(RecyclerView.ViewHolder holder, RoomViewModel room) {
         ViewHolderOne holderOne = (ViewHolderOne) holder;
         if (room.hide) {
             holderOne.parentLayout.setBackgroundResource(R.drawable.hide_room_selector);
@@ -144,7 +138,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         holderOne.roomName.setText(room.name);
-        if (room.mentions > 0) {
+        if (room.mention) {
             holderOne.counterMess.setBackgroundResource(R.drawable.rounded_counter_mentions_mess);
             holderOne.counterMess.setText("@");
 

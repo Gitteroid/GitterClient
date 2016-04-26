@@ -3,7 +3,6 @@ package com.ne1c.developerstalk.presenters;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.MessageMapper;
-import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.StatusMessage;
 import com.ne1c.developerstalk.models.data.UserModel;
 import com.ne1c.developerstalk.models.view.MessageViewModel;
@@ -77,14 +76,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .map(messageModels -> {
-                    ArrayList<MessageViewModel> list = new ArrayList<>();
-
-                    for (MessageModel model : messageModels) {
-                        list.add(MessageMapper.mapToView(model));
-                    }
-                    return list;
-                })
+                .map(MessageMapper::mapToView)
                 .subscribe(mView::showLoadBeforeIdMessages, throwable -> {
                     mView.hideTopProgressBar();
                 });
@@ -104,6 +96,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessages(roomId, limit, true)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .map(MessageMapper::mapToView)
                 .subscribe(messages -> {
                     mView.showMessages(messages);
                     mView.hideListProgress();
@@ -121,6 +114,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         final boolean[] fromDatabase = {false};
 
         Subscription sub = mDataManger.getMessages(roomId, limit, true)
+                .map(MessageMapper::mapToView)
                 .doOnNext(messages -> {
                     if (fromDatabase[0]) {
                         fromDatabase[0] = false;
@@ -161,6 +155,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessages(roomId, 10, false)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .map(MessageMapper::mapToView)
                 .subscribe(mView::showMessages, throwable -> {
                     mView.showError(R.string.error);
                 });
@@ -202,9 +197,9 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         mSubscriptions.add(sub);
     }
 
-    public MessageModel createSendMessage(String text) {
+    public MessageViewModel createSendMessage(String text) {
         UserModel user = Utils.getInstance().getUserPref();
-        MessageModel message = new MessageModel();
+        MessageViewModel message = new MessageViewModel();
 
         message.sent = StatusMessage.SENDING.name();
         message.fromUser = user;

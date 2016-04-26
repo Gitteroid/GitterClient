@@ -1,15 +1,15 @@
 package com.ne1c.developerstalk.events;
 
-import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 
 public class RefreshMessagesRoomEvent {
-    private RoomModel mRoomModel;
+    private RoomViewModel mRoomModel;
 
-    public RefreshMessagesRoomEvent(RoomModel roomModel) {
+    public RefreshMessagesRoomEvent(RoomViewModel roomModel) {
         mRoomModel = roomModel;
     }
 
-    public RoomModel getRoomModel() {
+    public RoomViewModel getRoomModel() {
         return mRoomModel;
     }
 }

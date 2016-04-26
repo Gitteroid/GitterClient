@@ -7,6 +7,7 @@ import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.SearchRoomsResponse;
 import com.ne1c.developerstalk.models.data.UserModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
@@ -93,6 +94,11 @@ public class DataManger {
 
     public Observable<Boolean> leaveFromRoom(String roomId) {
         return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id)
+                .map(statusResponse -> {
+                    mCachedMessages.remove(roomId);
+                    mClientDatabase.removeRoom(roomId);
+                    return statusResponse;
+                })
                 .map(statusResponse -> statusResponse.success);
     }
 
@@ -143,6 +149,10 @@ public class DataManger {
                 roomId, limit, beforeId);
     }
 
+    public void addSingleMessage(String roomId, MessageModel model) {
+        mClientDatabase.addSingleMessage(roomId, model);
+    }
+
     public void updateLastMessagesInDb(String roomId, ArrayList<MessageModel> messages) {
         // Save last 10 messages
         if (messages.size() > 10) {
@@ -185,6 +195,19 @@ public class DataManger {
 
     public void updateRooms(ArrayList<RoomModel> rooms) {
         mClientDatabase.updateRooms(getSynchronizedRooms(rooms, mCachedRooms));
+    }
+
+    public void updateRooms(ArrayList<RoomViewModel> rooms, boolean wasEdit) {
+        for (RoomModel cachedRoom : mCachedRooms) {
+            for (RoomViewModel viewRoom : rooms) {
+                if (cachedRoom.id.equals(viewRoom.id)) {
+                    cachedRoom.hide = viewRoom.hide;
+                    cachedRoom.listPosition = viewRoom.listPosition;
+                }
+            }
+        }
+
+        mClientDatabase.updateRooms(mCachedRooms);
     }
 
     public Observable<Boolean> readMessages(String roomId, String[] ids) {

@@ -1,10 +1,5 @@
 package com.ne1c.developerstalk.presenters;
 
-import android.graphics.Bitmap;
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.SimpleTarget;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.RoomMapper;
@@ -60,20 +55,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(userModel -> {
                     mView.showProfile(userModel);
-
-                    // Update avatar
-                    Glide.with(Utils.getInstance().getContext()).load(userModel.avatarUrlMedium).asBitmap()
-                            .into(new SimpleTarget<Bitmap>() {
-                                @Override
-                                public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                    if (mView != null) {
-                                        mView.updatePhoto(resource);
-                                    }
-                                }
-                            });
-                }, throwable -> {
-                    mView.showProfile(Utils.getInstance().getUserPref());
-                });
+                }, throwable -> { mView.showError(R.string.error); });
 
         mSubscriptions.add(sub);
     }

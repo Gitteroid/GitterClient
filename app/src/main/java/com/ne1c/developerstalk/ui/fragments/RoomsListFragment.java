@@ -17,6 +17,7 @@ import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
 import com.ne1c.developerstalk.di.components.RoomsListComponent;
 import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
 import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
 import com.ne1c.developerstalk.ui.adapters.helper.OnStartDragListener;
@@ -36,8 +37,8 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     private ItemTouchHelper mItemTouchHelper;
     private ProgressBar mProgressBar;
 
-    private ArrayList<RoomModel> mRooms = new ArrayList<>();
-    private ArrayList<RoomModel> mSearchedRooms = new ArrayList<>();
+    private ArrayList<RoomViewModel> mRooms = new ArrayList<>();
+    private ArrayList<RoomViewModel> mSearchedRooms = new ArrayList<>();
 
     private boolean mIsEdit = false;
     private boolean mIsSearchMode = false;
@@ -78,7 +79,7 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.refresh_rooms_layout);
         mRefreshLayout.setOnRefreshListener(() -> {
             if (!mIsEdit) {
-                mPresenter.loadRooms();
+                mPresenter.loadRooms(true);
             } else {
                 mRefreshLayout.setRefreshing(false);
             }
@@ -88,7 +89,7 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mProgressBar.setIndeterminate(true);
 
         mPresenter.bindView(this);
-        mPresenter.loadCachedRooms();
+        mPresenter.loadRooms(false);
 
         return v;
     }
@@ -116,7 +117,7 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
             mAdapter.setEditMode(false);
 
             mPresenter.saveRooms(mRooms);
-            ArrayList<RoomModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
+            ArrayList<RoomViewModel> visible = mPresenter.getOnlyVisibleRooms(mRooms);
             mRooms.clear();
             mRooms.addAll(visible);
 
@@ -128,7 +129,7 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     public void onResume() {
         super.onResume();
 
-        mPresenter.loadRooms();
+        mRefreshLayout.setRefreshing(true);
     }
 
     @Override
@@ -139,7 +140,7 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     }
 
     @Override
-    public void showRooms(List<RoomModel> rooms) {
+    public void showRooms(List<RoomViewModel> rooms) {
         if (mRefreshLayout.isRefreshing()) {
             mRefreshLayout.setRefreshing(false);
         }
@@ -185,14 +186,14 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     }
 
     @Override
-    public void resultSearch(ArrayList<RoomModel> rooms) {
+    public void resultSearch(ArrayList<RoomViewModel> rooms) {
         mSearchedRooms.clear();
         mSearchedRooms.addAll(rooms);
         mSearchableAdapter.notifyDataSetChanged();
     }
 
     @Override
-    public void resultSearchWithOffset(ArrayList<RoomModel> rooms) {
+    public void resultSearchWithOffset(ArrayList<RoomViewModel> rooms) {
         if (mIsSearchMode) {
             int startPosition = mSearchedRooms.size();
             mSearchedRooms.addAll(rooms);

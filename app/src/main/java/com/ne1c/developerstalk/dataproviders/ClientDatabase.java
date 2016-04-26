@@ -424,6 +424,15 @@ public class ClientDatabase {
         mDatabase.endTransaction();
     }
 
+    public void removeRoom(String roomId) {
+        mDatabase.beginTransaction();
+
+        mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[] {roomId});
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+    }
+
     private class DBWorker extends SQLiteOpenHelper {
         public DBWorker(Context context, String name, int version) {
             super(context, name, null, version);

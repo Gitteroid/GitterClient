@@ -32,6 +32,8 @@ import com.ne1c.developerstalk.events.UpdateMessageEvent;
 import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.StatusMessage;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.presenters.ChatRoomPresenter;
 import com.ne1c.developerstalk.ui.adapters.MessagesAdapter;
 import com.ne1c.developerstalk.ui.views.ChatView;
@@ -56,8 +58,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private MaterialProgressBar mTopProgressBar;
     private FloatingActionButton mFabToBottom;
 
-    private ArrayList<MessageModel> mMessagesArr = new ArrayList<>();
-    private RoomModel mRoom;
+    private ArrayList<MessageViewModel> mMessagesArr = new ArrayList<>();
+    private RoomViewModel mRoom;
 
     private Parcelable mMessageListSavedState;
 
@@ -72,7 +74,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private boolean mIsLoadBeforeIdMessages = false;
     private boolean mIsRefreshing = false;
 
-    private RoomModel mOverviewRoom = null;
+    private RoomViewModel mOverviewRoom = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -248,7 +250,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessageListSavedState = savedInstanceState.getParcelable("scrollPosition");
             savedInstanceState.remove("scrollPosition");
 
-            RoomModel room = savedInstanceState.getParcelable("active_room");
+            RoomViewModel room = savedInstanceState.getParcelable("active_room");
             savedInstanceState.remove("active_room");
 
             if (room != null) {
@@ -284,7 +286,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mSendButton.setOnClickListener(v -> {
             if (!mMessageEditText.getText().toString().isEmpty()) {
                 if (Utils.getInstance().isNetworkConnected()) {
-                    MessageModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
+                    MessageViewModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
 
                     mMessagesArr.add(0, model);
                     mMessagesAdapter.notifyItemInserted(0);
@@ -340,7 +342,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         }
     }
 
-    private void loadMessageRoomServer(final RoomModel roomModel) {
+    private void loadMessageRoomServer(final RoomViewModel roomModel) {
         mMessagesAdapter.setRoom(roomModel);
 
         mPresenter.loadNetworkMessages(roomModel.id, mStartNumberLoadMessages + mCountLoadMessages);
@@ -348,7 +350,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     // Event from MainActivity or notification
     // Load messages of room
-    public void onEvent(RoomModel model) {
+    public void onEvent(RoomViewModel model) {
         hideListProgress();
         hideTopProgressBar();
 
@@ -395,7 +397,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         if (mMessagesAdapter != null) {
             for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
-                MessageModel item = mMessagesArr.get(i);
+                MessageViewModel item = mMessagesArr.get(i);
 
                 // Send message
                 if (message.getMessage().text.equals(item.text) &&
@@ -422,7 +424,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void showMessages(ArrayList<MessageModel> messages) {
+    public void showMessages(ArrayList<MessageViewModel> messages) {
         Collections.reverse(messages);
 
         mMessagesArr.clear();
@@ -456,9 +458,9 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void showUpdateMessage(MessageModel message) {
+    public void showUpdateMessage(MessageViewModel message) {
         for (int i = 0; i < mMessagesArr.size(); i++) {
-            MessageModel item = mMessagesArr.get(i);
+            MessageViewModel item = mMessagesArr.get(i);
             // Update message
             if (!item.sent.equals(StatusMessage.NO_SEND.name())
                     && !item.sent.equals(StatusMessage.SENDING.name())
@@ -503,7 +505,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void showLoadBeforeIdMessages(ArrayList<MessageModel> messages) {
+    public void showLoadBeforeIdMessages(ArrayList<MessageViewModel> messages) {
         if (messages.size() > 0 && !mIsRefreshing) {
             Collections.reverse(messages);
 
@@ -518,7 +520,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     @Override
-    public void deliveredMessage(MessageModel message) {
+    public void deliveredMessage(MessageViewModel message) {
         for (int i = 0; i < mMessagesArr.size(); i++) {
             if (mMessagesArr.get(i).sent.equals(StatusMessage.SENDING.name()) &&
                     mMessagesArr.get(i).text.equals(message.text)) {
