@@ -61,7 +61,9 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/logo_img"
                 android:layout_centerInParent="true"
-                android:elevation="4dp"
+                android:background="?selectableItemBackground"
+                android:textColor="@color/colorPrimaryDark"
+                android:elevation="0dp"
                 android:minWidth="120dp"
                 android:text="Sign In"/>
         </RelativeLayout>
