@@ -2,9 +2,11 @@ package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.MessageMapper;
 import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.StatusMessage;
 import com.ne1c.developerstalk.models.data.UserModel;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
 import com.ne1c.developerstalk.ui.views.ChatView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -58,6 +60,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.sendMessage(roomId, text)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .map(MessageMapper::mapToView)
                 .subscribe(mView::deliveredMessage,
                         throwable -> mView.errorDeliveredMessage());
 
@@ -74,6 +77,14 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .map(messageModels -> {
+                    ArrayList<MessageViewModel> list = new ArrayList<>();
+
+                    for (MessageModel model : messageModels) {
+                        list.add(MessageMapper.mapToView(model));
+                    }
+                    return list;
+                })
                 .subscribe(mView::showLoadBeforeIdMessages, throwable -> {
                     mView.hideTopProgressBar();
                 });
@@ -166,6 +177,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.updateMessage(roomId, messageId, text)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .map(MessageMapper::mapToView)
                 .subscribe(mView::showUpdateMessage, throwable -> {
                     mView.showError(R.string.updated_error);
                 });

@@ -7,7 +7,9 @@ import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.RoomMapper;
 import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -106,10 +108,10 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
+                    ArrayList<RoomViewModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
                         if (!room.hide) {
-                            visibleList.add(room);
+                            visibleList.add(RoomMapper.mapToView(room));
                         }
                     }
 
