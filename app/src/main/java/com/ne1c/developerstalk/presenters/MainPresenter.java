@@ -8,19 +8,15 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
 import com.ne1c.developerstalk.models.data.RoomModel;
-import com.ne1c.developerstalk.models.data.UserModel;
 import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import javax.inject.Inject;
 
-import rx.Observable;
 import rx.Subscription;
-import rx.functions.Func1;
 import rx.subscriptions.CompositeSubscription;
 
 public class MainPresenter extends BasePresenter<MainView> {
@@ -39,47 +35,25 @@ public class MainPresenter extends BasePresenter<MainView> {
     @Override
     public void bindView(MainView view) {
         mView = view;
-        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
     }
 
-    public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms()
-                .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
-                    for (RoomModel room : roomModels) {
-                        if (!room.hide) {
-                            visibleList.add(room);
-                        }
-                    }
+    @Override
+    public void onCreate() {
+        mSubscriptions = new CompositeSubscription();
+    }
 
-                    return visibleList;
-                })
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms);
-
-        mSubscriptions.add(sub);
+    @Override
+    public void onDestroy() {
+        mSubscriptions.unsubscribe();
     }
 
     public void loadProfile() {
         Subscription sub = mDataManger.getProfile()
-                .onErrorResumeNext(throwable -> {
-                    ArrayList<UserModel> user = new ArrayList<UserModel>();
-                    user.add(Utils.getInstance().getUserPref());
-                    return Observable.just(user);
-                })
-                .map(userModels -> {
-                    UserModel user = userModels.get(0);
-                    Utils.getInstance().writeUserToPref(user);
-
-                    return user;
-                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(userModel -> {
@@ -112,7 +86,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
-                    if (response.success) {
+                    if (response) {
                         mView.leavedFromRoom();
                     }
                 }, (throwable -> {
@@ -122,14 +96,13 @@ public class MainPresenter extends BasePresenter<MainView> {
         mSubscriptions.add(sub);
     }
 
-    public void loadRooms() {
+    public void loadRooms(boolean fresh) {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(R.string.no_network);
-            return;
         }
 
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms()
+        Subscription sub = mDataManger.getRooms(fresh)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(roomModels -> {

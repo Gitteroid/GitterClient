@@ -42,6 +42,16 @@ public class LoginPresenter extends BasePresenter<LoginView> {
         mView = null;
     }
 
+    @Override
+    public void onCreate() {
+
+    }
+
+    @Override
+    public void onDestroy() {
+
+    }
+
     public String getAuthUrl() {
         return AUTH_URL;
     }

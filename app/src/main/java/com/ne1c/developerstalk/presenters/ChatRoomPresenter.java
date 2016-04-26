@@ -13,7 +13,6 @@ import java.util.ArrayList;
 
 import javax.inject.Inject;
 
-import rx.Observable;
 import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
@@ -33,14 +32,21 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     @Override
     public void bindView(ChatView view) {
         mView = view;
-
-        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
+    }
+
+    @Override
+    public void onCreate() {
+        mSubscriptions = new CompositeSubscription();
+    }
+
+    @Override
+    public void onDestroy() {
+        mSubscriptions.unsubscribe();
     }
 
     public void sendMessage(String roomId, String text) {
@@ -84,7 +90,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
         mView.showListProgressBar();
 
-        Subscription sub = mDataManger.getNetworkMessages(roomId, limit)
+        Subscription sub = mDataManger.getMessages(roomId, limit, true)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(messages -> {
@@ -103,8 +109,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         final boolean[] fromNetwork = {false};
         final boolean[] fromDatabase = {false};
 
-        Subscription sub = Observable.concat(mDataManger.getDbMessages(roomId),
-                mDataManger.getNetworkMessages(roomId, limit))
+        Subscription sub = mDataManger.getMessages(roomId, limit, true)
                 .doOnNext(messages -> {
                     if (fromDatabase[0]) {
                         fromDatabase[0] = false;
@@ -133,6 +138,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 }, throwable -> {
                     mView.hideListProgress();
                     mView.hideTopProgressBar();
+                }, () -> {
+
                 });
 
         mSubscriptions.add(sub);
@@ -140,7 +147,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     // Load messages from database
     public void loadCachedMessages(String roomId) {
-        Subscription sub = mDataManger.getDbMessages(roomId)
+        Subscription sub = mDataManger.getMessages(roomId, 10, false)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showMessages, throwable -> {
@@ -157,10 +164,6 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         }
 
         Subscription sub = mDataManger.updateMessage(roomId, messageId, text)
-                .map(messageModel -> {
-                    mDataManger.insertMessageToDb(messageModel, roomId);
-                    return messageModel;
-                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showUpdateMessage, throwable -> {
@@ -168,10 +171,6 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 });
 
         mSubscriptions.add(sub);
-    }
-
-    public void insertMessageToDb(MessageModel model, String id) {
-        mDataManger.insertMessageToDb(model, id);
     }
 
     public void markMessageAsRead(int first, int last, String roomId, String[] ids) {
@@ -182,8 +181,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.readMessages(roomId, ids)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(response -> {
-                    if (response.success) {
+                .subscribe(success -> {
+                    if (success) {
                         mView.successReadMessages(first, last, roomId, ids.length - 1);
                     }
                 }, throwable -> {});

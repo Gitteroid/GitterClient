@@ -39,7 +39,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     @Override
     public void bindView(RoomsListView view) {
         mView = view;
-        mSubscriptions = new CompositeSubscription();
 
         Subscription sub = mSearchRoomSubject
                 .asObservable()
@@ -83,6 +82,15 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     @Override
     public void unbindView() {
         mView = null;
+    }
+
+    @Override
+    public void onCreate() {
+        mSubscriptions = new CompositeSubscription();
+    }
+
+    @Override
+    public void onDestroy() {
         mSubscriptions.unsubscribe();
     }
 
@@ -90,14 +98,13 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         return mAllRooms;
     }
 
-    public void loadRooms() {
+    public void loadRooms(boolean fresh) {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(R.string.no_network);
-            return;
         }
 
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms()
+        Subscription sub = mDataManger.getRooms(fresh)
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
 
@@ -114,14 +121,14 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(mView::showRooms, throwable -> {
-                        mView.showError(R.string.error);
+                    mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
     }
 
-    public void saveRooms(List<RoomModel> rooms) {
-        mDataManger.writeRoomsToDb(rooms);
+    public void saveRooms(ArrayList<RoomModel> rooms) {
+        mDataManger.updateRooms(rooms);
     }
 
     public ArrayList<RoomModel> getOnlyVisibleRooms(ArrayList<RoomModel> rooms) {
@@ -135,27 +142,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         return visibleList;
     }
 
-    public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms()
-                .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
-                    for (RoomModel room : roomModels) {
-                        if (!room.hide) {
-                            visibleList.add(room);
-                        }
-                    }
-
-                    return visibleList;
-                })
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms, throwable -> {
-                        mView.showError(R.string.error);
-                });
-
-        mSubscriptions.add(sub);
-    }
-
     public void searchRooms(String query) {
         if (!query.isEmpty()) {
             mView.showDialog();
@@ -164,15 +150,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
             mView.resultSearch(new ArrayList<>());
             mView.dismissDialog();
         }
-    }
-
-    public void searchRoomsWithOffset(String query, int offset) {
-            mDataManger.searchRoomsWithOffset(query, offset)
-                    .subscribeOn(mSchedulersFactory.io())
-                    .observeOn(mSchedulersFactory.androidMainThread())
-                    .subscribe(response -> {
-                        mView.resultSearchWithOffset(response.getResult());
-                    }, throwable -> {});
     }
 
     private class SearchModel {
