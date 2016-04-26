@@ -183,6 +183,10 @@ public class DataManger {
                 });
     }
 
+    public void updateRooms(ArrayList<RoomModel> rooms) {
+        mClientDatabase.updateRooms(getSynchronizedRooms(rooms, mCachedRooms));
+    }
+
     public Observable<Boolean> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
                 Utils.getInstance().getUserPref().id, roomId, ids)
