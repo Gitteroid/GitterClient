@@ -12,7 +12,6 @@ import com.ne1c.developerstalk.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -41,7 +40,7 @@ public class DataManger {
         Observable<ArrayList<RoomModel>> dbRooms = mClientDatabase.getRooms();
 
         if (fresh) {
-             return Observable.zip(serverRooms, dbRooms, (server, db) -> {
+            return Observable.zip(serverRooms, dbRooms, (server, db) -> {
                 ArrayList<RoomModel> synchronizedRooms = getSynchronizedRooms(server, db);
 
                 mClientDatabase.updateRooms(synchronizedRooms);
@@ -92,14 +91,6 @@ public class DataManger {
         return synchronizedRooms;
     }
 
-    public Observable<ArrayList<RoomModel>> getDbRooms() {
-        return mClientDatabase.getRooms();
-    }
-
-    public void writeRoomsToDb(List<RoomModel> rooms) {
-        mClientDatabase.insertRooms(rooms);
-    }
-
     public Observable<Boolean> leaveFromRoom(String roomId) {
         return mApi.leaveRoom(Utils.getInstance().getBearer(), roomId, Utils.getInstance().getUserPref().id)
                 .map(statusResponse -> statusResponse.success);
@@ -110,12 +101,12 @@ public class DataManger {
             mCurrentUser = Utils.getInstance().getUserPref();
 
             Observable<UserModel> currentUserFromNetwork = mApi.getCurrentUser(Utils.getInstance().getBearer())
-                    .map(userModels -> userModels.get(0))
-                    .map(userModel -> {
-                        Utils.getInstance().writeUserToPref(userModel);
-                        mCurrentUser = userModel;
+                    .map(userModels -> {
+                        UserModel user = userModels.get(0);
+                        Utils.getInstance().writeUserToPref(user);
+                        mCurrentUser = user;
 
-                        return userModel;
+                        return user;
                     });
 
             return Observable.concat(Observable.just(mCurrentUser), currentUserFromNetwork);
@@ -124,27 +115,41 @@ public class DataManger {
         return Observable.just(mCurrentUser);
     }
 
+    public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit, boolean fresh) {
+        if (fresh) {
+            return Observable.concat(mClientDatabase.getMessages(roomId),
+                    mApi.getMessagesRoom(Utils.getInstance().getAccessToken(), roomId, limit))
+                    .map(messageModels -> {
+                        mCachedMessages.put(roomId, messageModels);
+                        updateLastMessagesInDb(roomId, messageModels);
+
+                        return messageModels;
+                    });
+        } else {
+            if (mCachedMessages.containsKey(roomId)) {
+                return mClientDatabase.getMessages(roomId)
+                        .map((messageModels -> {
+                            mCachedMessages.put(roomId, messageModels);
+                            return messageModels;
+                        }));
+            } else {
+                return Observable.just(mCachedMessages.get(roomId));
+            }
+        }
+    }
+
     public Observable<ArrayList<MessageModel>> getMessagesBeforeId(String roomId, int limit, String beforeId) {
         return mApi.getMessagesBeforeId(Utils.getInstance().getBearer(),
                 roomId, limit, beforeId);
     }
 
-    public void insertMessageToDb(MessageModel model, String roomId) {
-        mClientDatabase.insertMessage(model, roomId);
-    }
-
-    public void insertMessagesToDb(ArrayList<MessageModel> messages, String roomId) {
+    public void updateLastMessagesInDb(String roomId, ArrayList<MessageModel> messages) {
         // Save last 10 messages
         if (messages.size() > 10) {
-            ArrayList<MessageModel> newList = new ArrayList<>();
-
-            for (int i = messages.size() - 11; i < messages.size(); i++) {
-                newList.add(messages.get(i));
-            }
-
-            mClientDatabase.insertMessages(newList, roomId);
+            mClientDatabase.updateMessages(roomId,
+                    (ArrayList<MessageModel>) messages.subList(messages.size() - 11, messages.size()));
         } else {
-            mClientDatabase.insertMessages(messages, roomId);
+            mClientDatabase.updateMessages(roomId, messages);
         }
     }
 
@@ -171,15 +176,10 @@ public class DataManger {
     }
 
     public Observable<MessageModel> updateMessage(String roomId, String messageId, String text) {
-        return mApi.updateMessage(Utils.getInstance().getBearer(), roomId, messageId, text);
-    }
-
-    public Observable<ArrayList<MessageModel>> getNetworkMessages(String roomId, int limit) {
-        return mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit)
-                .onErrorResumeNext(Observable.just(new ArrayList<>()))
-                .map(messageModels -> {
-                    insertMessagesToDb(messageModels, roomId);
-                    return messageModels;
+        return mApi.updateMessage(Utils.getInstance().getBearer(), roomId, messageId, text)
+                .map(model -> {
+                    mClientDatabase.updateSpecificMessage(roomId, model);
+                    return model;
                 });
     }
 
@@ -191,10 +191,6 @@ public class DataManger {
 
     public Observable<MessageModel> sendMessage(String roomId, String text) {
         return mApi.sendMessage(Utils.getInstance().getBearer(), roomId, text);
-    }
-
-    public Observable<ArrayList<MessageModel>> getDbMessages(String roomId) {
-        return mClientDatabase.getMessages(roomId);
     }
 
     public Observable<SearchRoomsResponse> searchRooms(String query) {
@@ -213,7 +209,7 @@ public class DataManger {
     public Observable<JoinRoomResponse> joinToRoom(String roomUri) {
         return mApi.joinRoom(Utils.getInstance().getBearer(), roomUri)
                 .map(joinRoomResponse -> {
-                    writeRoomsToDb(Collections.singletonList((RoomModel) joinRoomResponse));
+                    mClientDatabase.addSingleRoom(joinRoomResponse);
                     return joinRoomResponse;
                 });
     }
