@@ -1,14 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
-import android.graphics.Bitmap;
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.SimpleTarget;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.RoomMapper;
 import com.ne1c.developerstalk.models.data.RoomModel;
-import com.ne1c.developerstalk.models.data.UserModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.views.MainView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -45,54 +41,22 @@ public class MainPresenter extends BasePresenter<MainView> {
         mView = null;
     }
 
-    public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms()
-                .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
-                    for (RoomModel room : roomModels) {
-                        if (!room.hide) {
-                            visibleList.add(room);
-                        }
-                    }
+    @Override
+    public void onCreate() {
+    }
 
-                    return visibleList;
-                })
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms);
+    @Override
+    public void onDestroy() {
 
-        mSubscriptions.add(sub);
     }
 
     public void loadProfile() {
-        if (!Utils.getInstance().isNetworkConnected()) {
-            mView.showError(R.string.no_network);
-            return;
-        }
-
         Subscription sub = mDataManger.getProfile()
-                .map(userModels -> {
-                    UserModel user = userModels.get(0);
-                    Utils.getInstance().writeUserToPref(user);
-
-                    return user;
-                })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(userModel -> {
                     mView.showProfile(userModel);
-
-                    // Update avatar
-                    Glide.with(Utils.getInstance().getContext()).load(userModel.avatarUrlMedium).asBitmap()
-                            .into(new SimpleTarget<Bitmap>() {
-                                @Override
-                                public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
-                                    mView.updatePhoto(resource);
-                                }
-                            });
-                }, throwable -> {
-                    mView.showProfile(Utils.getInstance().getUserPref());
-                });
+                }, throwable -> { mView.showError(R.string.error); });
 
         mSubscriptions.add(sub);
     }
@@ -107,7 +71,7 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .subscribe(response -> {
-                    if (response.success) {
+                    if (response) {
                         mView.leavedFromRoom();
                     }
                 }, (throwable -> {
@@ -117,27 +81,27 @@ public class MainPresenter extends BasePresenter<MainView> {
         mSubscriptions.add(sub);
     }
 
-    public void loadRooms() {
+    public void loadRooms(boolean fresh) {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(R.string.no_network);
-            return;
         }
 
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms()
+        Subscription sub = mDataManger.getRooms(fresh)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
+                    ArrayList<RoomViewModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
                         if (!room.hide) {
-                            visibleList.add(room);
+                            visibleList.add(RoomMapper.mapToView(room));
                         }
                     }
 
                     return visibleList;
                 })
                 .subscribe(mView::showRooms, throwable -> {
+                    mView.showError(R.string.error_load_rooms);
                 });
 
         mSubscriptions.add(sub);

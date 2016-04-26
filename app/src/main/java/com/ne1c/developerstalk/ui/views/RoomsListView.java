@@ -2,13 +2,13 @@ package com.ne1c.developerstalk.ui.views;
 
 import android.support.annotation.StringRes;
 
-import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public interface RoomsListView {
-    void showRooms(List<RoomModel> rooms);
+    void showRooms(List<RoomViewModel> rooms, boolean fresh);
 
     void showError(@StringRes int resId);
 
@@ -18,7 +18,7 @@ public interface RoomsListView {
 
     void errorSearch();
 
-    void resultSearch(ArrayList<RoomModel> rooms);
+    void resultSearch(ArrayList<RoomViewModel> rooms);
 
-    void resultSearchWithOffset(ArrayList<RoomModel> rooms);
+    void resultSearchWithOffset(ArrayList<RoomViewModel> rooms);
 }

@@ -1,8 +1,10 @@
 package com.ne1c.developerstalk.presenters;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.dataproviders.DataManger;
+import com.ne1c.developerstalk.models.RoomMapper;
+import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.views.RoomsListView;
 import com.ne1c.developerstalk.utils.RxSchedulersFactory;
 import com.ne1c.developerstalk.utils.Utils;
@@ -20,7 +22,7 @@ import rx.subscriptions.CompositeSubscription;
 public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     // All rooms for edit
     // Set this list to adapter if user will edit
-    private ArrayList<RoomModel> mAllRooms = new ArrayList<>();
+    private ArrayList<RoomViewModel> mAllRooms = new ArrayList<>();
 
     private RoomsListView mView;
 
@@ -46,15 +48,16 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 .throttleLast(1, TimeUnit.SECONDS)
                 .flatMap(query -> mDataManger.searchRooms(query))
                 .map(response -> {
+                    // Show without exist in db
                     ArrayList<RoomModel> responseRooms = response.getResult();
-                    ArrayList<RoomModel> filterRooms = new ArrayList<>();
+                    ArrayList<RoomViewModel> filterRooms = new ArrayList<>();
 
                     boolean existInDb;
 
                     for (RoomModel responseRoom : responseRooms) {
                         existInDb = false;
 
-                        for (RoomModel dbRoom : mAllRooms) {
+                        for (RoomViewModel dbRoom : mAllRooms) {
                             if (responseRoom.id.equals(dbRoom.id)) {
                                 existInDb = true;
                                 break;
@@ -62,7 +65,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                         }
 
                         if (!existInDb) {
-                            filterRooms.add(responseRoom);
+                            filterRooms.add(RoomMapper.mapToView(responseRoom));
                         }
                     }
 
@@ -82,28 +85,39 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
     @Override
     public void unbindView() {
-        mView = null;
         mSubscriptions.unsubscribe();
+
+        mView = null;
     }
 
-    public List<RoomModel> getAllRooms() {
+    @Override
+    public void onCreate() {
+
+    }
+
+    @Override
+    public void onDestroy() {
+
+    }
+
+    public List<RoomViewModel> getAllRooms() {
         return mAllRooms;
     }
 
-    public void loadRooms() {
+    public void loadRooms(boolean fresh) {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(R.string.no_network);
-            return;
         }
 
         @SuppressWarnings("unchecked")
-        Subscription sub = mDataManger.getRooms()
+        Subscription sub = mDataManger.getRooms(fresh)
+                .map(RoomMapper::mapToView)
                 .map(roomModels -> {
-                    mAllRooms = (ArrayList<RoomModel>) roomModels.clone();
+                    mAllRooms = (ArrayList<RoomViewModel>) roomModels.clone();
 
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
+                    ArrayList<RoomViewModel> visibleList = new ArrayList<>();
 
-                    for (RoomModel room : roomModels) {
+                    for (RoomViewModel room : roomModels) {
                         if (!room.hide) {
                             visibleList.add(room);
                         }
@@ -113,47 +127,28 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms, throwable -> {
-                        mView.showError(R.string.error);
+                .subscribe(roomViewModels -> {
+                        mView.showRooms(roomViewModels, fresh);
+                }, throwable -> {
+                    mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);
     }
 
-    public void saveRooms(List<RoomModel> rooms) {
-        mDataManger.writeRoomsToDb(rooms);
+    public void saveRooms(ArrayList<RoomViewModel> rooms) {
+        mDataManger.updateRooms(rooms, true);
     }
 
-    public ArrayList<RoomModel> getOnlyVisibleRooms(ArrayList<RoomModel> rooms) {
-        ArrayList<RoomModel> visibleList = new ArrayList<>();
-        for (RoomModel room : rooms) {
+    public ArrayList<RoomViewModel> getOnlyVisibleRooms(ArrayList<RoomViewModel> rooms) {
+        ArrayList<RoomViewModel> visibleList = new ArrayList<>();
+        for (RoomViewModel room : rooms) {
             if (!room.hide) {
                 visibleList.add(room);
             }
         }
 
         return visibleList;
-    }
-
-    public void loadCachedRooms() {
-        Subscription sub = mDataManger.getDbRooms()
-                .map(roomModels -> {
-                    ArrayList<RoomModel> visibleList = new ArrayList<>();
-                    for (RoomModel room : roomModels) {
-                        if (!room.hide) {
-                            visibleList.add(room);
-                        }
-                    }
-
-                    return visibleList;
-                })
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms, throwable -> {
-                        mView.showError(R.string.error);
-                });
-
-        mSubscriptions.add(sub);
     }
 
     public void searchRooms(String query) {
@@ -163,25 +158,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         } else {
             mView.resultSearch(new ArrayList<>());
             mView.dismissDialog();
-        }
-    }
-
-    public void searchRoomsWithOffset(String query, int offset) {
-            mDataManger.searchRoomsWithOffset(query, offset)
-                    .subscribeOn(mSchedulersFactory.io())
-                    .observeOn(mSchedulersFactory.androidMainThread())
-                    .subscribe(response -> {
-                        mView.resultSearchWithOffset(response.getResult());
-                    }, throwable -> {});
-    }
-
-    private class SearchModel {
-        String query;
-        int offset;
-
-        public SearchModel(String query, int offset) {
-            this.query = query;
-            this.offset = offset;
         }
     }
 }

@@ -1,22 +1,22 @@
 package com.ne1c.developerstalk.events;
 
-import com.ne1c.developerstalk.models.data.MessageModel;
-import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 
 public class NewMessageEvent {
-    private MessageModel mMessageModel;
-    private RoomModel mRoomModel;
+    private MessageViewModel mMessageModel;
+    private RoomViewModel mRoomModel;
 
-    public NewMessageEvent(MessageModel messageModel, RoomModel roomModel) {
+    public NewMessageEvent(MessageViewModel messageModel, RoomViewModel roomModel) {
         mMessageModel = messageModel;
         mRoomModel = roomModel;
     }
 
-    public MessageModel getMessage() {
+    public MessageViewModel getMessage() {
         return mMessageModel;
     }
 
-    public RoomModel getRoom() {
+    public RoomViewModel getRoom() {
         return mRoomModel;
     }
 }

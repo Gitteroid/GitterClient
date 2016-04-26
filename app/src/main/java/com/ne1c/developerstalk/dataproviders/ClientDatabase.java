@@ -56,63 +56,63 @@ public class ClientDatabase {
     public static final String COLUMN_AVATAR_SMALL_URL = "avatar_small_url";
     public static final String COLUMN_AVATAR_MEDIUM_URL = "avatar_medium_url";
 
-    private DBWorker mDBWorker;
     private SQLiteDatabase mDatabase;
 
     public ClientDatabase(Context context) {
-        mDBWorker = new DBWorker(context, DB_NAME, DB_VERSION);
-        mDatabase = mDBWorker.getWritableDatabase();
+        DBWorker DBWorker = new DBWorker(context, DB_NAME, DB_VERSION);
+        mDatabase = DBWorker.getWritableDatabase();
     }
 
     public Observable<ArrayList<RoomModel>> getRooms() {
-        return Observable.create(subscriber -> {
-            ArrayList<RoomModel> list = new ArrayList<>();
+        return Observable.fromCallable(this::getSyncRooms);
+    }
 
-            Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
-            try {
-                if (cursor.moveToFirst()) {
-                    int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
-                    int columnName = cursor.getColumnIndex(COLUMN_NAME);
-                    int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
-                    int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
-                    int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
-                    int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
-                    int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
-                    int columnUrl = cursor.getColumnIndex(COLUMN_URL);
-                    int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
-                    int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
-                    int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
+    public ArrayList<RoomModel> getSyncRooms() {
+        ArrayList<RoomModel> list = new ArrayList<>();
 
-                    do {
-                        RoomModel model = new RoomModel();
-                        model.id = cursor.getString(columnId);
-                        model.name = cursor.getString(columnName);
-                        model.topic = cursor.getString(columnTopic);
-                        model.oneToOne = cursor.getInt(columnOneToOne) == 1;
-                        model.userCount = cursor.getInt(columnUsersCount);
-                        model.unreadItems = cursor.getInt(columnUnreadItems);
-                        model.url = cursor.getString(columnUrl);
-                        model.v = cursor.getInt(columnVersion);
-                        model.hide = cursor.getInt(columnHide) == 1;
-                        model.listPosition = cursor.getInt(columnListPos);
+        Cursor cursor = mDatabase.query(ROOM_TABLE, null, null, null, null, null, null, null);
+        try {
+            if (cursor.moveToFirst()) {
+                int columnId = cursor.getColumnIndex(COLUMN_ROOM_ID);
+                int columnName = cursor.getColumnIndex(COLUMN_NAME);
+                int columnTopic = cursor.getColumnIndex(COLUMN_TOPIC);
+                int columnUsersIds = cursor.getColumnIndex(COLUMN_USERS_IDS);
+                int columnOneToOne = cursor.getColumnIndex(COLUMN_ONE_TO_ONE);
+                int columnUsersCount = cursor.getColumnIndex(COLUMN_USERS_COUNT);
+                int columnUnreadItems = cursor.getColumnIndex(COLUMN_UNREAD_ITEMS);
+                int columnUrl = cursor.getColumnIndex(COLUMN_URL);
+                int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
+                int columnHide = cursor.getColumnIndex(COLUMN_HIDE);
+                int columnListPos = cursor.getColumnIndex(COLUMN_LIST_POSITION);
 
-                        String idsStr = cursor.getString(columnUsersIds);
-                        String[] idsArr = getUsersIds(idsStr);
-                        model.users = getUsers(idsArr);
+                do {
+                    RoomModel model = new RoomModel();
+                    model.id = cursor.getString(columnId);
+                    model.name = cursor.getString(columnName);
+                    model.topic = cursor.getString(columnTopic);
+                    model.oneToOne = cursor.getInt(columnOneToOne) == 1;
+                    model.userCount = cursor.getInt(columnUsersCount);
+                    model.unreadItems = cursor.getInt(columnUnreadItems);
+                    model.url = cursor.getString(columnUrl);
+                    model.v = cursor.getInt(columnVersion);
+                    model.hide = cursor.getInt(columnHide) == 1;
+                    model.listPosition = cursor.getInt(columnListPos);
 
-                        list.add(model);
-                    } while (cursor.moveToNext());
+                    String idsStr = cursor.getString(columnUsersIds);
+                    String[] idsArr = getUsersIds(idsStr);
+                    model.users = getUsers(idsArr);
 
-                }
-            } finally {
-                cursor.close();
+                    list.add(model);
+                } while (cursor.moveToNext());
+
             }
+        } finally {
+            cursor.close();
+        }
 
-            Collections.sort(list, new RoomModel.SortedByPosition());
+        Collections.sort(list, new RoomModel.SortedByPosition());
 
-            subscriber.onNext(list);
-            subscriber.onCompleted();
-        });
+        return list;
     }
 
     public UserModel getUser(String userId) {
@@ -126,16 +126,14 @@ public class ClientDatabase {
                 int columnAvatarSmall = cursor.getColumnIndex(COLUMN_AVATAR_SMALL_URL);
                 int columnAvatarMedium = cursor.getColumnIndex(COLUMN_AVATAR_MEDIUM_URL);
 
-                do {
-                    UserModel model = new UserModel();
-                    model.id = cursor.getString(columnUserId);
-                    model.username = cursor.getString(columnUsername);
-                    model.displayName = cursor.getString(columnDisplayName);
-                    model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
-                    model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
+                UserModel model = new UserModel();
+                model.id = cursor.getString(columnUserId);
+                model.username = cursor.getString(columnUsername);
+                model.displayName = cursor.getString(columnDisplayName);
+                model.avatarUrlMedium = cursor.getString(columnAvatarMedium);
+                model.avatarUrlSmall = cursor.getString(columnAvatarSmall);
 
-                    return model;
-                } while (cursor.moveToNext());
+                return model;
             }
         } finally {
             cursor.close();
@@ -174,10 +172,34 @@ public class ClientDatabase {
         return list;
     }
 
-    public void insertMessage(MessageModel model, String roomId) {
-        ArrayList<MessageModel> list = new ArrayList<>();
-        list.add(model);
-        insertMessages(list, roomId);
+    public void addSingleMessage(String roomId, MessageModel model) {
+        mDatabase.beginTransaction();
+
+        ContentValues cv = new ContentValues();
+        cv.put(COLUMN_MESSAGE_ID, model.id);
+        cv.put(COLUMN_ROOM_ID, roomId);
+        cv.put(COLUMN_TEXT, model.text);
+        cv.put(COLUMN_HTML, model.html);
+        cv.put(COLUMN_SENT, model.sent);
+        cv.put(COLUMN_EDITED_AT, model.editedAt);
+        cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
+        cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
+        cv.put(COLUMN_READ_BY, model.readBy);
+        cv.put(COLUMN_VERSION, model.v);
+
+        String urls = "";
+        for (MessageModel.Urls url : model.urls) {
+            urls += url.url + ";";
+        }
+
+        cv.put(COLUMN_URLS, urls);
+
+        mDatabase.insert(MESSAGES_TABLE, null, cv);
+
+        insertUsers(new ArrayList<>(Collections.singletonList(model.fromUser)));
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
     }
 
     public Observable<ArrayList<MessageModel>> getMessages(String roomId) {
@@ -255,61 +277,6 @@ public class ClientDatabase {
         return list;
     }
 
-    // Method get messages from cached table and move their to messages table
-    public Observable<ArrayList<MessageModel>> getCachedMessagesModel(String roomId) {
-        return Observable.create(subscriber -> {
-            ArrayList<MessageModel> list = new ArrayList<>();
-            Cursor cursor = mDatabase.rawQuery(String.format("SELECT * FROM %s WHERE %s = \'%s\';",
-                    CACHED_MESSAGES_TABLE, COLUMN_ROOM_ID, roomId), null);
-
-            int difference = 1;
-            try {
-                if (cursor.moveToPosition(cursor.getCount() - difference)) {
-                    int columnMessageId = cursor.getColumnIndex(COLUMN_MESSAGE_ID);
-                    int columnText = cursor.getColumnIndex(COLUMN_TEXT);
-                    int columnHtml = cursor.getColumnIndex(COLUMN_HTML);
-                    int columnSent = cursor.getColumnIndex(COLUMN_SENT);
-                    int columnEditedAt = cursor.getColumnIndex(COLUMN_EDITED_AT);
-                    int columnFromUserId = cursor.getColumnIndex(COLUMN_FROM_USER_ID);
-                    int columnUnread = cursor.getColumnIndex(COLUMN_UNREAD);
-                    int columnReadBy = cursor.getColumnIndex(COLUMN_READ_BY);
-                    int columnVersion = cursor.getColumnIndex(COLUMN_VERSION);
-                    int columnUrls = cursor.getColumnIndex(COLUMN_URLS);
-
-                    do {
-                        MessageModel model = new MessageModel();
-                        model.id = cursor.getString(columnMessageId);
-                        model.text = cursor.getString(columnText);
-                        model.html = cursor.getString(columnHtml);
-                        model.sent = cursor.getString(columnSent);
-                        model.editedAt = cursor.getString(columnEditedAt);
-                        model.fromUser = getUser(cursor.getString(columnFromUserId));
-                        model.unread = cursor.getInt(columnUnread) == 1;
-                        model.readBy = cursor.getInt(columnReadBy);
-                        model.v = cursor.getInt(columnVersion);
-                        String url = cursor.getString(columnUrls);
-                        model.urls = getUrls(url);
-
-                        list.add(model);
-                        difference += 1;
-                    } while (cursor.moveToPosition(cursor.getCount() - difference));
-                }
-            } finally {
-                cursor.close();
-            }
-
-            insertMessages(list, roomId);
-            clearCachedMessages(roomId);
-
-            subscriber.onNext(list);
-            subscriber.onCompleted();
-        });
-    }
-
-    public void clearCachedMessages(String roomId) {
-        mDatabase.delete(CACHED_MESSAGES_TABLE, COLUMN_ROOM_ID + " = " + roomId, null);
-    }
-
     public void insertUsers(ArrayList<UserModel> list) {
         mDatabase.beginTransaction();
 
@@ -328,136 +295,142 @@ public class ClientDatabase {
         mDatabase.endTransaction();
     }
 
-    public void insertRooms(List<RoomModel> list) {
-        mDatabase.beginTransaction();
-
-        removeOldRooms(list);
-
-        // Set position if was not set
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).listPosition == -1) {
-                list.get(i).listPosition = i;
-            }
-        }
-
-        for (RoomModel model : list) {
-            ContentValues cv = new ContentValues();
-            cv.put(COLUMN_ROOM_ID, model.id);
-            cv.put(COLUMN_NAME, model.name);
-            cv.put(COLUMN_TOPIC, model.topic);
-            cv.put(COLUMN_ONE_TO_ONE, model.oneToOne ? 1 : 0);
-            cv.put(COLUMN_USERS_COUNT, model.userCount);
-            cv.put(COLUMN_UNREAD_ITEMS, model.unreadItems);
-            cv.put(COLUMN_URL, model.url);
-            cv.put(COLUMN_VERSION, model.v);
-            cv.put(COLUMN_HIDE, model.hide ? 1 : 0);
-            cv.put(COLUMN_LIST_POSITION, model.listPosition);
-
-            String userIds = "";
-            for (UserModel user : model.users) {
-                userIds += user.id + ";";
-            }
-            cv.put(COLUMN_USERS_IDS, userIds);
-
-            mDatabase.insertWithOnConflict(ROOM_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
-        }
-
-        mDatabase.setTransactionSuccessful();
-        mDatabase.endTransaction();
-    }
-
-    public void insertCachedMessages(ArrayList<MessageModel> list, String roomId) {
-        // Write users once, that will not write, after every iteration of loop
-        ArrayList<UserModel> users = new ArrayList<>();
-
-        mDatabase.beginTransaction();
-
-        for (MessageModel model : list) {
-            ContentValues cv = new ContentValues();
-            cv.put(COLUMN_MESSAGE_ID, model.id);
-            cv.put(COLUMN_ROOM_ID, roomId);
-            cv.put(COLUMN_TEXT, model.text);
-            cv.put(COLUMN_HTML, model.html);
-            cv.put(COLUMN_SENT, model.sent);
-            cv.put(COLUMN_EDITED_AT, model.editedAt);
-            cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
-            cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
-            cv.put(COLUMN_READ_BY, model.readBy);
-            cv.put(COLUMN_VERSION, model.v);
-
-            String urls = "";
-            for (MessageModel.Urls url : model.urls) {
-                urls += url.url + ";";
-            }
-
-            cv.put(COLUMN_URLS, urls);
-
-            users.add(model.fromUser);
-
-            mDatabase.insertWithOnConflict(CACHED_MESSAGES_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
-        }
-
-        mDatabase.setTransactionSuccessful();
-        mDatabase.endTransaction();
-
-        insertUsers(users);
-    }
-
-    public void insertMessages(ArrayList<MessageModel> list, String roomId) {
-        // Write users once, that will not write, after every iteration of loop
-        ArrayList<UserModel> users = new ArrayList<>();
-
-        mDatabase.beginTransaction();
-
-        for (MessageModel model : list) {
-            ContentValues cv = new ContentValues();
-            cv.put(COLUMN_MESSAGE_ID, model.id);
-            cv.put(COLUMN_ROOM_ID, roomId);
-            cv.put(COLUMN_TEXT, model.text);
-            cv.put(COLUMN_HTML, model.html);
-            cv.put(COLUMN_SENT, model.sent);
-            cv.put(COLUMN_EDITED_AT, model.editedAt);
-            cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
-            cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
-            cv.put(COLUMN_READ_BY, model.readBy);
-            cv.put(COLUMN_VERSION, model.v);
-
-            String urls = "";
-            for (MessageModel.Urls url : model.urls) {
-                urls += url.url + ";";
-            }
-
-            cv.put(COLUMN_URLS, urls);
-
-            users.add(model.fromUser);
-
-            mDatabase.insertWithOnConflict(MESSAGES_TABLE, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
-        }
-
-        mDatabase.setTransactionSuccessful();
-        mDatabase.endTransaction();
-
-        insertUsers(users);
-    }
-
     public void close() {
         mDatabase.close();
     }
 
-    // Remove old rooms, which not exist in new list of rooms
-    public void removeOldRooms(List<RoomModel> newList) {
-        getRooms().subscribe(roomModels -> {
-            mDatabase.beginTransaction();
+    // Send param only with synchronized rooms
+    public void updateRooms(ArrayList<RoomModel> synchronizedRooms) {
+        mDatabase.beginTransaction();
 
-            for (RoomModel model : roomModels) {
-                if (!newList.contains(model)) {
-                    mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[]{model.id});
-                }
+        mDatabase.delete(ROOM_TABLE, null, null);
+
+        for (RoomModel room : synchronizedRooms) {
+            ContentValues cv = new ContentValues();
+            cv.put(COLUMN_ROOM_ID, room.id);
+            cv.put(COLUMN_NAME, room.name);
+            cv.put(COLUMN_TOPIC, room.topic);
+            cv.put(COLUMN_ONE_TO_ONE, room.oneToOne ? 1 : 0);
+            cv.put(COLUMN_USERS_COUNT, room.userCount);
+            cv.put(COLUMN_UNREAD_ITEMS, room.unreadItems);
+            cv.put(COLUMN_URL, room.url);
+            cv.put(COLUMN_VERSION, room.v);
+            cv.put(COLUMN_HIDE, room.hide ? 1 : 0);
+            cv.put(COLUMN_LIST_POSITION, room.listPosition);
+
+            String userIds = "";
+            for (UserModel user : room.users) {
+                userIds += user.id + ";";
+            }
+            cv.put(COLUMN_USERS_IDS, userIds);
+
+            mDatabase.insert(ROOM_TABLE, null, cv);
+        }
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+    }
+
+    public void addSingleRoom(RoomModel room) {
+        mDatabase.beginTransaction();
+
+        ContentValues cv = new ContentValues();
+        cv.put(COLUMN_ROOM_ID, room.id);
+        cv.put(COLUMN_NAME, room.name);
+        cv.put(COLUMN_TOPIC, room.topic);
+        cv.put(COLUMN_ONE_TO_ONE, room.oneToOne ? 1 : 0);
+        cv.put(COLUMN_USERS_COUNT, room.userCount);
+        cv.put(COLUMN_UNREAD_ITEMS, room.unreadItems);
+        cv.put(COLUMN_URL, room.url);
+        cv.put(COLUMN_VERSION, room.v);
+        cv.put(COLUMN_HIDE, room.hide ? 1 : 0);
+        cv.put(COLUMN_LIST_POSITION, room.listPosition);
+
+        String userIds = "";
+        for (UserModel user : room.users) {
+            userIds += user.id + ";";
+        }
+        cv.put(COLUMN_USERS_IDS, userIds);
+
+        mDatabase.insert(ROOM_TABLE, null, cv);
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+    }
+
+    public void updateMessages(String roomId, ArrayList<MessageModel> messageModels) {
+        mDatabase.beginTransaction();
+
+        mDatabase.delete(MESSAGES_TABLE, COLUMN_ROOM_ID + " = ?", new String[]{roomId});
+
+        ArrayList<UserModel> users = new ArrayList<>();
+
+        for (MessageModel model : messageModels) {
+            ContentValues cv = new ContentValues();
+            cv.put(COLUMN_MESSAGE_ID, model.id);
+            cv.put(COLUMN_ROOM_ID, roomId);
+            cv.put(COLUMN_TEXT, model.text);
+            cv.put(COLUMN_HTML, model.html);
+            cv.put(COLUMN_SENT, model.sent);
+            cv.put(COLUMN_EDITED_AT, model.editedAt);
+            cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
+            cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
+            cv.put(COLUMN_READ_BY, model.readBy);
+            cv.put(COLUMN_VERSION, model.v);
+
+            String urls = "";
+            for (MessageModel.Urls url : model.urls) {
+                urls += url.url + ";";
             }
 
-            mDatabase.setTransactionSuccessful();
-            mDatabase.endTransaction();
-        });
+            cv.put(COLUMN_URLS, urls);
+
+            users.add(model.fromUser);
+
+            mDatabase.insert(MESSAGES_TABLE, null, cv);
+        }
+
+        insertUsers(users);
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+    }
+
+    public void updateSpecificMessage(String roomId, MessageModel model) {
+        mDatabase.beginTransaction();
+
+        ContentValues cv = new ContentValues();
+        cv.put(COLUMN_MESSAGE_ID, model.id);
+        cv.put(COLUMN_ROOM_ID, roomId);
+        cv.put(COLUMN_TEXT, model.text);
+        cv.put(COLUMN_HTML, model.html);
+        cv.put(COLUMN_SENT, model.sent);
+        cv.put(COLUMN_EDITED_AT, model.editedAt);
+        cv.put(COLUMN_FROM_USER_ID, model.fromUser.id);
+        cv.put(COLUMN_UNREAD, model.unread ? 1 : 0);
+        cv.put(COLUMN_READ_BY, model.readBy);
+        cv.put(COLUMN_VERSION, model.v);
+
+        String urls = "";
+        for (MessageModel.Urls url : model.urls) {
+            urls += url.url + ";";
+        }
+
+        cv.put(COLUMN_URLS, urls);
+
+        mDatabase.update(MESSAGES_TABLE, cv, COLUMN_MESSAGE_ID + " = ?", new String[]{model.id});
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
+    }
+
+    public void removeRoom(String roomId) {
+        mDatabase.beginTransaction();
+
+        mDatabase.delete(ROOM_TABLE, COLUMN_ROOM_ID + " = ?", new String[] {roomId});
+
+        mDatabase.setTransactionSuccessful();
+        mDatabase.endTransaction();
     }
 
     private class DBWorker extends SQLiteOpenHelper {

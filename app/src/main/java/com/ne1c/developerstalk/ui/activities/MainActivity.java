@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
@@ -14,13 +14,10 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.resource.drawable.GlideDrawable;
-import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.SimpleTarget;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -32,6 +29,8 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.mikepenz.materialdrawer.util.AbstractDrawerImageLoader;
+import com.mikepenz.materialdrawer.util.DrawerImageLoader;
 import com.ne1c.developerstalk.Application;
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerMainComponent;
@@ -40,9 +39,11 @@ import com.ne1c.developerstalk.di.modules.MainPresenterModule;
 import com.ne1c.developerstalk.events.NewMessageEvent;
 import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
+import com.ne1c.developerstalk.models.MessageMapper;
 import com.ne1c.developerstalk.models.data.MessageModel;
 import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.UserModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.presenters.MainPresenter;
 import com.ne1c.developerstalk.services.NotificationService;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
@@ -73,10 +74,10 @@ public class MainActivity extends BaseActivity implements MainView {
     private Drawer mDrawer;
     private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
     private AccountHeader mAccountHeader;
-    private IProfile mMainProfile;
+    private IProfile mMainProfile = new ProfileDrawerItem();
 
-    private ArrayList<RoomModel> mRoomsList = new ArrayList<>();
-    private RoomModel mActiveRoom;
+    private ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
+    private RoomViewModel mActiveRoom;
 
     private int selectedNavItem = -1; // Default, item not selected
     private boolean loadAvatarFromNetworkFlag;
@@ -99,13 +100,27 @@ public class MainActivity extends BaseActivity implements MainView {
 
         setContentView(R.layout.activity_main);
 
+        mPresenter.onCreate();
         mPresenter.bindView(this);
+
 
         EventBus.getDefault().register(this);
         initView();
         initSavedInstanceState(savedInstanceState);
 
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
+
+        DrawerImageLoader.init(new AbstractDrawerImageLoader() {
+            @Override
+            public void set(ImageView imageView, Uri uri, Drawable placeholder) {
+                Glide.with(imageView.getContext()).load(uri).placeholder(placeholder).into(imageView);
+            }
+
+            @Override
+            public void cancel(ImageView imageView) {
+                Glide.clear(imageView);
+            }
+        });
     }
 
     @Override
@@ -141,10 +156,10 @@ public class MainActivity extends BaseActivity implements MainView {
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
 
-            mPresenter.loadCachedRooms();
+            mPresenter.loadRooms(false);
 
             if (Utils.getInstance().isNetworkConnected()) {
-                mPresenter.loadRooms();
+                mPresenter.loadRooms(true);
             }
 
             mPresenter.loadProfile();
@@ -156,7 +171,7 @@ public class MainActivity extends BaseActivity implements MainView {
                     getResources().getColor(R.color.md_green_700));
             badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
-            for (RoomModel room : mRoomsList) {
+            for (RoomViewModel room : mRoomsList) {
                 if (room.unreadItems > 0) {
                     String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                     mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
@@ -207,7 +222,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         // If get intent from notification
         if (mRoomsList != null) {
-            RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
+            RoomViewModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
             // If selected room not equal room id from notification, than load room
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
@@ -234,13 +249,7 @@ public class MainActivity extends BaseActivity implements MainView {
         DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
         mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
 
-        UserModel model = Utils.getInstance().getUserPref();
-        if (!model.id.isEmpty()) {
-            mMainProfile = new ProfileDrawerItem().withName(model.username);
-            loadImageFromCache();
-        } else {
-            mMainProfile = new ProfileDrawerItem().withName("Anonymous");
-        }
+        mPresenter.loadProfile();
 
         mAccountHeader = new AccountHeaderBuilder()
                 .withActivity(this)
@@ -363,7 +372,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 if (mActiveRoom != null) {
                     EventBus.getDefault().post(new RefreshMessagesRoomEvent(mActiveRoom));
 
-                    mPresenter.loadRooms();
+                    mPresenter.loadRooms(true);
                 }
                 break;
             case R.id.action_leave:
@@ -386,7 +395,7 @@ public class MainActivity extends BaseActivity implements MainView {
         return super.onCreateOptionsMenu(menu);
     }
 
-    private void setItemsDrawer(ArrayList<RoomModel> data) {
+    private void setItemsDrawer(ArrayList<RoomViewModel> data) {
         mRoomsList.clear();
         mRoomsList.addAll(data);
 
@@ -400,7 +409,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 getResources().getColor(R.color.md_green_700));
         badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
-        for (RoomModel room : mRoomsList) {
+        for (RoomViewModel room : mRoomsList) {
             if (room.unreadItems > 0) {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                 mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
@@ -464,22 +473,10 @@ public class MainActivity extends BaseActivity implements MainView {
         unregisterReceiver(newMessageReceiver);
 
         mPresenter.unbindView();
+        mPresenter.onDestroy();
 
         mComponent = null;
         super.onDestroy();
-    }
-
-    private void loadImageFromCache() {
-        Glide.with(this).load(Utils.getInstance().getUserPref().avatarUrlMedium).diskCacheStrategy(DiskCacheStrategy.RESULT).into(new SimpleTarget<GlideDrawable>() {
-            @Override
-            public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
-                if (!loadAvatarFromNetworkFlag) {
-                    mAccountHeader.removeProfile(mMainProfile);
-                    mMainProfile.withIcon(resource.getCurrent());
-                    mAccountHeader.addProfiles(mMainProfile);
-                }
-            }
-        });
     }
 
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
@@ -503,7 +500,7 @@ public class MainActivity extends BaseActivity implements MainView {
                     mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
                     mDrawer.getAdapter().notifyDataSetChanged();
 
-                    EventBus.getDefault().post(new NewMessageEvent(message, mRoomsList.get(i)));
+                    EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
                 }
             }
         }
@@ -535,17 +532,17 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     @Override
-    public void showRooms(ArrayList<RoomModel> rooms) {
+    public void showRooms(ArrayList<RoomViewModel> rooms) {
         setItemsDrawer(rooms);
     }
 
     @Override
     public void showProfile(UserModel user) {
-        // Update profile
-        // updateProfileByIdentifier() not working
-        mAccountHeader.removeProfile(mMainProfile);
         mMainProfile.withName(user.username);
-        mAccountHeader.addProfiles(mMainProfile);
+        mMainProfile.withEmail(user.displayName);
+        mMainProfile.withIcon(user.avatarUrlMedium);
+
+        mAccountHeader.updateProfile(mMainProfile);
     }
 
     @Override
@@ -556,13 +553,5 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void leavedFromRoom() {
         finish();
-    }
-
-    @Override
-    public void updatePhoto(Bitmap photo) {
-        mAccountHeader.removeProfile(mMainProfile);
-        mMainProfile.withIcon(photo);
-        mAccountHeader.addProfiles(mMainProfile);
-        loadAvatarFromNetworkFlag = true;
     }
 }
