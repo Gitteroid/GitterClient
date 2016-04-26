@@ -41,6 +41,7 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     @Override
     public void bindView(RoomsListView view) {
         mView = view;
+        mSubscriptions = new CompositeSubscription();
 
         Subscription sub = mSearchRoomSubject
                 .asObservable()
@@ -84,17 +85,19 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
     @Override
     public void unbindView() {
+        mSubscriptions.unsubscribe();
+
         mView = null;
     }
 
     @Override
     public void onCreate() {
-        mSubscriptions = new CompositeSubscription();
+
     }
 
     @Override
     public void onDestroy() {
-        mSubscriptions.unsubscribe();
+
     }
 
     public List<RoomViewModel> getAllRooms() {
@@ -108,14 +111,15 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
 
         @SuppressWarnings("unchecked")
         Subscription sub = mDataManger.getRooms(fresh)
+                .map(RoomMapper::mapToView)
                 .map(roomModels -> {
                     mAllRooms = (ArrayList<RoomViewModel>) roomModels.clone();
 
                     ArrayList<RoomViewModel> visibleList = new ArrayList<>();
 
-                    for (RoomModel room : roomModels) {
+                    for (RoomViewModel room : roomModels) {
                         if (!room.hide) {
-                            visibleList.add(RoomMapper.mapToView(room));
+                            visibleList.add(room);
                         }
                     }
 
@@ -123,7 +127,9 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
                 })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
-                .subscribe(mView::showRooms, throwable -> {
+                .subscribe(roomViewModels -> {
+                        mView.showRooms(roomViewModels, fresh);
+                }, throwable -> {
                     mView.showError(R.string.error);
                 });
 
@@ -152,16 +158,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
         } else {
             mView.resultSearch(new ArrayList<>());
             mView.dismissDialog();
-        }
-    }
-
-    private class SearchModel {
-        String query;
-        int offset;
-
-        public SearchModel(String query, int offset) {
-            this.query = query;
-            this.offset = offset;
         }
     }
 }

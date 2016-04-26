@@ -1,12 +1,12 @@
 package com.ne1c.developerstalk.ui.activities;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 
 import com.ne1c.developerstalk.R;
-import com.ne1c.developerstalk.models.data.RoomModel;
+import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.ui.DrawShadowFrameLayout;
 import com.ne1c.developerstalk.ui.fragments.ChatRoomFragment;
 import com.ne1c.developerstalk.utils.UIUtils;
@@ -23,7 +23,7 @@ public class OverviewRoomActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        RoomModel roomModel = getIntent().getParcelableExtra("room");
+        RoomViewModel roomModel = getIntent().getParcelableExtra("room");
 
         getFragmentManager()
                 .beginTransaction()

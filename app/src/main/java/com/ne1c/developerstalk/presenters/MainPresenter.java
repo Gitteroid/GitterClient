@@ -32,21 +32,22 @@ public class MainPresenter extends BasePresenter<MainView> {
     @Override
     public void bindView(MainView view) {
         mView = view;
+        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
+        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
     public void onCreate() {
-        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void onDestroy() {
-        mSubscriptions.unsubscribe();
+
     }
 
     public void loadProfile() {

@@ -30,7 +30,6 @@ import com.ne1c.developerstalk.events.ReadMessagesEvent;
 import com.ne1c.developerstalk.events.RefreshMessagesRoomEvent;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
 import com.ne1c.developerstalk.models.data.MessageModel;
-import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.data.StatusMessage;
 import com.ne1c.developerstalk.models.view.MessageViewModel;
 import com.ne1c.developerstalk.models.view.RoomViewModel;
@@ -383,7 +382,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     public void onEvent(UpdateMessageEvent message) {
-        MessageModel newMessage = message.getMessageModel();
+        MessageViewModel newMessage = message.getMessageModel();
 
         if (newMessage != null) {
             mPresenter.updateMessages(mRoom.id, newMessage.id, newMessage.text);
@@ -595,7 +594,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mComponent.inject(this);
     }
 
-    public static ChatRoomFragment newInstance(RoomModel overviewRoom) {
+    public static ChatRoomFragment newInstance(RoomViewModel overviewRoom) {
         Bundle bundle = new Bundle();
         bundle.putParcelable("overviewRoom", overviewRoom);
 

@@ -10,8 +10,8 @@ public class MessageMapper {
         MessageViewModel viewModel = new MessageViewModel();
 
         viewModel.id = model.id;
-        viewModel.text = model.id;
-        viewModel.sent = model.id;
+        viewModel.text = model.text;
+        viewModel.sent = model.sent;
         viewModel.fromUser = model.fromUser;
         viewModel.unread = model.unread;
         viewModel.urls = model.urls;
@@ -20,7 +20,7 @@ public class MessageMapper {
     }
 
     public static ArrayList<MessageViewModel> mapToView(ArrayList<MessageModel> messageModels) {
-        ArrayList<MessageViewModel> list = new ArrayList<MessageViewModel>();
+        ArrayList<MessageViewModel> list = new ArrayList<>();
 
         for (MessageModel messageModel : messageModels) {
             list.add(MessageMapper.mapToView(messageModel));

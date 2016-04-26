@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface RoomsListView {
-    void showRooms(List<RoomViewModel> rooms);
+    void showRooms(List<RoomViewModel> rooms, boolean fresh);
 
     void showError(@StringRes int resId);
 

@@ -16,7 +16,6 @@ import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.di.components.DaggerRoomsListComponent;
 import com.ne1c.developerstalk.di.components.RoomsListComponent;
 import com.ne1c.developerstalk.di.modules.RoomsListPresenterModule;
-import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.view.RoomViewModel;
 import com.ne1c.developerstalk.presenters.RoomsListPresenter;
 import com.ne1c.developerstalk.ui.adapters.RoomsAdapter;
@@ -52,6 +51,8 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+
+        mPresenter.onCreate();
     }
 
     @Override
@@ -88,15 +89,36 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
         mProgressBar = (ProgressBar) v.findViewById(R.id.progress_bar);
         mProgressBar.setIndeterminate(true);
 
-        mPresenter.bindView(this);
-        mPresenter.loadRooms(false);
-
         return v;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        mPresenter.bindView(this);
+
+        if (mRooms.size() == 0) {
+            mPresenter.loadRooms(false);
+        }
+
+        if (!mIsEdit && !mRefreshLayout.isRefreshing()) {
+            mRefreshLayout.setRefreshing(true);
+            mPresenter.loadRooms(true);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        mPresenter.unbindView();
     }
 
     @Override
     public void onDestroy() {
         mComponent = null;
+        mPresenter.onDestroy();
 
         super.onDestroy();
     }
@@ -126,13 +148,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-
-        mRefreshLayout.setRefreshing(true);
-    }
-
-    @Override
     public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
         if (mIsEdit) {
             mItemTouchHelper.startDrag(viewHolder);
@@ -140,8 +155,8 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     }
 
     @Override
-    public void showRooms(List<RoomViewModel> rooms) {
-        if (mRefreshLayout.isRefreshing()) {
+    public void showRooms(List<RoomViewModel> rooms, boolean fresh) {
+        if (mRefreshLayout.isRefreshing() && fresh) {
             mRefreshLayout.setRefreshing(false);
         }
 

@@ -124,7 +124,7 @@ public class DataManger {
     public Observable<ArrayList<MessageModel>> getMessages(String roomId, int limit, boolean fresh) {
         if (fresh) {
             return Observable.concat(mClientDatabase.getMessages(roomId),
-                    mApi.getMessagesRoom(Utils.getInstance().getAccessToken(), roomId, limit))
+                    mApi.getMessagesRoom(Utils.getInstance().getBearer(), roomId, limit))
                     .map(messageModels -> {
                         mCachedMessages.put(roomId, messageModels);
                         updateLastMessagesInDb(roomId, messageModels);
@@ -132,7 +132,7 @@ public class DataManger {
                         return messageModels;
                     });
         } else {
-            if (mCachedMessages.containsKey(roomId)) {
+            if (mCachedMessages.get(roomId) == null) {
                 return mClientDatabase.getMessages(roomId)
                         .map((messageModels -> {
                             mCachedMessages.put(roomId, messageModels);
@@ -213,7 +213,20 @@ public class DataManger {
     public Observable<Boolean> readMessages(String roomId, String[] ids) {
         return mApi.readMessages(Utils.getInstance().getBearer(),
                 Utils.getInstance().getUserPref().id, roomId, ids)
-                .map(statusResponse -> statusResponse.success);
+                .map(statusResponse -> statusResponse.success)
+                .map(response -> {
+                    if (response) {
+                        for (RoomModel room : mCachedRooms) {
+                            if (room.equals(roomId)) {
+                                room.unreadItems -= ids.length;
+                            }
+                        }
+
+                        updateRooms(mCachedRooms);
+                    }
+
+                    return response;
+                });
     }
 
     public Observable<MessageModel> sendMessage(String roomId, String text) {

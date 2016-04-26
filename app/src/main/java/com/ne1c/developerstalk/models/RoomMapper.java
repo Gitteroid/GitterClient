@@ -3,6 +3,8 @@ package com.ne1c.developerstalk.models;
 import com.ne1c.developerstalk.models.data.RoomModel;
 import com.ne1c.developerstalk.models.view.RoomViewModel;
 
+import java.util.ArrayList;
+
 public class RoomMapper {
     public static RoomViewModel mapToView(RoomModel model) {
         RoomViewModel viewModel = new RoomViewModel();
@@ -18,5 +20,15 @@ public class RoomMapper {
         viewModel.listPosition = model.listPosition;
 
         return viewModel;
+    }
+
+    public static ArrayList<RoomViewModel> mapToView(ArrayList<RoomModel> roomModels) {
+        ArrayList<RoomViewModel> list = new ArrayList<>();
+
+        for (RoomModel room : roomModels) {
+            list.add(RoomMapper.mapToView(room));
+        }
+
+        return list;
     }
 }

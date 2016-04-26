@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 import com.ne1c.developerstalk.R;
 import com.ne1c.developerstalk.events.UpdateMessageEvent;
-import com.ne1c.developerstalk.models.data.MessageModel;
+import com.ne1c.developerstalk.models.view.MessageViewModel;
 
 import de.greenrobot.event.EventBus;
 
@@ -28,7 +28,7 @@ public class EditMessageFragment extends DialogFragment {
 
         mEditText = (EditText) v.findViewById(R.id.edit_text);
 
-        final MessageModel model = getArguments().getParcelable("message");
+        final MessageViewModel model = getArguments().getParcelable("message");
 
         mEditText.setText(model.text);
 

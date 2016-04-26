@@ -33,21 +33,23 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     @Override
     public void bindView(ChatView view) {
         mView = view;
+        mSubscriptions = new CompositeSubscription();
     }
 
     @Override
     public void unbindView() {
+        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
     public void onCreate() {
-        mSubscriptions = new CompositeSubscription();
+
     }
 
     @Override
     public void onDestroy() {
-        mSubscriptions.unsubscribe();
+
     }
 
     public void sendMessage(String roomId, String text) {
@@ -113,6 +115,16 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         final boolean[] fromNetwork = {false};
         final boolean[] fromDatabase = {false};
 
+        if (!Utils.getInstance().isNetworkConnected()) {
+            Subscription sub = mDataManger.getMessages(roomId, limit, false)
+                    .map(MessageMapper::mapToView)
+                    .subscribe(mView::showMessages);
+
+            mSubscriptions.add(sub);
+
+            return;
+        }
+
         Subscription sub = mDataManger.getMessages(roomId, limit, true)
                 .map(MessageMapper::mapToView)
                 .doOnNext(messages -> {
@@ -143,8 +155,6 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 }, throwable -> {
                     mView.hideListProgress();
                     mView.hideTopProgressBar();
-                }, () -> {
-
                 });
 
         mSubscriptions.add(sub);
