@@ -1,4 +1,4 @@
-# Developers Talk
+# Gitteroid
 
 <!--[![Build Status](https://travis-ci.org/Ne1c/GitterClient.svg?branch=master)](https://travis-ci.org/Ne1c/GitterClient)-->
 
