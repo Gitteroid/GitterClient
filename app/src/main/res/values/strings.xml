@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Developers Talk</string>
+    <string name="app_name">Gitteroid</string>
     <string name="title_activity_main">Chat room</string>
 
     <string name="hello_world">Hello world!</string>
