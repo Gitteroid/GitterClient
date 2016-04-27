@@ -10,7 +10,7 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "com.ne1c.developerstalk"
+        applicationId "com.ne1c.gitteroid"
         minSdkVersion 16
         targetSdkVersion 23
         versionCode 24
