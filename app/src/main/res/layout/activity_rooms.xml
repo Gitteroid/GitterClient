@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.ne1c.developerstalk.ui.DrawShadowFrameLayout
+    <com.ne1c.gitteroid.ui.DrawShadowFrameLayout
         android:id="@+id/shadow_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -19,5 +19,5 @@
             android:layout_height="match_parent" />
 
         <include layout="@layout/toolbar" />
-    </com.ne1c.developerstalk.ui.DrawShadowFrameLayout>
+    </com.ne1c.gitteroid.ui.DrawShadowFrameLayout>
 </LinearLayout>

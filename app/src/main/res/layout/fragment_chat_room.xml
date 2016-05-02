@@ -13,6 +13,7 @@
         android:layout_above="@+id/bottom_bar"
         android:scrollbars="vertical"
         android:transcriptMode="alwaysScroll"
+        android:background="@android:color/white"
         android:visibility="visible"/>
 
     <ProgressBar
@@ -52,7 +53,6 @@
                 android:layout_height="wrap_content"
                 android:background="?selectableItemBackground"
                 android:text="@string/join_room"
-                android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:visibility="gone"/>
         </LinearLayout>
@@ -61,13 +61,15 @@
             android:id="@+id/input_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/md_white_1000"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <ImageButton
                 android:id="@+id/markdown_button"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackground"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_layout"/>
 
             <EditText
@@ -75,8 +77,6 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="4dp"
-                android:layout_marginTop="4dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="@string/type_to_compose"
@@ -86,22 +86,28 @@
                 android:id="@+id/send_button"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackground"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_send"/>
         </LinearLayout>
     </FrameLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="48dp"
+        android:background="@drawable/bottom_shadow"
+        android:rotation="180"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_to_bottom"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:layout_alignParentRight="true"
         android:layout_above="@id/bottom_bar"
+        android:layout_alignParentRight="true"
         android:layout_margin="@dimen/fab_margin"
         android:clickable="true"
         app:backgroundTint="@color/fabBackground"
-        app:borderWidth="0dp"
-        app:srcCompat="@drawable/arrow_down"
-        app:elevation="0dp"/>
+        app:elevation="0dp"
+        app:srcCompat="@drawable/arrow_down"/>
 </RelativeLayout>
