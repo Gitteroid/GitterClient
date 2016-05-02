@@ -10,8 +10,8 @@ import rx.Subscription;
 import rx.subscriptions.CompositeSubscription;
 
 public class LoginPresenter extends BasePresenter<LoginView> {
-    private final String CLIENT_ID = "247736d87aa0134a33f73b00cc47b18165296e9e";
-    private final String CLIENT_SECRET = "238ca926e7e59121ceb7c46c3a2c91eafe51b6c5";
+    private final String CLIENT_ID = "e94f6920cfbc194174a942fc1a5541355b124309";
+    private final String CLIENT_SECRET = "bb702baf80daabf7809dc4244f46f37252130c5c";
     private final String GRANT_TYPE = "authorization_code";
     private final String REDIRECT_URL = "http://about:blank";
     private final String RESPONSE_TYPE = "code";

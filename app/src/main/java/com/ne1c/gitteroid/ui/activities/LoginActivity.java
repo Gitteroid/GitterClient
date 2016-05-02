@@ -155,7 +155,6 @@ public class LoginActivity extends BaseActivity implements LoginView {
             // startLoadToken check that don't run second request
             if (url.contains("code=") && !url.contains("state=") && !startLoadToken) {
                 view.stopLoading();
-                view.destroy();
 
                 startLoadToken = true;
                 // Get access token and show MainActivity
