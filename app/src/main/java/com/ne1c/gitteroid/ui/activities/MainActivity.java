@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -40,6 +41,7 @@ import com.ne1c.gitteroid.events.NewMessageEvent;
 import com.ne1c.gitteroid.events.ReadMessagesEvent;
 import com.ne1c.gitteroid.events.RefreshMessagesRoomEvent;
 import com.ne1c.gitteroid.models.MessageMapper;
+import com.ne1c.gitteroid.models.RoomMapper;
 import com.ne1c.gitteroid.models.data.MessageModel;
 import com.ne1c.gitteroid.models.data.RoomModel;
 import com.ne1c.gitteroid.models.data.UserModel;
@@ -174,7 +176,15 @@ public class MainActivity extends BaseActivity implements MainView {
             for (RoomViewModel room : mRoomsList) {
                 if (room.unreadItems > 0) {
                     String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-                    mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
+                    mDrawer.addItemAtPosition(new PrimaryDrawerItem()
+                            .withIcon(R.drawable.ic_room)
+                            .withName(room.name)
+                            .withTextColor(Color.WHITE)
+                            .withIconColor(Color.WHITE)
+                            .withIconTintingEnabled(true)
+                            .withSelectedTextColor(Color.BLACK)
+                            .withSelectedIconColor(Color.BLACK)
+                            .withSelectedColorRes(R.color.md_white_1000)
                             .withBadge(badgeText)
                             .withBadgeStyle(badgeStyle)
                             .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -183,6 +193,12 @@ public class MainActivity extends BaseActivity implements MainView {
                             new PrimaryDrawerItem()
                                     .withIcon(R.drawable.ic_room)
                                     .withName(room.name)
+                                    .withTextColor(Color.WHITE)
+                                    .withIconColor(Color.WHITE)
+                                    .withIconTintingEnabled(true)
+                                    .withSelectedTextColor(Color.BLACK)
+                                    .withSelectedIconColor(Color.BLACK)
+                                    .withSelectedColorRes(R.color.md_white_1000)
                                     .withBadgeStyle(badgeStyle)
                                     .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
                 }
@@ -222,11 +238,11 @@ public class MainActivity extends BaseActivity implements MainView {
 
         // If get intent from notification
         if (mRoomsList != null) {
-            RoomViewModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
-
+            RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
+            RoomViewModel roomViewModel = RoomMapper.mapToView(intentRoom);
             // If selected room not equal room id from notification, than load room
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
-                mActiveRoom = intentRoom;
+                mActiveRoom = roomViewModel;
 
                 for (int i = 0; i < mRoomsList.size(); i++) {
                     if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
@@ -266,14 +282,33 @@ public class MainActivity extends BaseActivity implements MainView {
 
         mAccountHeader.setActiveProfile(mMainProfile);
 
-        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.drawable.ic_home).withName(getString(R.string.home))
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withIcon(R.drawable.ic_home)
+                .withName(getString(R.string.home))
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
                 .withSelectable(false)
                 .withSetSelected(false));
+
+
         mDrawerItems.add(new DividerDrawerItem());
-        mDrawerItems.add(new PrimaryDrawerItem().withName(getString(R.string.action_settings)).withIcon(R.drawable.ic_settings_dark)
+
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withName(getString(R.string.action_settings))
+                .withIcon(R.drawable.ic_settings_dark)
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
                 .withSelectable(false)
                 .withSetSelected(false));
-        mDrawerItems.add(new PrimaryDrawerItem().withIcon(R.drawable.ic_logout).withName(getString(R.string.signout)));
+
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withIcon(R.drawable.ic_logout)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withName(getString(R.string.signout))
+                .withTextColor(Color.WHITE));
 
         mDrawer = new DrawerBuilder().withActivity(this)
                 .withTranslucentStatusBar(false)
@@ -281,6 +316,8 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withActionBarDrawerToggle(mDrawerToggle)
                 .withActionBarDrawerToggle(true)
                 .withActionBarDrawerToggleAnimated(true)
+                .withTranslucentStatusBar(true)
+                .withSliderBackgroundColorRes(R.color.navDrawerBackground)
                 .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
                 .withOnDrawerItemClickListener((view, position, iDrawerItem) -> {
                     if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
@@ -412,7 +449,15 @@ public class MainActivity extends BaseActivity implements MainView {
         for (RoomViewModel room : mRoomsList) {
             if (room.unreadItems > 0) {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-                mDrawer.addItemAtPosition(new PrimaryDrawerItem().withIcon(R.drawable.ic_room).withName(room.name)
+                mDrawer.addItemAtPosition(new PrimaryDrawerItem()
+                        .withIcon(R.drawable.ic_room)
+                        .withName(room.name)
+                        .withTextColor(Color.WHITE)
+                        .withIconColor(Color.WHITE)
+                        .withIconTintingEnabled(true)
+                        .withSelectedTextColor(Color.BLACK)
+                        .withSelectedIconColor(Color.BLACK)
+                        .withSelectedColorRes(R.color.md_white_1000)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
                         .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
@@ -421,6 +466,12 @@ public class MainActivity extends BaseActivity implements MainView {
                         new PrimaryDrawerItem()
                                 .withIcon(R.drawable.ic_room)
                                 .withName(room.name)
+                                .withTextColor(Color.WHITE)
+                                .withIconColor(Color.WHITE)
+                                .withIconTintingEnabled(true)
+                                .withSelectedTextColor(Color.BLACK)
+                                .withSelectedIconColor(Color.BLACK)
+                                .withSelectedColorRes(R.color.md_white_1000)
                                 .withBadgeStyle(badgeStyle)
                                 .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
             }
