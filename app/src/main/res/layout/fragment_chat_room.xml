@@ -108,7 +108,6 @@
         android:layout_margin="@dimen/fab_margin"
         android:clickable="true"
         app:backgroundTint="@color/fabBackground"
-        app:borderWidth="0dp"
         app:elevation="0dp"
         app:srcCompat="@drawable/arrow_down"/>
 </RelativeLayout>

@@ -79,7 +79,7 @@
             android:layout_width="18dp"
             android:layout_height="24dp"
             android:layout_marginTop="2dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="?selectableItemBackgroundBorderless"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_menu"/>
 
