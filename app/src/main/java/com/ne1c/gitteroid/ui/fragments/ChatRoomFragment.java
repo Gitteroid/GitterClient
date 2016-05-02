@@ -416,7 +416,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             mMessagesAdapter.notifyItemInserted(0);
 
             int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
-            if (firstVisible > 1 && firstVisible <= 5) {
+            if (firstVisible >= 1 && firstVisible <= 5) {
                 mMessagesList.smoothScrollToPosition(0);
             }
         }
