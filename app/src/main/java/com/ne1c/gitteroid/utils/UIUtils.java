@@ -3,6 +3,8 @@ package com.ne1c.gitteroid.utils;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.View;
 
 import com.ne1c.gitteroid.R;
@@ -35,5 +37,9 @@ public class UIUtils {
             rootView.setPadding(rootView.getPaddingLeft(), clearance,
                     rootView.getPaddingRight(), rootView.getPaddingBottom());
         }
+    }
+
+    public static float convertPxToDp(int px, DisplayMetrics displayMetrics) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, px, displayMetrics);
     }
 }
