@@ -6,11 +6,10 @@
               android:background="@android:color/background_light"
               tools:context=".ui.activities.LoginActivity">
 
-    <com.ne1c.gitteroid.ui.DrawShadowFrameLayout
+    <FrameLayout
         android:id="@+id/shadow_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:shadowDrawable="@drawable/bottom_shadow">
+        android:layout_height="match_parent">
 
         <RelativeLayout
             android:id="@+id/content_layout"
@@ -70,5 +69,5 @@
         </RelativeLayout>
 
         <include layout="@layout/toolbar"/>
-    </com.ne1c.gitteroid.ui.DrawShadowFrameLayout>
+    </FrameLayout>
 </LinearLayout>

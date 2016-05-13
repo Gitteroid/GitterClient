@@ -18,9 +18,7 @@ import com.ne1c.gitteroid.R;
 import com.ne1c.gitteroid.di.components.DaggerLoginComponent;
 import com.ne1c.gitteroid.di.components.LoginComponent;
 import com.ne1c.gitteroid.presenters.LoginPresenter;
-import com.ne1c.gitteroid.ui.DrawShadowFrameLayout;
 import com.ne1c.gitteroid.ui.views.LoginView;
-import com.ne1c.gitteroid.utils.UIUtils;
 import com.ne1c.gitteroid.utils.Utils;
 
 import javax.inject.Inject;
@@ -84,19 +82,6 @@ public class LoginActivity extends BaseActivity implements LoginView {
         mComponent = DaggerLoginComponent.builder()
                 .applicationComponent(getAppComponent())
                 .build();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        int actionBarSize = UIUtils.calculateActionBarSize(this);
-        DrawShadowFrameLayout drawShadowFrameLayout =
-                (DrawShadowFrameLayout) findViewById(R.id.shadow_layout);
-        if (drawShadowFrameLayout != null) {
-            drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
-        }
-        UIUtils.setContentTopClearance(findViewById(R.id.content_layout), actionBarSize);
     }
 
     @Override

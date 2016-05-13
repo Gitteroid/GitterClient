@@ -11,9 +11,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.ne1c.gitteroid.R;
-import com.ne1c.gitteroid.ui.DrawShadowFrameLayout;
 import com.ne1c.gitteroid.ui.fragments.RoomsListFragment;
-import com.ne1c.gitteroid.utils.UIUtils;
 import com.ne1c.gitteroid.utils.Utils;
 
 public class RoomsActivity extends AppCompatActivity {
@@ -149,19 +147,5 @@ public class RoomsActivity extends AppCompatActivity {
 
         mSearchQuery = savedInstanceState.getString("search", null);
         mRestoreSearch = true;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        int actionBarSize = UIUtils.calculateActionBarSize(this);
-        DrawShadowFrameLayout drawShadowFrameLayout =
-                (DrawShadowFrameLayout) findViewById(R.id.shadow_layout);
-        if (drawShadowFrameLayout != null) {
-            drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
-        }
-
-        UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
     }
 }

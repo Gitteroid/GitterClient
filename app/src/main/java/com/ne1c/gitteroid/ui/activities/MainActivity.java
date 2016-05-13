@@ -48,10 +48,8 @@ import com.ne1c.gitteroid.models.data.UserModel;
 import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.presenters.MainPresenter;
 import com.ne1c.gitteroid.services.NotificationService;
-import com.ne1c.gitteroid.ui.DrawShadowFrameLayout;
 import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment;
 import com.ne1c.gitteroid.ui.views.MainView;
-import com.ne1c.gitteroid.utils.UIUtils;
 import com.ne1c.gitteroid.utils.Utils;
 
 import java.util.ArrayList;
@@ -82,7 +80,6 @@ public class MainActivity extends BaseActivity implements MainView {
     private RoomViewModel mActiveRoom;
 
     private int selectedNavItem = -1; // Default, item not selected
-    private boolean loadAvatarFromNetworkFlag;
 
     private MainComponent mComponent;
 
@@ -358,19 +355,6 @@ public class MainActivity extends BaseActivity implements MainView {
                     return true;
                 })
                 .build();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        int actionBarSize = UIUtils.calculateActionBarSize(this);
-        DrawShadowFrameLayout drawShadowFrameLayout =
-                (DrawShadowFrameLayout) findViewById(R.id.shadow_layout);
-        if (drawShadowFrameLayout != null) {
-            drawShadowFrameLayout.setShadowTopOffset(actionBarSize);
-        }
-        UIUtils.setContentTopClearance(findViewById(R.id.fragment_container), actionBarSize);
     }
 
     @Override
