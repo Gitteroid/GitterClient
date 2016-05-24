@@ -14,7 +14,8 @@
         android:scrollbars="vertical"
         android:transcriptMode="alwaysScroll"
         android:background="@android:color/white"
-        android:visibility="visible"/>
+        android:visibility="visible"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
     <ProgressBar
         android:id="@+id/progress_bar"
