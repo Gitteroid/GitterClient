@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
@@ -71,15 +72,18 @@ public class MainActivity extends BaseActivity implements MainView {
 
     private ActionBarDrawerToggle mDrawerToggle;
 
+    private TabLayout mRoomTabs;
+
     private Drawer mDrawer;
     private ArrayList<IDrawerItem> mDrawerItems = new ArrayList<>();
     private AccountHeader mAccountHeader;
     private IProfile mMainProfile = new ProfileDrawerItem();
 
     private ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
+    private ArrayList<RoomViewModel> mRoomsInDrawer = new ArrayList<>(); // Rooms that user will see
     private RoomViewModel mActiveRoom;
 
-    private int selectedNavItem = -1; // Default, item not selected
+    // private int selectedNavItem = -1; // Default, item not selected
 
     private MainComponent mComponent;
 
@@ -141,6 +145,8 @@ public class MainActivity extends BaseActivity implements MainView {
             getSupportActionBar().setHomeButtonEnabled(true);
         }
 
+        mRoomTabs = (TabLayout) findViewById(R.id.rooms_tab);
+
         mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
 
         if (mChatRoomFragment == null) {
@@ -163,7 +169,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
             mPresenter.loadProfile();
         } else {
-            selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
+            final int selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
             mRoomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
 
             BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
@@ -177,27 +183,11 @@ public class MainActivity extends BaseActivity implements MainView {
                             .withIcon(R.drawable.ic_room)
                             .withName(room.name)
                             .withTextColor(Color.WHITE)
-                            .withIconColor(Color.WHITE)
-                            .withIconTintingEnabled(true)
                             .withSelectedTextColor(Color.BLACK)
-                            .withSelectedIconColor(Color.BLACK)
                             .withSelectedColorRes(R.color.md_white_1000)
                             .withBadge(badgeText)
                             .withBadgeStyle(badgeStyle)
                             .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
-                } else {
-                    mDrawer.addItemAtPosition(
-                            new PrimaryDrawerItem()
-                                    .withIcon(R.drawable.ic_room)
-                                    .withName(room.name)
-                                    .withTextColor(Color.WHITE)
-                                    .withIconColor(Color.WHITE)
-                                    .withIconTintingEnabled(true)
-                                    .withSelectedTextColor(Color.BLACK)
-                                    .withSelectedIconColor(Color.BLACK)
-                                    .withSelectedColorRes(R.color.md_white_1000)
-                                    .withBadgeStyle(badgeStyle)
-                                    .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
                 }
             }
 
@@ -205,14 +195,9 @@ public class MainActivity extends BaseActivity implements MainView {
                 // If activity open from notification
                 mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
 
-                if (mActiveRoom == null || mActiveRoom.id == null) {
-                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
-                }
 
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                        selectedNavItem = i + 1;
-                    }
+                if (mActiveRoom == null || mActiveRoom.id == null) {
+                    mActiveRoom = mRoomsList.get(mDrawer.getCurrentSelectedPosition() - 1);
                 }
 
                 mDrawer.setSelectionAtPosition(selectedNavItem + 1);
@@ -241,17 +226,18 @@ public class MainActivity extends BaseActivity implements MainView {
             if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
                 mActiveRoom = roomViewModel;
 
+                int selectedNavItem = 0;
                 for (int i = 0; i < mRoomsList.size(); i++) {
                     if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
                         selectedNavItem = i + 1;
                     }
                 }
 
-                mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+                mDrawer.setSelectionAtPosition(selectedNavItem, true);
                 if (mRoomsList.size() > 0) {
-                    EventBus.getDefault().post(mRoomsList.get(selectedNavItem - 1));
+                    EventBus.getDefault().post(mActiveRoom);
                 }
-                setTitle(mRoomsList.get(selectedNavItem - 1).name);
+                //  setTitle(mRoomsList.get(selectedNavItem - 1).name);
             }
 
             mDrawer.closeDrawer();
@@ -335,17 +321,20 @@ public class MainActivity extends BaseActivity implements MainView {
                                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
                         stopService(new Intent(getApplicationContext(), NotificationService.class));
                         finish();
-                    } else if (mRoomsList != null && mRoomsList.size() > 0) {
-                        if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
-                            for (int i = 0; i < mRoomsList.size(); i++) {
-                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsList.get(i).name)) {
-                                    selectedNavItem = i + 1; // Because item "Home" in navigation menu
-                                    mActiveRoom = mRoomsList.get(selectedNavItem - 1);
+                    } else if (item.getName().toString().equals(getString(R.string.all))) {
 
-                                    String drawerItemName = ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
+                    } else if (mRoomsInDrawer != null && mRoomsInDrawer.size() > 0) {
+                        if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
+                            for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsInDrawer.get(i).name)) {
+                                    //selectedNavItem = i + 1; // Because item "Home" in navigation menu
+                                    mActiveRoom = mRoomsInDrawer.get(mDrawer.getCurrentSelectedPosition() - 1);
+
+                                    String drawerItemName = mActiveRoom.name;//((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
 
                                     setTitle(drawerItemName);
-                                    EventBus.getDefault().post(mRoomsList.get(i));
+                                    EventBus.getDefault().post(mRoomsInDrawer.get(i));
+                                    mRoomTabs.addTab(mRoomTabs.newTab().setText(mActiveRoom.name));
                                 }
                             }
                         }
@@ -361,7 +350,7 @@ public class MainActivity extends BaseActivity implements MainView {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putInt(SELECT_NAV_ITEM_BUNDLE, selectedNavItem);
+        outState.putInt(SELECT_NAV_ITEM_BUNDLE, mDrawer.getCurrentSelectedPosition());
         outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList);
     }
 
@@ -420,6 +409,8 @@ public class MainActivity extends BaseActivity implements MainView {
         mRoomsList.clear();
         mRoomsList.addAll(data);
 
+        mRoomsInDrawer.clear();
+
         // Remove old items
         // 4 but items: "Home", "Divider", "Settings", "Sign Out".
         while (mDrawer.getDrawerItems().size() != 4) {
@@ -435,59 +426,42 @@ public class MainActivity extends BaseActivity implements MainView {
                 String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
                 mDrawer.addItemAtPosition(new PrimaryDrawerItem()
                         .withIcon(R.drawable.ic_room)
-                        .withName(room.name)
-                        .withTextColor(Color.WHITE)
                         .withIconColor(Color.WHITE)
                         .withIconTintingEnabled(true)
+                        .withName(room.name)
+                        .withTextColor(Color.WHITE)
                         .withSelectedTextColor(Color.BLACK)
-                        .withSelectedIconColor(Color.BLACK)
                         .withSelectedColorRes(R.color.md_white_1000)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
                         .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
-            } else {
-                mDrawer.addItemAtPosition(
-                        new PrimaryDrawerItem()
-                                .withIcon(R.drawable.ic_room)
-                                .withName(room.name)
-                                .withTextColor(Color.WHITE)
-                                .withIconColor(Color.WHITE)
-                                .withIconTintingEnabled(true)
-                                .withSelectedTextColor(Color.BLACK)
-                                .withSelectedIconColor(Color.BLACK)
-                                .withSelectedColorRes(R.color.md_white_1000)
-                                .withBadgeStyle(badgeStyle)
-                                .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
+
+                mRoomsInDrawer.add(room);
             }
         }
 
-        if (mRoomsList.size() > 0) {
-            RoomModel room = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
+        mDrawer.addItemAtPosition(new PrimaryDrawerItem()
+                .withName(R.string.all)
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withIcon(R.drawable.ic_format_list_bulleted)
+                .withSelectable(false), mDrawer.getDrawerItems().size() - 2);
 
-            String roomId = room != null ? room.id : null;
-
-            if (roomId == null) {
-                roomId = getIntent().getStringExtra("roomId");
-                getIntent().removeExtra("roomId");
-            } else {
-                // Not to repeat open room
-                getIntent().removeExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
-            }
-
+        if (mRoomsInDrawer.size() > 0) {
+            mActiveRoom = mRoomsInDrawer.size() > 0 ? mRoomsInDrawer.get(0) : null;
+            String roomId = getIntent().getStringExtra("roomId");
             if (roomId != null) {
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (roomId.equals(mRoomsList.get(i).id)) {
-                        selectedNavItem = i + 1;
-                    }
-                }
-            } else if (selectedNavItem == -1) {
-                selectedNavItem = 1;
+                mActiveRoom = getRoomById(roomId);
             }
         }
 
         mDrawer.getAdapter().notifyDataSetChanged();
 
-        mDrawer.setSelectionAtPosition(selectedNavItem + 1);
+        if (mRoomsInDrawer.size() > 0) {
+            mRoomTabs.removeAllTabs();
+            mDrawer.setSelectionAtPosition(getDrawerPositionByRoom(mActiveRoom), true);
+        }
     }
 
     @Override
@@ -531,6 +505,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
                 if (mRoomsList.get(i).id.equals(roomId)) {
                     mRoomsList.get(i).unreadItems += 1;
+
                     final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
                     mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
                     mDrawer.getAdapter().notifyDataSetChanged();
@@ -588,5 +563,19 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void leavedFromRoom() {
         finish();
+    }
+
+    private RoomViewModel getRoomById(String roomId) {
+        for (RoomViewModel model: mRoomsList) {
+            if (model.id.equals(roomId)) {
+                return model;
+            }
+        }
+
+        return null;
+    }
+
+    private int getDrawerPositionByRoom(RoomViewModel model) {
+        return mRoomsInDrawer.indexOf(model) + 2;
     }
 }
