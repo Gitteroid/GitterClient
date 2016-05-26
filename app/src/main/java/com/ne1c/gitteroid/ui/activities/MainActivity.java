@@ -65,6 +65,7 @@ public class MainActivity extends BaseActivity implements MainView {
     public final static String MESSAGE_INTENT_KEY = "message";
     public final static String ROOM_ID_INTENT_KEY = "room";
 
+    public final int START_ROOM_IN_DRAWER_OFFSET = 2;
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
 
@@ -187,7 +188,7 @@ public class MainActivity extends BaseActivity implements MainView {
                             .withSelectedColorRes(R.color.md_white_1000)
                             .withBadge(badgeText)
                             .withBadgeStyle(badgeStyle)
-                            .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
+                            .withSelectable(true), mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
                 }
             }
 
@@ -328,7 +329,7 @@ public class MainActivity extends BaseActivity implements MainView {
                             for (int i = 0; i < mRoomsInDrawer.size(); i++) {
                                 if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsInDrawer.get(i).name)) {
                                     //selectedNavItem = i + 1; // Because item "Home" in navigation menu
-                                    mActiveRoom = mRoomsInDrawer.get(mDrawer.getCurrentSelectedPosition() - 1);
+                                    mActiveRoom = mRoomsInDrawer.get(mDrawer.getCurrentSelectedPosition() - START_ROOM_IN_DRAWER_OFFSET);
 
                                     String drawerItemName = mActiveRoom.name;//((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
 
@@ -414,7 +415,7 @@ public class MainActivity extends BaseActivity implements MainView {
         // Remove old items
         // 4 but items: "Home", "Divider", "Settings", "Sign Out".
         while (mDrawer.getDrawerItems().size() != 4) {
-            mDrawer.removeItemByPosition(2); // 2? Wtf?
+            mDrawer.removeItemByPosition(START_ROOM_IN_DRAWER_OFFSET); // 2? Wtf?
         }
 
         BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
@@ -434,7 +435,7 @@ public class MainActivity extends BaseActivity implements MainView {
                         .withSelectedColorRes(R.color.md_white_1000)
                         .withBadge(badgeText)
                         .withBadgeStyle(badgeStyle)
-                        .withSelectable(true), mDrawer.getDrawerItems().size() - 2);
+                        .withSelectable(true), mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
 
                 mRoomsInDrawer.add(room);
             }
@@ -446,21 +447,15 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withIconColor(Color.WHITE)
                 .withIconTintingEnabled(true)
                 .withIcon(R.drawable.ic_format_list_bulleted)
-                .withSelectable(false), mDrawer.getDrawerItems().size() - 2);
-
-        if (mRoomsInDrawer.size() > 0) {
-            mActiveRoom = mRoomsInDrawer.size() > 0 ? mRoomsInDrawer.get(0) : null;
-            String roomId = getIntent().getStringExtra("roomId");
-            if (roomId != null) {
-                mActiveRoom = getRoomById(roomId);
-            }
-        }
+                .withSelectable(false), mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
 
         mDrawer.getAdapter().notifyDataSetChanged();
 
         if (mRoomsInDrawer.size() > 0) {
+            mActiveRoom = null;
             mRoomTabs.removeAllTabs();
-            mDrawer.setSelectionAtPosition(getDrawerPositionByRoom(mActiveRoom), true);
+            // Select first room
+            mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET, true);
         }
     }
 
@@ -576,6 +571,6 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private int getDrawerPositionByRoom(RoomViewModel model) {
-        return mRoomsInDrawer.indexOf(model) + 2;
+        return mRoomsInDrawer.indexOf(model) + START_ROOM_IN_DRAWER_OFFSET;
     }
 }
