@@ -23,7 +23,7 @@ public class OverviewRoomActivity extends AppCompatActivity {
 
         RoomViewModel roomModel = getIntent().getParcelableExtra("room");
 
-        getFragmentManager()
+        getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, ChatRoomFragment.newInstance(roomModel))
                 .commit();

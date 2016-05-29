@@ -1,8 +1,8 @@
 package com.ne1c.gitteroid.ui.fragments;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 
 import com.ne1c.gitteroid.Application;
 import com.ne1c.gitteroid.di.HasComponent;

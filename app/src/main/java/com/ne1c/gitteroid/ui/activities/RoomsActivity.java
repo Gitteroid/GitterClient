@@ -39,15 +39,15 @@ public class RoomsActivity extends AppCompatActivity {
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
 
-        mRoomsListFragment = (RoomsListFragment) getFragmentManager().findFragmentByTag("roomsList");
+        mRoomsListFragment = (RoomsListFragment) getSupportFragmentManager().findFragmentByTag("roomsList");
 
         if (mRoomsListFragment == null) {
             mRoomsListFragment = new RoomsListFragment();
-            getFragmentManager().beginTransaction().add(mRoomsListFragment, "roomsList").commit();
+            getSupportFragmentManager().beginTransaction().add(mRoomsListFragment, "roomsList").commit();
         }
 
         if (savedInstanceState == null) {
-            getFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, mRoomsListFragment).commit();
         }
 
         Utils.getInstance().startNotificationService();
