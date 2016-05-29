@@ -59,4 +59,5 @@
     <string name="error_load_rooms">Error load rooms</string>
     <string name="sign_in">Sign in</string>
     <string name="all">All</string>
+    <string name="close_room">Close room</string>
 </resources>
