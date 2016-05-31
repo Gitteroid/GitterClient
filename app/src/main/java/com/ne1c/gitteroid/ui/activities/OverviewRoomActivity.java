@@ -25,7 +25,7 @@ public class OverviewRoomActivity extends AppCompatActivity {
 
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragment_container, ChatRoomFragment.newInstance(roomModel))
+                .replace(R.id.fragment_container, ChatRoomFragment.newInstance(roomModel, true))
                 .commit();
     }
 
