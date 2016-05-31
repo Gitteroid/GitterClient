@@ -18,7 +18,7 @@ import rx.subscriptions.CompositeSubscription;
 
 public class MainPresenter extends BasePresenter<MainView> {
     private MainView mView;
-    private CompositeSubscription mSubscriptions;
+    private CompositeSubscription mSubscriptions = new CompositeSubscription();
 
     private DataManger mDataManger;
     private RxSchedulersFactory mSchedulersFactory;
