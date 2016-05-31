@@ -83,11 +83,14 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getApplicationContext());
         mStartNumberLoadMessages = Integer.valueOf(prefs.getString("number_load_mess", "10"));
 
-        if (getArguments() != null) {
-            mOverviewRoom = getArguments().getParcelable("overviewRoom");
+        boolean overview = getArguments().getBoolean("overview");
+        if (overview) {
+            mOverviewRoom = getArguments().getParcelable("room");
+        } else {
+            mRoom = getArguments().getParcelable("room");
         }
 
-        EventBus.getDefault().register(this);
+        //EventBus.getDefault().register(this);
     }
 
     @Override
@@ -134,6 +137,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             joinRoomButton.setVisibility(View.VISIBLE);
             joinRoomButton.setOnClickListener(v1 -> mPresenter.joinToRoom(mOverviewRoom.name));
         }
+
+        onEvent(mRoom);
 
         return v;
     }
@@ -594,9 +599,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mComponent.inject(this);
     }
 
-    public static ChatRoomFragment newInstance(RoomViewModel overviewRoom) {
+    public static ChatRoomFragment newInstance(RoomViewModel room, boolean overview) {
         Bundle bundle = new Bundle();
-        bundle.putParcelable("overviewRoom", overviewRoom);
+        bundle.putParcelable("room", room);
+        bundle.putBoolean("overview", overview);
 
         ChatRoomFragment fragment = new ChatRoomFragment();
         fragment.setArguments(bundle);
