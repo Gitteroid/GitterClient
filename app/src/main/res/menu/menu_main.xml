@@ -9,16 +9,15 @@
         android:title="@string/action_refresh"
         app:showAsAction="always"/>
     <item
-        android:id="@+id/action_leave"
-        android:icon="@drawable/ic_leave_from_room"
-        android:orderInCategory="100"
-        android:title="@string/action_leave"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/close_room"
         android:icon="@drawable/ic_close"
         android:orderInCategory="100"
         android:title="@string/close_room"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_leave"
+        android:icon="@drawable/ic_leave_from_room"
+        android:orderInCategory="100"
+        android:title="@string/action_leave"
         app:showAsAction="ifRoom" />
 </menu>
