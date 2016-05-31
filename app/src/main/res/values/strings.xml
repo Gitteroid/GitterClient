@@ -60,4 +60,6 @@
     <string name="sign_in">Sign in</string>
     <string name="all">All</string>
     <string name="close_room">Close room</string>
+    <string name="nothing_to_close">Nothing to close</string>
+    <string name="cannt_close_single_room">Can\'t close single room</string>
 </resources>
