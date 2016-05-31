@@ -17,6 +17,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -26,7 +27,6 @@ import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.BadgeStyle;
-import com.mikepenz.materialdrawer.holder.StringHolder;
 import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
@@ -72,10 +72,11 @@ public class MainActivity extends BaseActivity implements MainView {
     private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
     private final String ROOMS_BUNDLE = "rooms_bundle";
     private final String ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle";
+    private final String ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle";
 
-   // private ChatRoomFragment mChatRoomFragment;
+    // private ChatRoomFragment mChatRoomFragment;
     private ViewPager mRoomsViewPager;
-    private RoomsPagerAdapter mRoomsPagerAdapter;
+   // private RoomsPagerAdapter mRoomsPagerAdapter;
 
     private ActionBarDrawerToggle mDrawerToggle;
 
@@ -88,12 +89,37 @@ public class MainActivity extends BaseActivity implements MainView {
 
     private ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
     private ArrayList<RoomViewModel> mRoomsInDrawer = new ArrayList<>(); // Rooms that user will see
-    private RoomViewModel mActiveRoom;
+    private ArrayList<RoomViewModel> mRoomsInTabs = new ArrayList<>();
 
     private MainComponent mComponent;
 
     @Inject
     MainPresenter mPresenter;
+
+    private Drawer.OnDrawerItemClickListener mDrawerItemClickListener = new Drawer.OnDrawerItemClickListener() {
+        @Override
+        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+            final PrimaryDrawerItem item = (PrimaryDrawerItem) drawerItem;
+
+            final String name = item.getName().getText();
+
+            if (name.equals(getString(R.string.home))) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
+            } else if (name.equals(getString(R.string.action_settings))) {
+                startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
+            } else if (name.equals(getString(R.string.signout))) {
+                signOut();
+            } else if (name.equals(getString(R.string.all))) {
+                showRoomsListDialog();
+            } else if (mRoomsInDrawer.size() > 0) {
+                clickOnRoomInDrawer(name);
+            }
+
+            mDrawer.closeDrawer();
+
+            return true;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,7 +140,7 @@ public class MainActivity extends BaseActivity implements MainView {
         EventBus.getDefault().register(this);
         registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
 
-        initView();
+        initViews();
 
         initState(savedInstanceState);
 
@@ -153,7 +179,7 @@ public class MainActivity extends BaseActivity implements MainView {
         });
     }
 
-    private void initView() {
+    private void initViews() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -163,16 +189,11 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         mRoomsViewPager = (ViewPager) findViewById(R.id.rooms_viewPager);
-        mRoomTabs = (TabLayout) findViewById(R.id.rooms_tab);
+        //mRoomsPagerAdapter = new RoomsPagerAdapter(getSupportFragmentManager(), mRoomsInTabs);
+        mRoomsViewPager.setAdapter(new RoomsPagerAdapter(getSupportFragmentManager(), mRoomsInTabs));
 
+        mRoomTabs = (TabLayout) findViewById(R.id.rooms_tab);
         mRoomTabs.setupWithViewPager(mRoomsViewPager);
-//
-//        mChatRoomFragment = (ChatRoomFragment) getFragmentManager().findFragmentByTag("chatRoom");
-//
-//        if (mChatRoomFragment == null) {
-//            mChatRoomFragment = new ChatRoomFragment();
-//            getFragmentManager().beginTransaction().add(mChatRoomFragment, "chatRoom").commit();
-//        }
 
         setNavigationView();
     }
@@ -185,11 +206,11 @@ public class MainActivity extends BaseActivity implements MainView {
 
         if (mRoomsList.size() > 0) {
             // If activity open from notification
-            mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
-
-            if (mActiveRoom == null || mActiveRoom.id == null) {
-                mActiveRoom = mRoomsList.get(mDrawer.getCurrentSelectedPosition() - 1);
-            }
+            // mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
+//
+//            if (mActiveRoom == null || mActiveRoom.id == null) {
+//                mActiveRoom = mRoomsList.get(mDrawer.getCurrentSelectedPosition() - 1);
+//            }
 
             mDrawer.setSelectionAtPosition(selectedNavItem + 1);
 
@@ -198,8 +219,6 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private void initWithoutSavedInstanceState() {
-       // getFragmentManager().beginTransaction().replace(R.id.fragment_container, mChatRoomFragment).commit();
-
         mPresenter.loadRooms(false);
 
         if (Utils.getInstance().isNetworkConnected()) {
@@ -271,22 +290,22 @@ public class MainActivity extends BaseActivity implements MainView {
             RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
             RoomViewModel roomViewModel = RoomMapper.mapToView(intentRoom);
             // If selected room not equal room id from notification, than load room
-            if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
-                mActiveRoom = roomViewModel;
-
-                int selectedNavItem = 0;
-                for (int i = 0; i < mRoomsList.size(); i++) {
-                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-                        selectedNavItem = i + 1;
-                    }
-                }
-
-                mDrawer.setSelectionAtPosition(selectedNavItem, true);
-                if (mRoomsList.size() > 0) {
-                    EventBus.getDefault().post(mActiveRoom);
-                }
-                //  setTitle(mRoomsList.get(selectedNavItem - 1).name);
-            }
+//            if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
+//                mActiveRoom = roomViewModel;
+//
+//                int selectedNavItem = 0;
+//                for (int i = 0; i < mRoomsList.size(); i++) {
+//                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+//                        selectedNavItem = i + 1;
+//                    }
+//                }
+//
+//                mDrawer.setSelectionAtPosition(selectedNavItem, true);
+//                if (mRoomsList.size() > 0) {
+//                    EventBus.getDefault().post(mActiveRoom);
+//                }
+//                //  setTitle(mRoomsList.get(selectedNavItem - 1).name);
+//            }
 
             mDrawer.closeDrawer();
         }
@@ -298,20 +317,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
         mPresenter.loadProfile();
 
-        mAccountHeader = new AccountHeaderBuilder()
-                .withActivity(this)
-                .withHeaderBackground(R.drawable.header)
-                .withProfileImagesClickable(true)
-                .withSelectionListEnabledForSingleProfile(false)
-                .addProfiles(mMainProfile)
-                .withOnAccountHeaderListener((view, iProfile, b) -> {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
-                    return false;
-                })
-                .build();
-
-        mAccountHeader.setActiveProfile(mMainProfile);
+        createAccountHeader();
 
         mDrawerItems.add(new PrimaryDrawerItem()
                 .withIcon(R.drawable.ic_home)
@@ -350,48 +356,25 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withTranslucentStatusBar(true)
                 .withSliderBackgroundColorRes(R.color.navDrawerBackground)
                 .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
-                .withOnDrawerItemClickListener((view, position, iDrawerItem) -> {
-                    if (!(iDrawerItem instanceof PrimaryDrawerItem)) {
-                        return false;
-                    }
+                .withOnDrawerItemClickListener(mDrawerItemClickListener)
+                .build();
+    }
 
-                    PrimaryDrawerItem item = (PrimaryDrawerItem) iDrawerItem;
-
-                    if (item.getName().toString().equals(getString(R.string.home))) {
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
-                    } else if (item.getName().toString().equals(getString(R.string.action_settings))) {
-                        startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
-                    } else if (item.getName().toString().equals(getString(R.string.signout))) {
-                        getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE).edit().clear().apply();
-
-                        startActivity(new Intent(getApplicationContext(), LoginActivity.class)
-                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
-                        stopService(new Intent(getApplicationContext(), NotificationService.class));
-                        finish();
-                    } else if (item.getName().toString().equals(getString(R.string.all))) {
-
-                    } else if (mRoomsInDrawer != null && mRoomsInDrawer.size() > 0) {
-                        if (mActiveRoom == null || !mActiveRoom.name.equals(item.getName().getText())) {
-                            for (int i = 0; i < mRoomsInDrawer.size(); i++) {
-                                if (((PrimaryDrawerItem) iDrawerItem).getName().toString().equals(mRoomsInDrawer.get(i).name)) {
-                                    //selectedNavItem = i + 1; // Because item "Home" in navigation menu
-                                    mActiveRoom = mRoomsInDrawer.get(mDrawer.getCurrentSelectedPosition() - START_ROOM_IN_DRAWER_OFFSET);
-
-                                    String drawerItemName = mActiveRoom.name;//((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString();
-
-                                    setTitle(drawerItemName);
-                                    EventBus.getDefault().post(mRoomsInDrawer.get(i));
-                                    mRoomTabs.addTab(mRoomTabs.newTab().setText(mActiveRoom.name));
-                                }
-                            }
-                        }
-                    }
-
-                    mDrawer.closeDrawer();
-                    return true;
+    private void createAccountHeader() {
+        mAccountHeader = new AccountHeaderBuilder()
+                .withActivity(this)
+                .withHeaderBackground(R.drawable.header)
+                .withProfileImagesClickable(true)
+                .withSelectionListEnabledForSingleProfile(false)
+                .addProfiles(mMainProfile)
+                .withOnAccountHeaderListener((view, iProfile, b) -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
+                    return false;
                 })
                 .build();
+
+        mAccountHeader.setActiveProfile(mMainProfile);
     }
 
     @Override
@@ -427,23 +410,23 @@ public class MainActivity extends BaseActivity implements MainView {
                 }
                 break;
             case R.id.action_refresh:
-                if (mActiveRoom != null) {
-                    EventBus.getDefault().post(new RefreshMessagesRoomEvent(mActiveRoom));
+                if (getSelectedRoom() != null) {
+                    EventBus.getDefault().post(new RefreshMessagesRoomEvent(getSelectedRoom()));
 
                     mPresenter.loadRooms(true);
                 }
                 break;
             case R.id.action_leave:
-                if (mActiveRoom.oneToOne) {
+                if (getSelectedRoom() != null && getSelectedRoom().oneToOne) {
                     Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
                     break;
                 }
 
-                mPresenter.leaveFromRoom(mActiveRoom.id);
+                mPresenter.leaveFromRoom(getSelectedRoom().id);
 
                 break;
             case R.id.close_room:
-                mRoomTabs.removeTabAt(mRoomTabs.getSelectedTabPosition());
+                closeRoom();
                 break;
         }
 
@@ -460,18 +443,16 @@ public class MainActivity extends BaseActivity implements MainView {
         cleanDrawer();
 
         addRoomsToDrawer(data, false);
-
-        if (mRoomsInDrawer.size() > 0) {
-            mActiveRoom = null;
-            mRoomTabs.removeAllTabs();
-            // Select first room
-            mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET, true);
-        }
+        // mRoomTabs.removeAllTabs();
+        // Select first room
+        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET, true);
     }
 
     private void cleanDrawer() {
         mRoomsList.clear();
         mRoomsInDrawer.clear();
+        mRoomTabs.removeAllTabs();
+        mRoomsViewPager.getAdapter().notifyDataSetChanged();
 
         // Remove old items
         // 4 but items: "Home", "Divider", "Settings", "Sign Out".
@@ -495,7 +476,11 @@ public class MainActivity extends BaseActivity implements MainView {
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
 
-        unregisterReceiver(newMessageReceiver);
+        try {
+            unregisterReceiver(newMessageReceiver);
+        } catch (IllegalArgumentException e) {
+            // Broadcast not registered
+        }
 
         mPresenter.unbindView();
         mPresenter.onDestroy();
@@ -535,23 +520,23 @@ public class MainActivity extends BaseActivity implements MainView {
     // Update Badge in navigation item, if message was read
     public void onEvent(ReadMessagesEvent count) {
         for (int i = 0; i < mRoomsList.size(); i++) {
-            if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
+            if (mRoomsList.get(i).id.equals(getSelectedRoom().id)) {
                 // Update mActiveRoom, fix it.
                 // Make update will mActiveRoom while first load room or refresh room
-                mActiveRoom = mRoomsList.get(i);
-                mActiveRoom.unreadItems -= count.getCountRead();
+//                mActiveRoom = mRoomsList.get(i);
+//                mActiveRoom.unreadItems -= count.getCountRead();
 
-                if (mActiveRoom.unreadItems <= 0) {
-                    mActiveRoom.unreadItems = 0;
-                    // Remove badge
-                    mDrawer.updateItem(
-                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
-                } else {
-                    String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
-                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-                }
-
-                mRoomsList.set(i, mActiveRoom);
+//                if (mActiveRoom.unreadItems <= 0) {
+//                    mActiveRoom.unreadItems = 0;
+//                    // Remove badge
+//                    mDrawer.updateItem(
+//                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
+//                } else {
+//                    String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
+//                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+//                }
+//
+//                mRoomsList.set(i, mActiveRoom);
                 mDrawer.getAdapter().notifyDataSetChanged();
             }
         }
@@ -560,12 +545,7 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void showRooms(ArrayList<RoomViewModel> rooms) {
         setItemsDrawer(rooms);
-
-        if (mRoomsPagerAdapter == null) {
-            mRoomsPagerAdapter = new RoomsPagerAdapter(getSupportFragmentManager(), mRoomsInDrawer);
-        } else {
-            mRoomsPagerAdapter.notifyDataSetChanged();
-        }
+        // mRoomsPagerAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -587,17 +567,71 @@ public class MainActivity extends BaseActivity implements MainView {
         finish();
     }
 
-    private RoomViewModel getRoomById(String roomId) {
-        for (RoomViewModel model : mRoomsList) {
-            if (model.id.equals(roomId)) {
-                return model;
+    private void showRoomsListDialog() {
+
+    }
+
+    private void clickOnRoomInDrawer(String name) {
+        if (!roomAlreadyOpened(name)) {
+            for (RoomViewModel model : mRoomsInDrawer) {
+                if (name.equals(model.name)) {
+                    setTitle(model.name);
+                    mRoomTabs.addTab(mRoomTabs.newTab(), true);
+                    mRoomsInTabs.add(mRoomTabs.getSelectedTabPosition(), model);
+                    mRoomsViewPager.getAdapter().notifyDataSetChanged();
+                }
             }
+        } else {
+            mRoomsViewPager.setCurrentItem(getSelectionRoomPositionInTab(name), true);
+        }
+    }
+
+    private boolean roomAlreadyOpened(String name) {
+        return getSelectionRoomPositionInTab(name) != -1;
+    }
+
+    private int getSelectionRoomPositionInTab(String name) {
+        for (int i = 0; i < mRoomsInTabs.size(); i++) {
+            if (mRoomsInTabs.get(i).name.equals(name)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private RoomViewModel getSelectedRoom() {
+        final int index = mDrawer.getCurrentSelectedPosition() - START_ROOM_IN_DRAWER_OFFSET;
+
+        if (index >= 0 && index < mRoomsInDrawer.size()) {
+            return mRoomsInDrawer.get(index);
         }
 
         return null;
     }
 
-    private int getDrawerPositionByRoom(RoomViewModel model) {
-        return mRoomsInDrawer.indexOf(model) + START_ROOM_IN_DRAWER_OFFSET;
+    private void closeRoom() {
+        if (mRoomTabs.getTabCount() > 1) {
+            final int nowPos = mRoomTabs.getSelectedTabPosition();
+            mRoomTabs.removeTabAt(nowPos);
+            mRoomsInTabs.remove(nowPos);
+            mRoomsViewPager.getAdapter().notifyDataSetChanged();
+        } else if (mRoomTabs.getTabCount() == 0) {
+            Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show();
+        } else if (mRoomTabs.getTabCount() == 1) {
+            Toast.makeText(this, R.string.cannt_close_single_room, Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    private void signOut() {
+        getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE)
+                .edit().clear().apply();
+
+        startActivity(new Intent(getApplicationContext(), LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+        stopService(new Intent(getApplicationContext(), NotificationService.class));
+        finish();
     }
 }
