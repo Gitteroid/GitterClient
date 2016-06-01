@@ -504,7 +504,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         ReadMessagesEvent readMessagesEventBus = new ReadMessagesEvent();
 
         // -1 but last item equals to empty string
-        readMessagesEventBus.setCountRead(countRead);
+        readMessagesEventBus.countRead = countRead;
+        readMessagesEventBus.roomId = mRoom.id;
         EventBus.getDefault().post(readMessagesEventBus);
     }
 

@@ -27,6 +27,7 @@ import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.BadgeStyle;
+import com.mikepenz.materialdrawer.holder.StringHolder;
 import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
@@ -96,31 +97,6 @@ public class MainActivity extends BaseActivity implements MainView {
     @Inject
     MainPresenter mPresenter;
 
-    private Drawer.OnDrawerItemClickListener mDrawerItemClickListener = new Drawer.OnDrawerItemClickListener() {
-        @Override
-        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-            final PrimaryDrawerItem item = (PrimaryDrawerItem) drawerItem;
-
-            final String name = item.getName().getText();
-
-            if (name.equals(getString(R.string.home))) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
-            } else if (name.equals(getString(R.string.action_settings))) {
-                startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
-            } else if (name.equals(getString(R.string.signout))) {
-                signOut();
-            } else if (name.equals(getString(R.string.all))) {
-                showRoomsListDialog();
-            } else if (mRoomsInDrawer.size() > 0) {
-                clickOnRoomInDrawer(name);
-            }
-
-            mDrawer.closeDrawer();
-
-            return true;
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,28 +131,6 @@ public class MainActivity extends BaseActivity implements MainView {
                 .build();
 
         mComponent.inject(this);
-    }
-
-    private void initState(Bundle savedInstanceState) {
-        if (savedInstanceState != null) {
-            initWithSavedInstanceState(savedInstanceState);
-        } else {
-            initWithoutSavedInstanceState();
-        }
-    }
-
-    private void initDrawerImageLoader() {
-        DrawerImageLoader.init(new AbstractDrawerImageLoader() {
-            @Override
-            public void set(ImageView imageView, Uri uri, Drawable placeholder) {
-                Glide.with(imageView.getContext()).load(uri).placeholder(placeholder).into(imageView);
-            }
-
-            @Override
-            public void cancel(ImageView imageView) {
-                Glide.clear(imageView);
-            }
-        });
     }
 
     private void initViews() {
@@ -216,6 +170,14 @@ public class MainActivity extends BaseActivity implements MainView {
         setNavigationView();
     }
 
+    private void initState(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            initWithSavedInstanceState(savedInstanceState);
+        } else {
+            initWithoutSavedInstanceState();
+        }
+    }
+
     private void initWithSavedInstanceState(@NotNull Bundle savedInstanceState) {
         final int selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
         final ArrayList<RoomViewModel> roomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
@@ -244,6 +206,105 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         mPresenter.loadProfile();
+    }
+
+    private void initDrawerImageLoader() {
+        DrawerImageLoader.init(new AbstractDrawerImageLoader() {
+            @Override
+            public void set(ImageView imageView, Uri uri, Drawable placeholder) {
+                Glide.with(imageView.getContext()).load(uri).placeholder(placeholder).into(imageView);
+            }
+
+            @Override
+            public void cancel(ImageView imageView) {
+                Glide.clear(imageView);
+            }
+        });
+    }
+
+    private void setNavigationView() {
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
+        mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
+
+        mPresenter.loadProfile();
+
+        createAccountHeader();
+
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withIcon(R.drawable.ic_home)
+                .withName(getString(R.string.home))
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withSelectable(false)
+                .withSetSelected(false));
+
+        mDrawerItems.add(new DividerDrawerItem());
+
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withName(getString(R.string.action_settings))
+                .withIcon(R.drawable.ic_settings_dark)
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withSelectable(false)
+                .withSetSelected(false));
+
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withIcon(R.drawable.ic_logout)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withName(getString(R.string.signout))
+                .withTextColor(Color.WHITE));
+
+        mDrawer = new DrawerBuilder().withActivity(this)
+                .withTranslucentStatusBar(false)
+                .withAccountHeader(mAccountHeader)
+                .withActionBarDrawerToggle(mDrawerToggle)
+                .withActionBarDrawerToggle(true)
+                .withActionBarDrawerToggleAnimated(true)
+                .withTranslucentStatusBar(true)
+                .withSliderBackgroundColorRes(R.color.navDrawerBackground)
+                .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
+                .withOnDrawerItemClickListener(mDrawerItemClickListener)
+                .build();
+    }
+
+    private void createAccountHeader() {
+        mAccountHeader = new AccountHeaderBuilder()
+                .withActivity(this)
+                .withHeaderBackground(R.drawable.header)
+                .withProfileImagesClickable(true)
+                .withSelectionListEnabledForSingleProfile(false)
+                .addProfiles(mMainProfile)
+                .withOnAccountHeaderListener((view, iProfile, b) -> {
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
+                    return false;
+                })
+                .build();
+
+        mAccountHeader.setActiveProfile(mMainProfile);
+    }
+
+    private void setItemsDrawer(ArrayList<RoomViewModel> data) {
+        cleanDrawer();
+        addRoomsToDrawer(data, false);
+
+        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET);
+    }
+
+    private void cleanDrawer() {
+        mRoomsList.clear();
+        mRoomsInDrawer.clear();
+        mRoomTabs.removeAllTabs();
+        mRoomsViewPager.getAdapter().notifyDataSetChanged();
+
+        // Remove old items
+        // 4 but items: "Home", "Divider", "Settings", "Sign Out".
+        while (mDrawer.getDrawerItems().size() != 4) {
+            mDrawer.removeItemByPosition(START_ROOM_IN_DRAWER_OFFSET); // 2? Wtf?
+        }
     }
 
     private void addRoomsToDrawer(ArrayList<RoomViewModel> roomsList, boolean restore) {
@@ -329,71 +390,6 @@ public class MainActivity extends BaseActivity implements MainView {
         }
     }
 
-    private void setNavigationView() {
-        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.parent_layout);
-        mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name);
-
-        mPresenter.loadProfile();
-
-        createAccountHeader();
-
-        mDrawerItems.add(new PrimaryDrawerItem()
-                .withIcon(R.drawable.ic_home)
-                .withName(getString(R.string.home))
-                .withTextColor(Color.WHITE)
-                .withIconColor(Color.WHITE)
-                .withIconTintingEnabled(true)
-                .withSelectable(false)
-                .withSetSelected(false));
-
-        mDrawerItems.add(new DividerDrawerItem());
-
-        mDrawerItems.add(new PrimaryDrawerItem()
-                .withName(getString(R.string.action_settings))
-                .withIcon(R.drawable.ic_settings_dark)
-                .withTextColor(Color.WHITE)
-                .withIconColor(Color.WHITE)
-                .withIconTintingEnabled(true)
-                .withSelectable(false)
-                .withSetSelected(false));
-
-        mDrawerItems.add(new PrimaryDrawerItem()
-                .withIcon(R.drawable.ic_logout)
-                .withIconColor(Color.WHITE)
-                .withIconTintingEnabled(true)
-                .withName(getString(R.string.signout))
-                .withTextColor(Color.WHITE));
-
-        mDrawer = new DrawerBuilder().withActivity(this)
-                .withTranslucentStatusBar(false)
-                .withAccountHeader(mAccountHeader)
-                .withActionBarDrawerToggle(mDrawerToggle)
-                .withActionBarDrawerToggle(true)
-                .withActionBarDrawerToggleAnimated(true)
-                .withTranslucentStatusBar(true)
-                .withSliderBackgroundColorRes(R.color.navDrawerBackground)
-                .addDrawerItems((IDrawerItem[]) mDrawerItems.toArray(new IDrawerItem[mDrawerItems.size()]))
-                .withOnDrawerItemClickListener(mDrawerItemClickListener)
-                .build();
-    }
-
-    private void createAccountHeader() {
-        mAccountHeader = new AccountHeaderBuilder()
-                .withActivity(this)
-                .withHeaderBackground(R.drawable.header)
-                .withProfileImagesClickable(true)
-                .withSelectionListEnabledForSingleProfile(false)
-                .addProfiles(mMainProfile)
-                .withOnAccountHeaderListener((view, iProfile, b) -> {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            Uri.parse(Utils.GITHUB_URL + Utils.getInstance().getUserPref().url)));
-                    return false;
-                })
-                .build();
-
-        mAccountHeader.setActiveProfile(mMainProfile);
-    }
-
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -412,6 +408,12 @@ public class MainActivity extends BaseActivity implements MainView {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         mDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
     @Override
@@ -463,32 +465,6 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    private void setItemsDrawer(ArrayList<RoomViewModel> data) {
-        cleanDrawer();
-        addRoomsToDrawer(data, false);
-
-        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET);
-    }
-
-    private void cleanDrawer() {
-        mRoomsList.clear();
-        mRoomsInDrawer.clear();
-        mRoomTabs.removeAllTabs();
-        mRoomsViewPager.getAdapter().notifyDataSetChanged();
-
-        // Remove old items
-        // 4 but items: "Home", "Divider", "Settings", "Sign Out".
-        while (mDrawer.getDrawerItems().size() != 4) {
-            mDrawer.removeItemByPosition(START_ROOM_IN_DRAWER_OFFSET); // 2? Wtf?
-        }
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();
 
@@ -516,85 +492,30 @@ public class MainActivity extends BaseActivity implements MainView {
         super.onDestroy();
     }
 
-    private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
+    private Drawer.OnDrawerItemClickListener mDrawerItemClickListener = new Drawer.OnDrawerItemClickListener() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            signOut();
+        public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+            final PrimaryDrawerItem item = (PrimaryDrawerItem) drawerItem;
+
+            final String name = item.getName().getText();
+
+            if (name.equals(getString(R.string.home))) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")));
+            } else if (name.equals(getString(R.string.action_settings))) {
+                startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
+            } else if (name.equals(getString(R.string.signout))) {
+                signOut();
+            } else if (name.equals(getString(R.string.all))) {
+                showRoomsListDialog();
+            } else if (mRoomsInDrawer.size() > 0) {
+                clickOnRoomInDrawer(name);
+            }
+
+            mDrawer.closeDrawer();
+
+            return true;
         }
     };
-
-    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            for (int i = 0; i < mRoomsList.size(); i++) {
-                String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
-                MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
-
-                if (mRoomsList.get(i).id.equals(roomId)) {
-                    mRoomsList.get(i).unreadItems += 1;
-
-                    final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
-                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-                    mDrawer.getAdapter().notifyDataSetChanged();
-
-                    EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
-                }
-            }
-        }
-    };
-
-    // Update Badge in navigation item, if message was read
-    public void onEvent(ReadMessagesEvent count) {
-        for (int i = 0; i < mRoomsList.size(); i++) {
-            if (mRoomsList.get(i).id.equals(getSelectedRoom().id)) {
-                // Update mActiveRoom, fix it.
-                // Make update will mActiveRoom while first load room or refresh room
-//                mActiveRoom = mRoomsList.get(i);
-//                mActiveRoom.unreadItems -= count.getCountRead();
-
-//                if (mActiveRoom.unreadItems <= 0) {
-//                    mActiveRoom.unreadItems = 0;
-//                    // Remove badge
-//                    mDrawer.updateItem(
-//                            ((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(new StringHolder(null)));
-//                } else {
-//                    String badgeText = mActiveRoom.unreadItems >= 100 ? "99+" : Integer.toString(mActiveRoom.unreadItems);
-//                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-//                }
-//
-//                mRoomsList.set(i, mActiveRoom);
-                mDrawer.getAdapter().notifyDataSetChanged();
-            }
-        }
-    }
-
-    @Override
-    public void showRooms(ArrayList<RoomViewModel> rooms) {
-        setItemsDrawer(rooms);
-    }
-
-    @Override
-    public void showProfile(UserModel user) {
-        mMainProfile.withName(user.username);
-        mMainProfile.withEmail(user.displayName);
-        mMainProfile.withIcon(user.avatarUrlMedium);
-
-        mAccountHeader.updateProfile(mMainProfile);
-    }
-
-    @Override
-    public void showError(int resId) {
-        Toast.makeText(getApplicationContext(), resId, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void leavedFromRoom() {
-        finish();
-    }
-
-    private void showRoomsListDialog() {
-
-    }
 
     private void clickOnRoomInDrawer(String name) {
         if (!roomAlreadyOpened(name)) {
@@ -629,6 +550,96 @@ public class MainActivity extends BaseActivity implements MainView {
         return -1;
     }
 
+    private void signOut() {
+        getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE)
+                .edit().clear().apply();
+
+        startActivity(new Intent(getApplicationContext(), LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
+        stopService(new Intent(getApplicationContext(), NotificationService.class));
+        finish();
+    }
+
+    private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            signOut();
+        }
+    };
+
+    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            for (int i = 0; i < mRoomsList.size(); i++) {
+                String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
+                MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
+
+                if (mRoomsList.get(i).id.equals(roomId)) {
+                    mRoomsList.get(i).unreadItems += 1;
+
+                    final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
+                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
+                    mDrawer.getAdapter().notifyDataSetChanged();
+
+                    EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
+                }
+            }
+        }
+    };
+
+    // Update Badge in navigation item, if message was read
+    public void onEvent(ReadMessagesEvent event) {
+        final String idSelectedRoom = getSelectedRoom().id;
+
+        for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+            if (mRoomsInDrawer.get(i).id.equals(idSelectedRoom)) {
+                final RoomViewModel model = mRoomsInDrawer.get(i);
+                model.unreadItems -= event.countRead;
+
+                final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1);
+                if (model.unreadItems <= 0) {
+                    model.unreadItems = 0;
+                    // Remove badge
+                    mDrawer.updateItem(item.withBadge(new StringHolder(null)));
+                } else {
+                    final String badgeText = model.unreadItems >= 100 ? "99+" : Integer.toString(model.unreadItems);
+                    mDrawer.updateItem(item.withBadge(badgeText));
+                }
+
+                mDrawer.getAdapter().notifyDataSetChanged();
+            }
+        }
+    }
+
+    @Override
+    public void showRooms(ArrayList<RoomViewModel> rooms) {
+        setItemsDrawer(rooms);
+    }
+
+    @Override
+    public void showProfile(UserModel user) {
+        mMainProfile.withName(user.username);
+        mMainProfile.withEmail(user.displayName);
+        mMainProfile.withIcon(user.avatarUrlMedium);
+
+        mAccountHeader.updateProfile(mMainProfile);
+    }
+
+    @Override
+    public void showError(int resId) {
+        Toast.makeText(getApplicationContext(), resId, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void leavedFromRoom() {
+        finish();
+    }
+
+    private void showRoomsListDialog() {
+
+    }
+
     private int getPositionRoomInDrawer(String name) {
         for (int i = 0; i < mRoomsInDrawer.size(); i++) {
             if (mRoomsInDrawer.get(i).name.equals(name)) {
@@ -647,16 +658,5 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         return null;
-    }
-
-    private void signOut() {
-        getSharedPreferences(Utils.getInstance().USERINFO_PREF, MODE_PRIVATE)
-                .edit().clear().apply();
-
-        startActivity(new Intent(getApplicationContext(), LoginActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP));
-        stopService(new Intent(getApplicationContext(), NotificationService.class));
-        finish();
     }
 }
