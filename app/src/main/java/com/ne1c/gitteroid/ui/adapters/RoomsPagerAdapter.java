@@ -10,7 +10,7 @@ import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment;
 
 import java.util.ArrayList;
 
-public class RoomsPagerAdapter extends FragmentPagerAdapter {
+public class RoomsPagerAdapter extends FragmentPagerAdapter  {
     private ArrayList<RoomViewModel> mRoomsList;
 
     public RoomsPagerAdapter(FragmentManager fm, ArrayList<RoomViewModel> roomsList) {
