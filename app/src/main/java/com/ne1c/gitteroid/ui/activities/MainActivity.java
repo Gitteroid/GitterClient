@@ -76,7 +76,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
     // private ChatRoomFragment mChatRoomFragment;
     private ViewPager mRoomsViewPager;
-   // private RoomsPagerAdapter mRoomsPagerAdapter;
+    // private RoomsPagerAdapter mRoomsPagerAdapter;
 
     private ActionBarDrawerToggle mDrawerToggle;
 
@@ -189,8 +189,26 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         mRoomsViewPager = (ViewPager) findViewById(R.id.rooms_viewPager);
-        //mRoomsPagerAdapter = new RoomsPagerAdapter(getSupportFragmentManager(), mRoomsInTabs);
         mRoomsViewPager.setAdapter(new RoomsPagerAdapter(getSupportFragmentManager(), mRoomsInTabs));
+        mRoomsViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                final String name = mRoomsInTabs.get(position).name;
+                setTitle(name);
+
+                mDrawer.setSelectionAtPosition(getPositionRoomInDrawer(name), false);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
 
         mRoomTabs = (TabLayout) findViewById(R.id.rooms_tab);
         mRoomTabs.setupWithViewPager(mRoomsViewPager);
@@ -328,7 +346,6 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withSelectable(false)
                 .withSetSelected(false));
 
-
         mDrawerItems.add(new DividerDrawerItem());
 
         mDrawerItems.add(new PrimaryDrawerItem()
@@ -421,7 +438,6 @@ public class MainActivity extends BaseActivity implements MainView {
                     Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
                     break;
                 }
-
                 mPresenter.leaveFromRoom(getSelectedRoom().id);
 
                 break;
@@ -433,19 +449,30 @@ public class MainActivity extends BaseActivity implements MainView {
         return super.onOptionsItemSelected(item);
     }
 
+    private void closeRoom() {
+        if (mRoomTabs.getTabCount() > 1) {
+            final int nowPos = mRoomTabs.getSelectedTabPosition();
+            mRoomsInTabs.remove(nowPos);
+            mRoomsViewPager.getAdapter().notifyDataSetChanged();
+//            mRoomTabs.removeTabAt(nowPos);
+        } else if (mRoomTabs.getTabCount() == 0) {
+            Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show();
+        } else if (mRoomTabs.getTabCount() == 1) {
+            Toast.makeText(this, R.string.cannt_close_single_room, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        return super.onCreateOptionsMenu(menu);
+        return true;
     }
 
     private void setItemsDrawer(ArrayList<RoomViewModel> data) {
         cleanDrawer();
-
         addRoomsToDrawer(data, false);
-        // mRoomTabs.removeAllTabs();
-        // Select first room
-        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET, true);
+
+        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET);
     }
 
     private void cleanDrawer() {
@@ -492,8 +519,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private BroadcastReceiver unauthorizedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // Select "Sign Out"
-            mDrawer.setSelectionAtPosition(mDrawer.getDrawerItems().size() - 1);
+            signOut();
         }
     };
 
@@ -545,7 +571,6 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void showRooms(ArrayList<RoomViewModel> rooms) {
         setItemsDrawer(rooms);
-        // mRoomsPagerAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -576,9 +601,13 @@ public class MainActivity extends BaseActivity implements MainView {
             for (RoomViewModel model : mRoomsInDrawer) {
                 if (name.equals(model.name)) {
                     setTitle(model.name);
-                    mRoomTabs.addTab(mRoomTabs.newTab(), true);
-                    mRoomsInTabs.add(mRoomTabs.getSelectedTabPosition(), model);
+
+                    final int lastIndex = mRoomTabs.getTabCount();
+                    mRoomTabs.addTab(mRoomTabs.newTab(), lastIndex);
+                    mRoomsInTabs.add(lastIndex, model);
                     mRoomsViewPager.getAdapter().notifyDataSetChanged();
+
+                    mRoomsViewPager.setCurrentItem(lastIndex);
                 }
             }
         } else {
@@ -600,6 +629,16 @@ public class MainActivity extends BaseActivity implements MainView {
         return -1;
     }
 
+    private int getPositionRoomInDrawer(String name) {
+        for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+            if (mRoomsInDrawer.get(i).name.equals(name)) {
+                return i + START_ROOM_IN_DRAWER_OFFSET;
+            }
+        }
+
+        return -1;
+    }
+
     private RoomViewModel getSelectedRoom() {
         final int index = mDrawer.getCurrentSelectedPosition() - START_ROOM_IN_DRAWER_OFFSET;
 
@@ -608,20 +647,6 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         return null;
-    }
-
-    private void closeRoom() {
-        if (mRoomTabs.getTabCount() > 1) {
-            final int nowPos = mRoomTabs.getSelectedTabPosition();
-            mRoomTabs.removeTabAt(nowPos);
-            mRoomsInTabs.remove(nowPos);
-            mRoomsViewPager.getAdapter().notifyDataSetChanged();
-        } else if (mRoomTabs.getTabCount() == 0) {
-            Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show();
-        } else if (mRoomTabs.getTabCount() == 1) {
-            Toast.makeText(this, R.string.cannt_close_single_room, Toast.LENGTH_SHORT).show();
-        }
-
     }
 
     private void signOut() {
