@@ -52,6 +52,7 @@ import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.presenters.MainPresenter;
 import com.ne1c.gitteroid.services.NotificationService;
 import com.ne1c.gitteroid.ui.adapters.RoomsPagerAdapter;
+import com.ne1c.gitteroid.ui.fragments.PickRoomsDialogFragment;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.Utils;
 
@@ -75,9 +76,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private final String ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle";
     private final String ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle";
 
-    // private ChatRoomFragment mChatRoomFragment;
     private ViewPager mRoomsViewPager;
-    // private RoomsPagerAdapter mRoomsPagerAdapter;
 
     private ActionBarDrawerToggle mDrawerToggle;
 
@@ -326,6 +325,15 @@ public class MainActivity extends BaseActivity implements MainView {
             }
         }
 
+        mDrawer.addItemAtPosition(new PrimaryDrawerItem()
+                        .withName(getString(R.string.all))
+                        .withTextColor(Color.WHITE)
+                        .withIconColor(Color.WHITE)
+                        .withIconTintingEnabled(true)
+                        .withIcon(R.drawable.ic_format_list_bulleted)
+                        .withSelectable(false),
+                mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
+
         if (mRoomsInDrawer.size() == 0 && mRoomsList.size() > 0 && !restore) {
             final int endValue = mRoomsList.size() >= 4 ? 4 : mRoomsInDrawer.size();
             mRoomsInDrawer.addAll(mRoomsList.subList(0, endValue));
@@ -340,7 +348,7 @@ public class MainActivity extends BaseActivity implements MainView {
         badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
         String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-        return new PrimaryDrawerItem()
+        PrimaryDrawerItem item = new PrimaryDrawerItem()
                 .withIcon(R.drawable.ic_room)
                 .withIconColor(Color.WHITE)
                 .withIconTintingEnabled(true)
@@ -348,9 +356,14 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withTextColor(Color.WHITE)
                 .withSelectedTextColor(Color.BLACK)
                 .withSelectedColorRes(R.color.md_white_1000)
-                .withBadge(badgeText)
-                .withBadgeStyle(badgeStyle)
                 .withSelectable(true);
+
+        if (room.unreadItems != 0) {
+            return item.withBadge(badgeText)
+                    .withBadgeStyle(badgeStyle);
+        }
+
+        return item;
     }
 
     @Override
@@ -637,7 +650,8 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private void showRoomsListDialog() {
-
+        PickRoomsDialogFragment fragment = new PickRoomsDialogFragment();
+        fragment.show(getSupportFragmentManager(), mRoomsList, model -> pickRoom(model));
     }
 
     private int getPositionRoomInDrawer(String name) {
@@ -658,5 +672,21 @@ public class MainActivity extends BaseActivity implements MainView {
         }
 
         return null;
+    }
+
+    private void pickRoom(RoomViewModel model) {
+        if (getPositionRoomInDrawer(model.name) == -1) {
+            // -1 because added "All"
+            final int newPosition = mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET - 1;
+
+            mRoomsInDrawer.add(model);
+            mDrawer.addItemAtPosition(formatRoomToDrawerItem(model), newPosition);
+            mDrawer.getAdapter().notifyAdapterDataSetChanged();
+
+            mDrawer.setSelectionAtPosition(newPosition);
+        } else {
+            final int position = getPositionRoomInDrawer(model.name);
+            mDrawer.setSelectionAtPosition(position);
+        }
     }
 }
