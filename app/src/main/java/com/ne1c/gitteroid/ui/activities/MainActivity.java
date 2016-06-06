@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -70,11 +71,11 @@ public class MainActivity extends BaseActivity implements MainView {
     public final static String MESSAGE_INTENT_KEY = "message";
     public final static String ROOM_ID_INTENT_KEY = "room";
 
-    public final int START_ROOM_IN_DRAWER_OFFSET = 2;
-    private final String SELECT_NAV_ITEM_BUNDLE = "select_nav_item";
+    private final int START_ROOM_IN_DRAWER_OFFSET = 2;
     private final String ROOMS_BUNDLE = "rooms_bundle";
     private final String ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle";
     private final String ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle";
+    private final String ROOMS_PAGER_STATE_BUNDLE = "rooms_pager_state_bundle";
 
     private ViewPager mRoomsViewPager;
 
@@ -178,23 +179,20 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private void initWithSavedInstanceState(@NotNull Bundle savedInstanceState) {
-        final int selectedNavItem = savedInstanceState.getInt(SELECT_NAV_ITEM_BUNDLE);
         final ArrayList<RoomViewModel> roomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
+        mRoomsInDrawer.addAll(savedInstanceState.getParcelableArrayList(ROOMS_IN_DRAWER_BUNDLE));
+        mRoomsInTabs.addAll(savedInstanceState.getParcelableArrayList(ROOMS_IN_TABS_BUNDLE));
 
         addRoomsToDrawer(roomsList, true);
 
-        if (mRoomsList.size() > 0) {
-            // If activity open from notification
-            // mActiveRoom = getIntent().getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
-//
-//            if (mActiveRoom == null || mActiveRoom.id == null) {
-//                mActiveRoom = mRoomsList.get(mDrawer.getCurrentSelectedPosition() - 1);
-//            }
+        final Parcelable pagerAdapterState = savedInstanceState.getParcelable(ROOMS_PAGER_STATE_BUNDLE);
+        mRoomsViewPager.getAdapter().restoreState(pagerAdapterState, getClassLoader());
 
-            mDrawer.setSelectionAtPosition(selectedNavItem + 1);
-
-            setTitle(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(selectedNavItem)).getName().toString());
+        for (int i = 0; i < mRoomsInTabs.size(); i++) {
+            mRoomTabs.addTab(mRoomTabs.newTab(), i);
         }
+
+        mRoomsViewPager.getAdapter().notifyDataSetChanged();
     }
 
     private void initWithoutSavedInstanceState() {
@@ -310,16 +308,18 @@ public class MainActivity extends BaseActivity implements MainView {
         mRoomsList.clear();
         mRoomsList.addAll(roomsList);
 
-        if (!restore) {
-            mRoomsInDrawer.clear();
-        }
-
-        for (RoomViewModel room : roomsList) {
-            if (room.unreadItems > 0) {
+        if (restore) {
+            for (RoomViewModel room : mRoomsInDrawer) {
                 mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
                         mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
+            }
+        } else {
+            mRoomsInDrawer.clear();
 
-                if (!restore) {
+            for (RoomViewModel room : roomsList) {
+                if (room.unreadItems > 0) {
+                    mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
+                            mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
                     mRoomsInDrawer.add(room);
                 }
             }
@@ -405,10 +405,12 @@ public class MainActivity extends BaseActivity implements MainView {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        outState.putInt(SELECT_NAV_ITEM_BUNDLE, mDrawer.getCurrentSelectedPosition());
         outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList);
+        outState.putParcelableArrayList(ROOMS_IN_DRAWER_BUNDLE, mRoomsInDrawer);
+        outState.putParcelableArrayList(ROOMS_IN_TABS_BUNDLE, mRoomsInTabs);
+        outState.putParcelable(ROOMS_PAGER_STATE_BUNDLE, mRoomsViewPager.getAdapter().saveState());
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -469,7 +471,6 @@ public class MainActivity extends BaseActivity implements MainView {
             final int nowPos = mRoomTabs.getSelectedTabPosition();
             mRoomsInTabs.remove(nowPos);
             mRoomsViewPager.getAdapter().notifyDataSetChanged();
-//            mRoomTabs.removeTabAt(nowPos);
         } else if (mRoomTabs.getTabCount() == 0) {
             Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show();
         } else if (mRoomTabs.getTabCount() == 1) {
