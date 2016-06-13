@@ -49,6 +49,7 @@ public class MainPresenter extends BasePresenter<MainView> {
         Subscription sub = mDataManger.getProfile()
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(userModel -> mView != null)
                 .subscribe(userModel -> {
                     mView.showProfile(userModel);
                 }, throwable -> { mView.showError(R.string.error); });
@@ -65,6 +66,7 @@ public class MainPresenter extends BasePresenter<MainView> {
         Subscription sub = mDataManger.leaveFromRoom(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(response -> mView != null)
                 .subscribe(response -> {
                     if (response) {
                         mView.leavedFromRoom();
@@ -85,6 +87,7 @@ public class MainPresenter extends BasePresenter<MainView> {
         Subscription sub = mDataManger.getRooms(fresh)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(roomModels -> mView != null)
                 .map(roomModels -> {
                     ArrayList<RoomViewModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {
