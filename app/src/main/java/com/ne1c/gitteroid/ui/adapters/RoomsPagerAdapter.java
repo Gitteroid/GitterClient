@@ -25,7 +25,7 @@ public class RoomsPagerAdapter extends FragmentPagerAdapter  {
 
     @Override
     public Fragment getItem(int position) {
-        return ChatRoomFragment.newInstance(mRoomsList.get(position), false);
+        return ChatRoomFragment.newInstance(mRoomsList.get(position));
     }
 
     @Override
