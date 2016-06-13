@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -62,11 +63,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     private Parcelable mMessageListSavedState;
 
-    private ChatRoomComponent mComponent;
-
-    @Inject
-    ChatRoomPresenter mPresenter;
-
     private int mStartNumberLoadMessages = 10;
     private int mCountLoadMessages = 0;
 
@@ -74,6 +70,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private boolean mIsRefreshing = false;
 
     private RoomViewModel mOverviewRoom = null;
+
+    private ChatRoomComponent mComponent;
+
+    @Inject
+    ChatRoomPresenter mPresenter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -89,15 +90,23 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         } else {
             mRoom = getArguments().getParcelable("room");
         }
-
-        //EventBus.getDefault().register(this);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_chat_room, container, false);
+        return inflater.inflate(R.layout.fragment_chat_room, container, false);
+    }
 
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        initViews(view);
+        setDataToView(savedInstanceState);
+    }
+
+    private void initViews(View v) {
         mMessageEditText = (EditText) v.findViewById(R.id.message_edit_text);
         mSendButton = (ImageButton) v.findViewById(R.id.send_button);
 
@@ -118,97 +127,115 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mFabToBottom.setOnClickListener(v1 -> mMessagesList.smoothScrollToPosition(0));
         mFabToBottom.hide();
 
-        setDataToView(savedInstanceState);
-
         v.findViewById(R.id.markdown_button).setOnClickListener(v1 -> {
             DialogMarkdownFragment dialog = new DialogMarkdownFragment();
             dialog.setTargetFragment(ChatRoomFragment.this, DialogMarkdownFragment.REQUEST_CODE);
             dialog.show(getFragmentManager(), "MARKDOWN_DIALOG");
         });
 
-        mPresenter.bindView(this);
-
         if (mOverviewRoom != null) {
             v.findViewById(R.id.input_layout).setVisibility(View.GONE);
-
-            onEvent(mOverviewRoom);
 
             Button joinRoomButton = (Button) v.findViewById(R.id.join_room_button);
             joinRoomButton.setVisibility(View.VISIBLE);
             joinRoomButton.setOnClickListener(v1 -> mPresenter.joinToRoom(mOverviewRoom.name));
         }
+    }
 
-        onEvent(mRoom);
+    private void loadRoom() {
+        if (mOverviewRoom == null) {
+            loadMessages(mRoom);
+        } else {
+            loadMessages(mOverviewRoom);
+        }
+    }
 
-        return v;
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        mPresenter.bindView(this);
+        loadRoom();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        mPresenter.unbindView();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == DialogMarkdownFragment.REQUEST_CODE) {
-            switch (data.getIntExtra("layout_id", -1)) {
-                case MarkdownUtils.SINGLELINE_CODE:
-                    mMessageEditText.append("``");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 1);
-                    break;
-                case MarkdownUtils.MULTILINE_CODE:
-                    if (mMessageEditText.length() > 0) {
-                        mMessageEditText.append("``````");
-                    } else {
-                        mMessageEditText.append("\n``````");
-                    }
-
-                    mMessageEditText.setSelection(mMessageEditText.length() - 3);
-                    break;
-                case MarkdownUtils.BOLD:
-                    mMessageEditText.append("****");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 2);
-                    break;
-                case MarkdownUtils.ITALICS:
-                    mMessageEditText.append("**");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 1);
-                    break;
-                case MarkdownUtils.STRIKETHROUGH:
-                    mMessageEditText.append("~~~~");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 2);
-                    break;
-                case MarkdownUtils.QUOTE:
-                    if (mMessageEditText.length() > 0) {
-                        mMessageEditText.append("\n>");
-                    } else {
-                        mMessageEditText.append(">");
-                    }
-
-                    mMessageEditText.setSelection(mMessageEditText.length());
-                    break;
-                case MarkdownUtils.GITTER_LINK:
-                    mMessageEditText.append("[](http://)");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 10);
-                    break;
-                case MarkdownUtils.IMAGE_LINK:
-                    mMessageEditText.append("![](http://)");
-                    mMessageEditText.setSelection(mMessageEditText.length() - 10);
-                    break;
-                default:
-                    break;
-            }
-
-            mMessageEditText.requestFocus();
-            mMessageEditText.post(() -> {
-                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
-            });
+           pickedMarkdown(data.getIntExtra("layout_id", -1));
         }
 
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    private void pickedMarkdown(int layoutId) {
+        switch (layoutId) {
+            case MarkdownUtils.SINGLELINE_CODE:
+                mMessageEditText.append("``");
+                mMessageEditText.setSelection(mMessageEditText.length() - 1);
+                break;
+            case MarkdownUtils.MULTILINE_CODE:
+                if (mMessageEditText.length() > 0) {
+                    mMessageEditText.append("``````");
+                } else {
+                    mMessageEditText.append("\n``````");
+                }
+
+                mMessageEditText.setSelection(mMessageEditText.length() - 3);
+                break;
+            case MarkdownUtils.BOLD:
+                mMessageEditText.append("****");
+                mMessageEditText.setSelection(mMessageEditText.length() - 2);
+                break;
+            case MarkdownUtils.ITALICS:
+                mMessageEditText.append("**");
+                mMessageEditText.setSelection(mMessageEditText.length() - 1);
+                break;
+            case MarkdownUtils.STRIKETHROUGH:
+                mMessageEditText.append("~~~~");
+                mMessageEditText.setSelection(mMessageEditText.length() - 2);
+                break;
+            case MarkdownUtils.QUOTE:
+                if (mMessageEditText.length() > 0) {
+                    mMessageEditText.append("\n>");
+                } else {
+                    mMessageEditText.append(">");
+                }
+
+                mMessageEditText.setSelection(mMessageEditText.length());
+                break;
+            case MarkdownUtils.GITTER_LINK:
+                mMessageEditText.append("[](http://)");
+                mMessageEditText.setSelection(mMessageEditText.length() - 10);
+                break;
+            case MarkdownUtils.IMAGE_LINK:
+                mMessageEditText.append("![](http://)");
+                mMessageEditText.setSelection(mMessageEditText.length() - 10);
+                break;
+            default:
+                break;
+        }
+
+        mMessageEditText.requestFocus();
+        mMessageEditText.post(() -> {
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+        });
+    }
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
         outState.putParcelable("scrollPosition", mMessagesList.getLayoutManager().onSaveInstanceState());
         outState.putParcelable("active_room", mRoom);
         outState.putParcelableArrayList("messages", mMessagesArr);
+
+        super.onSaveInstanceState(outState);
     }
 
     private void setDataToView(Bundle savedInstanceState) {
@@ -218,38 +245,23 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 mMessageEditText);
 
         mMessagesList.setAdapter(mMessagesAdapter);
-        mMessagesList.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(final RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    markMessagesAsRead();
+        mMessagesList.addOnScrollListener(mMessagesScrollListener);
 
-                    int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
-                    if (firstVisible >= 10) {
-                        mFabToBottom.show();
-                    } else {
-                        mFabToBottom.hide();
-                    }
-                }
+        initSavedState(savedInstanceState);
 
-                int lastMessage = mMessagesArr.size() - 1;
+        if (mIsRefreshing) {
+            mMessagesList.setVisibility(View.GONE);
+            showListProgressBar();
+        }
 
-                if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage) {
-                    if (mMessagesArr.size() > 0 && !mMessagesArr.get(lastMessage).id.isEmpty()) {
-                        if (!mIsLoadBeforeIdMessages && mTopProgressBar.getVisibility() != View.VISIBLE) {
-                            mIsLoadBeforeIdMessages = true;
+        if (mIsLoadBeforeIdMessages) {
+            showTopProgressBar();
+        }
 
-                            showTopProgressBar();
-                            mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(lastMessage).id);
-                        }
-                    } else {
-                        hideTopProgressBar();
-                    }
-                }
-            }
-        });
+        mSendButton.setOnClickListener(v -> sendMessage());
+    }
 
+    private void initSavedState(Bundle savedInstanceState) {
         if (savedInstanceState != null) {
             mMessageListSavedState = savedInstanceState.getParcelable("scrollPosition");
             savedInstanceState.remove("scrollPosition");
@@ -277,46 +289,73 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             }
             //}
         }
+    }
 
-        if (mIsRefreshing) {
-            mMessagesList.setVisibility(View.GONE);
-            showListProgressBar();
+    private RecyclerView.OnScrollListener mMessagesScrollListener = new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            showFab(newState);
+            loadNewMessages();
         }
+    };
 
-        if (mIsLoadBeforeIdMessages) {
-            showTopProgressBar();
+    private void showFab(int newScrollState) {
+        if (newScrollState == RecyclerView.SCROLL_STATE_IDLE) {
+            markMessagesAsRead();
+
+            final int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
+            if (firstVisible >= 10) {
+                mFabToBottom.show();
+            } else {
+                mFabToBottom.hide();
+            }
         }
+    }
 
-        mSendButton.setOnClickListener(v -> {
-            if (!mMessageEditText.getText().toString().isEmpty()) {
-                if (Utils.getInstance().isNetworkConnected()) {
-                    MessageViewModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
+    private void loadNewMessages() {
+        final int lastMessage = mMessagesArr.size() - 1;
 
-                    mMessagesArr.add(0, model);
-                    mMessagesAdapter.notifyItemInserted(0);
+        if (mListLayoutManager.findLastVisibleItemPosition() == lastMessage) {
+            if (mMessagesArr.size() > 0 && !mMessagesArr.get(lastMessage).id.isEmpty()) {
+                if (!mIsLoadBeforeIdMessages && mTopProgressBar.getVisibility() != View.VISIBLE) {
+                    mIsLoadBeforeIdMessages = true;
 
-                    int first = mListLayoutManager.findFirstVisibleItemPosition();
-                    if (first != 1) {
-                        mMessagesList.smoothScrollToPosition(0);
-                    }
-
-                    mPresenter.sendMessage(mRoom.id, model.text);
-                    mMessageEditText.setText("");
-                } else {
-                    Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+                    showTopProgressBar();
+                    mPresenter.loadMessagesBeforeId(mRoom.id, 10, mMessagesArr.get(lastMessage).id);
                 }
             } else {
-                Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
+                hideTopProgressBar();
             }
-        });
+        }
+    }
+
+    private void sendMessage() {
+        if (!mMessageEditText.getText().toString().isEmpty()) {
+            if (Utils.getInstance().isNetworkConnected()) {
+                MessageViewModel model = mPresenter.createSendMessage(mMessageEditText.getText().toString());
+
+                mMessagesArr.add(0, model);
+                mMessagesAdapter.notifyItemInserted(0);
+
+                int first = mListLayoutManager.findFirstVisibleItemPosition();
+                if (first != 1) {
+                    mMessagesList.smoothScrollToPosition(0);
+                }
+
+                mPresenter.sendMessage(mRoom.id, model.text);
+                mMessageEditText.setText("");
+            } else {
+                Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(getActivity(), R.string.message_empty, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
     public void onDestroy() {
-        EventBus.getDefault().unregister(this);
-
-        mPresenter.unbindView();
         mComponent = null;
+        mPresenter.onDestroy();
 
         super.onDestroy();
     }
@@ -352,9 +391,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mPresenter.loadNetworkMessages(roomModel.id, mStartNumberLoadMessages + mCountLoadMessages);
     }
 
-    // Event from MainActivity or notification
-    // Load messages of room
-    public void onEvent(RoomViewModel model) {
+    private void loadMessages(RoomViewModel model) {
         hideListProgress();
         hideTopProgressBar();
 
@@ -600,6 +637,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mComponent.inject(this);
     }
 
+    public static ChatRoomFragment newInstance(RoomViewModel room) {
+        return newInstance(room, false);
+    }
+
     public static ChatRoomFragment newInstance(RoomViewModel room, boolean overview) {
         Bundle bundle = new Bundle();
         bundle.putParcelable("room", room);
@@ -611,7 +652,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         return fragment;
     }
 
-    // Callback for adapter
     public interface ReadMessageCallback {
         void read(ImageView indicator, int position);
     }
