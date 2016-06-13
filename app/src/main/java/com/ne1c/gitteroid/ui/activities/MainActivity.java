@@ -28,6 +28,7 @@ import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.holder.BadgeStyle;
+import com.mikepenz.materialdrawer.holder.ImageHolder;
 import com.mikepenz.materialdrawer.holder.StringHolder;
 import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
@@ -52,6 +53,7 @@ import com.ne1c.gitteroid.models.data.UserModel;
 import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.presenters.MainPresenter;
 import com.ne1c.gitteroid.services.NotificationService;
+import com.ne1c.gitteroid.ui.ImagePrimaryDrawerItem;
 import com.ne1c.gitteroid.ui.adapters.RoomsPagerAdapter;
 import com.ne1c.gitteroid.ui.fragments.PickRoomsDialogFragment;
 import com.ne1c.gitteroid.ui.views.MainView;
@@ -162,6 +164,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
             }
         });
+        mRoomsViewPager.setOffscreenPageLimit(10);
 
         mRoomTabs = (TabLayout) findViewById(R.id.rooms_tab);
         mRoomTabs.setupWithViewPager(mRoomsViewPager);
@@ -341,14 +344,15 @@ public class MainActivity extends BaseActivity implements MainView {
         mDrawer.getAdapter().notifyDataSetChanged();
     }
 
-    private PrimaryDrawerItem formatRoomToDrawerItem(RoomViewModel room) {
+    private ImagePrimaryDrawerItem formatRoomToDrawerItem(RoomViewModel room) {
         BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
                 getResources().getColor(R.color.md_green_700));
         badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
 
         String badgeText = room.unreadItems == 100 ? "99+" : Integer.toString(room.unreadItems);
-        PrimaryDrawerItem item = new PrimaryDrawerItem()
+        ImagePrimaryDrawerItem item = (ImagePrimaryDrawerItem) new ImagePrimaryDrawerItem()
                 .withIcon(R.drawable.ic_room)
+                .withIcon(new ImageHolder(room.getAvatarUrl()))
                 .withIconColor(Color.WHITE)
                 .withIconTintingEnabled(true)
                 .withName(room.name)
@@ -358,7 +362,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withSelectable(true);
 
         if (room.unreadItems != 0) {
-            return item.withBadge(badgeText)
+            return (ImagePrimaryDrawerItem) item.withBadge(badgeText)
                     .withBadgeStyle(badgeStyle);
         }
 
