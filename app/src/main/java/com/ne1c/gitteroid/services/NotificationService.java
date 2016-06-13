@@ -19,7 +19,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.util.Log;
 
 import com.ne1c.gitteroid.Application;
 import com.ne1c.gitteroid.R;
@@ -61,7 +60,6 @@ public class NotificationService extends Service {
 
     private DataManger mDataManger;
 
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -98,9 +96,7 @@ public class NotificationService extends Service {
                     mRooms = roomModels;
 
                     createSubscribers();
-                }, throwable -> {
-                    Log.e("notification_service", "onStartCommand: ", throwable);
-                });
+                }, throwable -> {});
 
         return START_STICKY;
     }
@@ -182,8 +178,7 @@ public class NotificationService extends Service {
     private void sendNotificationMessage(RoomModel room, MessageModel message) {
         Intent notifIntent = new Intent(getApplicationContext(), MainActivity.class);
         notifIntent.putExtra(FROM_ROOM_EXTRA_KEY, room);
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 getApplicationContext(),
@@ -202,6 +197,7 @@ public class NotificationService extends Service {
                         .setSmallIcon(R.drawable.ic_notif_message)
                         .setTicker(text)
                         .setContentText(text)
+                        .setNumber(room.unreadItems)
                         .setContentTitle(room.name);
 
         NotificationManagerCompat notifMgr = NotificationManagerCompat.from(getApplicationContext());
