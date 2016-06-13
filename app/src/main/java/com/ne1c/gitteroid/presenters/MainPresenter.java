@@ -37,17 +37,12 @@ public class MainPresenter extends BasePresenter<MainView> {
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
-    public void onCreate() {
-    }
-
-    @Override
     public void onDestroy() {
-
+        mSubscriptions.unsubscribe();
     }
 
     public void loadProfile() {

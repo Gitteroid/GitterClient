@@ -91,11 +91,6 @@ public class RoomsListPresenter extends BasePresenter<RoomsListView> {
     }
 
     @Override
-    public void onCreate() {
-
-    }
-
-    @Override
     public void onDestroy() {
 
     }

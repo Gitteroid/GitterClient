@@ -5,7 +5,5 @@ public abstract class BasePresenter<T> {
 
     public abstract void unbindView();
 
-    public abstract void onCreate();
-
     public abstract void onDestroy();
 }

@@ -110,7 +110,6 @@ public class MainActivity extends BaseActivity implements MainView {
 
         setContentView(R.layout.activity_main);
 
-        mPresenter.onCreate();
         mPresenter.bindView(this);
 
         EventBus.getDefault().register(this);
@@ -480,12 +479,15 @@ public class MainActivity extends BaseActivity implements MainView {
 
     @Override
     protected void onStop() {
+        mPresenter.unbindView();
+
         super.onStop();
 
         try {
             unregisterReceiver(unauthorizedReceiver);
+            unregisterReceiver(newMessageReceiver);
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            // Broadcast receiver not registered
         }
     }
 
@@ -493,13 +495,6 @@ public class MainActivity extends BaseActivity implements MainView {
     protected void onDestroy() {
         EventBus.getDefault().unregister(this);
 
-        try {
-            unregisterReceiver(newMessageReceiver);
-        } catch (IllegalArgumentException e) {
-            // Broadcast not registered
-        }
-
-        mPresenter.unbindView();
         mPresenter.onDestroy();
 
         mComponent = null;

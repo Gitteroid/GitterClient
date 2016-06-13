@@ -24,6 +24,8 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     private CompositeSubscription mSubscriptions;
 
+    private ArrayList<MessageViewModel> mCachedMessages = new ArrayList<>();
+
     @Inject
     public ChatRoomPresenter(RxSchedulersFactory factory, DataManger dataManger) {
         mSchedulersFactory = factory;
@@ -38,18 +40,12 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
-    public void onCreate() {
-
-    }
-
-    @Override
     public void onDestroy() {
-
+        mSubscriptions.unsubscribe();
     }
 
     public void sendMessage(String roomId, String text) {
@@ -62,6 +58,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(MessageMapper::mapToView)
+                .map(message -> {
+                    mCachedMessages.add(message);
+                    return message;
+                })
+                .filter(messageViewModel -> mView != null)
                 .subscribe(mView::deliveredMessage,
                         throwable -> mView.errorDeliveredMessage());
 
@@ -79,6 +80,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(MessageMapper::mapToView)
+                .map(messages -> {
+                    mCachedMessages.addAll(messages);
+                    return mCachedMessages;
+                })
+                .filter(messages -> mView != null)
                 .subscribe(mView::showLoadBeforeIdMessages, throwable -> {
                     mView.hideTopProgressBar();
                 });
@@ -99,6 +105,12 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .map(MessageMapper::mapToView)
+                .map(messages -> {
+                    mCachedMessages.clear();
+                    mCachedMessages.addAll(messages);
+                    return messages;
+                })
+                .filter(messages -> mView != null)
                 .subscribe(messages -> {
                     mView.showMessages(messages);
                     mView.hideListProgress();
@@ -114,6 +126,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     public void loadMessages(String roomId, int limit) {
         final boolean[] fromNetwork = {false};
         final boolean[] fromDatabase = {false};
+
+        if (mCachedMessages.size() > 0) {
+            mView.showMessages(mCachedMessages);
+            return;
+        }
 
         if (!Utils.getInstance().isNetworkConnected()) {
             Subscription sub = mDataManger.getMessages(roomId, limit, false)
@@ -165,7 +182,13 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.getMessages(roomId, 10, false)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(messages -> mView != null)
                 .map(MessageMapper::mapToView)
+                .map(messages -> {
+                    mCachedMessages.clear();
+                    mCachedMessages.addAll(messages);
+                    return messages;
+                })
                 .subscribe(mView::showMessages, throwable -> {
                     mView.showError(R.string.error);
                 });
@@ -182,6 +205,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.updateMessage(roomId, messageId, text)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(messageModel -> mView != null)
                 .map(MessageMapper::mapToView)
                 .subscribe(mView::showUpdateMessage, throwable -> {
                     mView.showError(R.string.updated_error);
@@ -198,11 +222,11 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
         Subscription sub = mDataManger.readMessages(roomId, ids)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(success -> mView != null && success)
                 .subscribe(success -> {
-                    if (success) {
-                        mView.successReadMessages(first, last, roomId, ids.length - 1);
-                    }
-                }, throwable -> {});
+                    mView.successReadMessages(first, last, roomId, ids.length - 1);
+                }, throwable -> {
+                });
 
         mSubscriptions.add(sub);
     }
@@ -225,9 +249,10 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
             return;
         }
 
-        mDataManger.joinToRoom(roomUri)
+        Subscription sub = mDataManger.joinToRoom(roomUri)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(response -> mView != null)
                 .subscribe(responseBody -> {
                     if (responseBody.getError() == null) {
                         mView.joinToRoom();
@@ -237,5 +262,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 }, throwable -> {
                     mView.showError(R.string.error);
                 });
+
+        mSubscriptions.add(sub);
     }
 }
