@@ -154,6 +154,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 })
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(messageViewModels -> mView != null)
                 .subscribe(messages -> {
                     if (fromDatabase[0] && messages.size() == 0) {
                         mView.showListProgressBar();

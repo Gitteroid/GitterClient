@@ -11,9 +11,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@+id/bottom_bar"
+        android:background="@android:color/white"
         android:scrollbars="vertical"
         android:transcriptMode="alwaysScroll"
-        android:background="@android:color/white"
         android:visibility="visible"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
@@ -35,7 +35,6 @@
         android:indeterminate="true"
         android:visibility="gone"
         app:mpb_progressStyle="horizontal"/>
-
 
     <FrameLayout
         android:id="@+id/bottom_bar"

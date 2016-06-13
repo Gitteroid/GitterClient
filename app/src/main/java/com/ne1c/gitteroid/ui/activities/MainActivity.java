@@ -122,6 +122,8 @@ public class MainActivity extends BaseActivity implements MainView {
         initState(savedInstanceState);
 
         initDrawerImageLoader();
+
+        startService(new Intent(this, NotificationService.class));
     }
 
     @Override
@@ -584,18 +586,43 @@ public class MainActivity extends BaseActivity implements MainView {
     private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            for (int i = 0; i < mRoomsList.size(); i++) {
-                String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
-                MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
+            final String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
+            final MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
 
-                if (mRoomsList.get(i).id.equals(roomId)) {
-                    mRoomsList.get(i).unreadItems += 1;
+            boolean searchRoomInDrawer = false;
 
-                    final String badgeText = mRoomsList.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
+            for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+                if (mRoomsInDrawer.get(i).id.equals(roomId)) {
+                    mRoomsInDrawer.get(i).unreadItems += 1;
+
+                    final String badgeText = mRoomsInDrawer.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
                     mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
                     mDrawer.getAdapter().notifyDataSetChanged();
 
                     EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
+                    searchRoomInDrawer = true;
+                }
+            }
+
+            if (!searchRoomInDrawer) {
+                for (int i = 0; i < mRoomsList.size(); i++) {
+                    if (mRoomsList.get(i).id.equals(roomId)) {
+                        final RoomViewModel room = mRoomsList.get(i);
+                        room.unreadItems += 1;
+
+                        final String badgeText = room.unreadItems >= 100 ? "99+" : Integer.toString(room.unreadItems);
+
+                        mRoomsInDrawer.add(room);
+
+                        final int newPos = mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET;
+                        mDrawer.addItemAtPosition(formatRoomToDrawerItem(room), newPos);
+
+                        final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(getPositionRoomInDrawer(room.name));
+                        mDrawer.updateItem(item.withBadge(badgeText));
+                        mDrawer.getAdapter().notifyDataSetChanged();
+
+                        EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
+                    }
                 }
             }
         }
@@ -608,21 +635,25 @@ public class MainActivity extends BaseActivity implements MainView {
         for (int i = 0; i < mRoomsInDrawer.size(); i++) {
             if (mRoomsInDrawer.get(i).id.equals(idSelectedRoom)) {
                 final RoomViewModel model = mRoomsInDrawer.get(i);
-                model.unreadItems -= event.countRead;
-
-                final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1);
-                if (model.unreadItems <= 0) {
-                    model.unreadItems = 0;
-                    // Remove badge
-                    mDrawer.updateItem(item.withBadge(new StringHolder(null)));
-                } else {
-                    final String badgeText = model.unreadItems >= 100 ? "99+" : Integer.toString(model.unreadItems);
-                    mDrawer.updateItem(item.withBadge(badgeText));
-                }
-
-                mDrawer.getAdapter().notifyDataSetChanged();
+                updateBadgeForRoom(model, event.countRead, getPositionRoomInDrawer(model.name));
             }
         }
+    }
+
+    private void updateBadgeForRoom(RoomViewModel model, int countRead, int posInDrawer) {
+        model.unreadItems -= countRead;
+
+        final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(posInDrawer);
+        if (model.unreadItems <= 0) {
+            model.unreadItems = 0;
+            // Remove badge
+            mDrawer.updateItem(item.withBadge(new StringHolder(null)));
+        } else {
+            final String badgeText = model.unreadItems >= 100 ? "99+" : Integer.toString(model.unreadItems);
+            mDrawer.updateItem(item.withBadge(badgeText));
+        }
+
+        mDrawer.getAdapter().notifyDataSetChanged();
     }
 
     @Override
