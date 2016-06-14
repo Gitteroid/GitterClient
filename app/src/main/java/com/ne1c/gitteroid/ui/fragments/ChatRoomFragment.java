@@ -168,7 +168,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == DialogMarkdownFragment.REQUEST_CODE) {
-           pickedMarkdown(data.getIntExtra("layout_id", -1));
+            pickedMarkdown(data.getIntExtra("layout_id", -1));
         }
 
         super.onActivityResult(requestCode, resultCode, data);

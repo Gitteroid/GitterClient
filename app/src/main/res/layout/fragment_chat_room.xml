@@ -36,6 +36,7 @@
         android:visibility="gone"
         app:mpb_progressStyle="horizontal"/>
 
+
     <FrameLayout
         android:id="@+id/bottom_bar"
         android:layout_width="match_parent"
@@ -94,8 +95,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="4dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="48dp"
+        android:layout_above="@id/bottom_bar"
         android:background="@drawable/bottom_shadow"
         android:rotation="180"/>
 
