@@ -33,7 +33,6 @@ import com.ne1c.gitteroid.utils.Utils;
 import java.util.List;
 
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -67,10 +66,10 @@ public class NotificationService extends Service {
         mDataManger = ((Application) getApplication()).getDataManager();
         mStreamer = ((Application) getApplication()).getStreamer();
 
-        regNetworkReceiver();
+        createNetworkReceiver();
     }
 
-    private void regNetworkReceiver() {
+    private void createNetworkReceiver() {
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
@@ -89,41 +88,38 @@ public class NotificationService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         loadFlagsFromPrefs();
 
-        unsubscribeAll();
+        return START_STICKY;
+    }
 
+    private void createRoomsSubscribers() {
         Subscription sub = mDataManger.getRooms(false)
+                .subscribeOn(Schedulers.io())
                 .subscribe(roomModels -> {
                     mRooms = roomModels;
 
-                    createSubscribers();
+                    for (RoomModel room : mRooms) {
+                        Subscription sub1 = mStreamer.getMessageStream(room.id)
+                                .subscribeOn(Schedulers.io())
+                                .filter(message -> message.text != null)
+                                .subscribe(message -> {
+                                    notifyAboutMessage(room, message);
+                                }, throwable -> {});
+
+                        mSubscriptions.add(sub1);
+                    }
                 }, throwable -> {
                 });
 
         mSubscriptions.add(sub);
-
-        return START_STICKY;
     }
 
-    private void createSubscribers() {
-        for (RoomModel room : mRooms) {
-            Subscription sub = mStreamer.getMessageStream(room.id)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .filter(message -> message.text != null)
-                    .subscribe(message -> {
-                        notifyAboutMessage(room, message);
-                    }, throwable -> {});
-
-            mSubscriptions.add(sub);
-        }
-    }
 
     private void notifyAboutMessage(RoomModel room, MessageModel message) {
         mDataManger.addSingleMessage(room.id, message);
 
         LocalBroadcastManager.getInstance(this)
                 .sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
-                        .putExtra(MainActivity.MESSAGE_INTENT_KEY, android.R.id.message)
+                        .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
                         .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));
 
         boolean isOwnerAccount = message.fromUser.id.equals(Utils.getInstance().getUserPref().id);
@@ -162,8 +158,8 @@ public class NotificationService extends Service {
     private BroadcastReceiver networkChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (Utils.getInstance().isNetworkConnected() && mRooms != null) {
-                createSubscribers();
+            if (Utils.getInstance().isNetworkConnected()) {
+                createRoomsSubscribers();
             } else {
                 unsubscribeAll();
             }
