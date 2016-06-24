@@ -90,6 +90,7 @@
                 android:id="@+id/markdown_button"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:tint="@color/md_grey_500"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_layout"/>
 
@@ -100,7 +101,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="@string/type_to_compose"
+                android:hint="@string/write_a_message"
+                android:textColorHint="@color/md_grey_400"
                 android:maxLines="3"/>
 
             <ImageButton
@@ -121,13 +123,12 @@
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_to_bottom"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_above="@id/bottom_bar"
         android:layout_alignParentRight="true"
         android:layout_margin="@dimen/fab_margin"
         android:clickable="true"
         app:backgroundTint="@color/fabBackground"
-        app:elevation="0dp"
-        app:srcCompat="@drawable/arrow_down_64"/>
+        app:srcCompat="@drawable/arrow_down_24"/>
 </RelativeLayout>

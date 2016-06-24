@@ -11,6 +11,6 @@
     <color name="hide_color">#32494949</color>
     <color name="hide_press_color">#3c292929</color>
     <color name="darkTextColor">#263238</color>
-    <color name="fabBackground">#96000000</color>
+    <color name="fabBackground">#34495e</color>
     <color name="navDrawerBackground">#383435</color>
 </resources>
