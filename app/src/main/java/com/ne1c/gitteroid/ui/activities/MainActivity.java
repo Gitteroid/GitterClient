@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.design.widget.TabLayout;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -42,12 +43,9 @@ import com.ne1c.gitteroid.R;
 import com.ne1c.gitteroid.di.components.DaggerMainComponent;
 import com.ne1c.gitteroid.di.components.MainComponent;
 import com.ne1c.gitteroid.di.modules.MainPresenterModule;
-import com.ne1c.gitteroid.events.NewMessageEvent;
 import com.ne1c.gitteroid.events.ReadMessagesEvent;
 import com.ne1c.gitteroid.events.RefreshMessagesRoomEvent;
-import com.ne1c.gitteroid.models.MessageMapper;
 import com.ne1c.gitteroid.models.RoomMapper;
-import com.ne1c.gitteroid.models.data.MessageModel;
 import com.ne1c.gitteroid.models.data.RoomModel;
 import com.ne1c.gitteroid.models.data.UserModel;
 import com.ne1c.gitteroid.models.view.RoomViewModel;
@@ -62,6 +60,7 @@ import com.ne1c.gitteroid.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import javax.inject.Inject;
 
@@ -73,7 +72,9 @@ public class MainActivity extends BaseActivity implements MainView {
     public final static String MESSAGE_INTENT_KEY = "message";
     public final static String ROOM_ID_INTENT_KEY = "room";
 
-    private final int START_ROOM_IN_DRAWER_OFFSET = 2;
+    private final int ROOM_IN_DRAWER_OFFSET_BOTTOM = 3; // All, Settings, Sign Out
+    private final int ROOM_IN_DRAWER_OFFSET_TOP = 2; // Header, Home
+
     private final String ROOMS_BUNDLE = "rooms_bundle";
     private final String ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle";
     private final String ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle";
@@ -90,9 +91,9 @@ public class MainActivity extends BaseActivity implements MainView {
     private AccountHeader mAccountHeader;
     private IProfile mMainProfile = new ProfileDrawerItem();
 
-    private ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
-    private ArrayList<RoomViewModel> mRoomsInDrawer = new ArrayList<>(); // Rooms that user will see
-    private ArrayList<RoomViewModel> mRoomsInTabs = new ArrayList<>();
+    private final ArrayList<RoomViewModel> mRoomsList = new ArrayList<>();
+    private final ArrayList<RoomViewModel> mRoomsInDrawer = new ArrayList<>(); // Rooms that user will see
+    private final ArrayList<RoomViewModel> mRoomsInTabs = new ArrayList<>();
 
     private MainComponent mComponent;
 
@@ -115,7 +116,8 @@ public class MainActivity extends BaseActivity implements MainView {
         mPresenter.bindView(this);
 
         EventBus.getDefault().register(this);
-        registerReceiver(newMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(mNewMessageReceiver, new IntentFilter(BROADCAST_NEW_MESSAGE));
 
         initViews();
 
@@ -240,6 +242,14 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withSelectable(false)
                 .withSetSelected(false));
 
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withName(getString(R.string.all))
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withIcon(R.drawable.ic_format_list_bulleted)
+                .withSelectable(false));
+
         mDrawerItems.add(new DividerDrawerItem());
 
         mDrawerItems.add(new PrimaryDrawerItem()
@@ -292,7 +302,7 @@ public class MainActivity extends BaseActivity implements MainView {
         cleanDrawer();
         addRoomsToDrawer(data, false);
 
-        mDrawer.setSelectionAtPosition(START_ROOM_IN_DRAWER_OFFSET);
+        mDrawer.setSelectionAtPosition(ROOM_IN_DRAWER_OFFSET_TOP);
     }
 
     private void cleanDrawer() {
@@ -302,46 +312,38 @@ public class MainActivity extends BaseActivity implements MainView {
         mRoomsViewPager.getAdapter().notifyDataSetChanged();
 
         // Remove old items
-        // 4 but items: "Home", "Divider", "Settings", "Sign Out".
-        while (mDrawer.getDrawerItems().size() != 4) {
-            mDrawer.removeItemByPosition(START_ROOM_IN_DRAWER_OFFSET); // 2? Wtf?
+        // 4 but items: "Home", "All", "Divider", "Settings", "Sign Out".
+        while (mDrawer.getDrawerItems().size() != 5) {
+            mDrawer.removeItemByPosition(ROOM_IN_DRAWER_OFFSET_TOP); // 2? Wtf?
         }
     }
 
     private void addRoomsToDrawer(ArrayList<RoomViewModel> roomsList, boolean restore) {
-        mRoomsList.clear();
         mRoomsList.addAll(roomsList);
 
         if (restore) {
-            for (RoomViewModel room : mRoomsInDrawer) {
-                mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
-                        mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
+            for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+                mDrawer.addItemAtPosition(formatRoomToDrawerItem(mRoomsInDrawer.get(i)),
+                        ROOM_IN_DRAWER_OFFSET_TOP);
             }
         } else {
-            mRoomsInDrawer.clear();
-
-            for (RoomViewModel room : roomsList) {
+            for (int i = 0; i < mRoomsList.size(); i++) {
+                final RoomViewModel room = mRoomsList.get(i);
                 if (room.unreadItems > 0) {
                     mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
-                            mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
+                            ROOM_IN_DRAWER_OFFSET_TOP);
+
                     mRoomsInDrawer.add(room);
                 }
             }
         }
 
-        mDrawer.addItemAtPosition(new PrimaryDrawerItem()
-                        .withName(getString(R.string.all))
-                        .withTextColor(Color.WHITE)
-                        .withIconColor(Color.WHITE)
-                        .withIconTintingEnabled(true)
-                        .withIcon(R.drawable.ic_format_list_bulleted)
-                        .withSelectable(false),
-                mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET);
-
         if (mRoomsInDrawer.size() == 0 && mRoomsList.size() > 0 && !restore) {
             final int endValue = mRoomsList.size() >= 4 ? 4 : mRoomsInDrawer.size();
             mRoomsInDrawer.addAll(mRoomsList.subList(0, endValue));
         }
+
+        Collections.reverse(mRoomsInDrawer);
 
         mDrawer.getAdapter().notifyDataSetChanged();
     }
@@ -487,14 +489,14 @@ public class MainActivity extends BaseActivity implements MainView {
     protected void onStop() {
         mPresenter.unbindView();
 
-        super.onStop();
-
         try {
             unregisterReceiver(unauthorizedReceiver);
-            unregisterReceiver(newMessageReceiver);
+            unregisterReceiver(mNewMessageReceiver);
         } catch (IllegalArgumentException e) {
             // Broadcast receiver not registered
         }
+
+        super.onStop();
     }
 
     @Override
@@ -504,6 +506,7 @@ public class MainActivity extends BaseActivity implements MainView {
         mPresenter.onDestroy();
 
         mComponent = null;
+
         super.onDestroy();
     }
 
@@ -583,23 +586,19 @@ public class MainActivity extends BaseActivity implements MainView {
         }
     };
 
-    private BroadcastReceiver newMessageReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mNewMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
-            final MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
 
             boolean searchRoomInDrawer = false;
 
             for (int i = 0; i < mRoomsInDrawer.size(); i++) {
                 if (mRoomsInDrawer.get(i).id.equals(roomId)) {
-                    mRoomsInDrawer.get(i).unreadItems += 1;
+                    final RoomViewModel room = mRoomsInDrawer.get(i);
 
-                    final String badgeText = mRoomsInDrawer.get(i).unreadItems >= 100 ? "99+" : Integer.toString(mRoomsList.get(i).unreadItems);
-                    mDrawer.updateItem(((PrimaryDrawerItem) mDrawer.getDrawerItems().get(i + 1)).withBadge(badgeText));
-                    mDrawer.getAdapter().notifyDataSetChanged();
+                    updateBadgeForRoom(room, 1, false);
 
-                    EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
                     searchRoomInDrawer = true;
                 }
             }
@@ -608,20 +607,13 @@ public class MainActivity extends BaseActivity implements MainView {
                 for (int i = 0; i < mRoomsList.size(); i++) {
                     if (mRoomsList.get(i).id.equals(roomId)) {
                         final RoomViewModel room = mRoomsList.get(i);
-                        room.unreadItems += 1;
-
-                        final String badgeText = room.unreadItems >= 100 ? "99+" : Integer.toString(room.unreadItems);
-
                         mRoomsInDrawer.add(room);
 
-                        final int newPos = mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET;
+                        final int newPos = mDrawer.getDrawerItems().size() - ROOM_IN_DRAWER_OFFSET_BOTTOM;
                         mDrawer.addItemAtPosition(formatRoomToDrawerItem(room), newPos);
 
-                        final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(getPositionRoomInDrawer(room.name));
-                        mDrawer.updateItem(item.withBadge(badgeText));
-                        mDrawer.getAdapter().notifyDataSetChanged();
+                        updateBadgeForRoom(room, 1, false);
 
-                        EventBus.getDefault().post(new NewMessageEvent(MessageMapper.mapToView(message), mRoomsList.get(i)));
                     }
                 }
             }
@@ -635,15 +627,19 @@ public class MainActivity extends BaseActivity implements MainView {
         for (int i = 0; i < mRoomsInDrawer.size(); i++) {
             if (mRoomsInDrawer.get(i).id.equals(idSelectedRoom)) {
                 final RoomViewModel model = mRoomsInDrawer.get(i);
-                updateBadgeForRoom(model, event.countRead, getPositionRoomInDrawer(model.name));
+                updateBadgeForRoom(model, event.countRead, true);
             }
         }
     }
 
-    private void updateBadgeForRoom(RoomViewModel model, int countRead, int posInDrawer) {
-        model.unreadItems -= countRead;
+    private void updateBadgeForRoom(RoomViewModel model, int diffMessages, boolean asRead) {
+        if (asRead) {
+            model.unreadItems -= diffMessages;
+        } else {
+            model.unreadItems += diffMessages;
+        }
 
-        final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(posInDrawer);
+        final PrimaryDrawerItem item = (PrimaryDrawerItem) mDrawer.getDrawerItems().get(getPositionRoomInDrawer(model.name));
         if (model.unreadItems <= 0) {
             model.unreadItems = 0;
             // Remove badge
@@ -688,7 +684,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private int getPositionRoomInDrawer(String name) {
         for (int i = 0; i < mRoomsInDrawer.size(); i++) {
             if (mRoomsInDrawer.get(i).name.equals(name)) {
-                return i + START_ROOM_IN_DRAWER_OFFSET;
+                return i + ROOM_IN_DRAWER_OFFSET_TOP;
             }
         }
 
@@ -696,7 +692,7 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private RoomViewModel getSelectedRoom() {
-        final int index = mDrawer.getCurrentSelectedPosition() - START_ROOM_IN_DRAWER_OFFSET;
+        final int index = mDrawer.getCurrentSelectedPosition() - ROOM_IN_DRAWER_OFFSET_BOTTOM;
 
         if (index >= 0 && index < mRoomsInDrawer.size()) {
             return mRoomsInDrawer.get(index);
@@ -708,7 +704,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private void pickRoom(RoomViewModel model) {
         if (getPositionRoomInDrawer(model.name) == -1) {
             // -1 because added "All"
-            final int newPosition = mDrawer.getDrawerItems().size() - START_ROOM_IN_DRAWER_OFFSET - 1;
+            final int newPosition = mDrawer.getDrawerItems().size() - ROOM_IN_DRAWER_OFFSET_BOTTOM;
 
             mRoomsInDrawer.add(model);
             mDrawer.addItemAtPosition(formatRoomToDrawerItem(model), newPosition);

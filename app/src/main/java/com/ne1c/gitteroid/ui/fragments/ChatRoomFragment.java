@@ -1,13 +1,16 @@
 package com.ne1c.gitteroid.ui.fragments;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,6 +23,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ne1c.gitteroid.R;
@@ -30,11 +34,13 @@ import com.ne1c.gitteroid.events.NewMessageEvent;
 import com.ne1c.gitteroid.events.ReadMessagesEvent;
 import com.ne1c.gitteroid.events.RefreshMessagesRoomEvent;
 import com.ne1c.gitteroid.events.UpdateMessageEvent;
+import com.ne1c.gitteroid.models.MessageMapper;
 import com.ne1c.gitteroid.models.data.MessageModel;
 import com.ne1c.gitteroid.models.data.StatusMessage;
 import com.ne1c.gitteroid.models.view.MessageViewModel;
 import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.presenters.ChatRoomPresenter;
+import com.ne1c.gitteroid.ui.activities.MainActivity;
 import com.ne1c.gitteroid.ui.adapters.MessagesAdapter;
 import com.ne1c.gitteroid.ui.views.ChatView;
 import com.ne1c.gitteroid.utils.MarkdownUtils;
@@ -48,6 +54,9 @@ import javax.inject.Inject;
 import de.greenrobot.event.EventBus;
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
+import static com.ne1c.gitteroid.ui.activities.MainActivity.MESSAGE_INTENT_KEY;
+import static com.ne1c.gitteroid.ui.activities.MainActivity.ROOM_ID_INTENT_KEY;
+
 public class ChatRoomFragment extends BaseFragment implements ChatView {
     private EditText mMessageEditText;
     private ImageButton mSendButton;
@@ -57,6 +66,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private ProgressBar mProgressBar;
     private MaterialProgressBar mTopProgressBar;
     private FloatingActionButton mFabToBottom;
+    private TextView mNewMessagePopupTextView;
 
     private ArrayList<MessageViewModel> mMessagesArr = new ArrayList<>();
     private RoomViewModel mRoom;
@@ -127,6 +137,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mFabToBottom.setOnClickListener(v1 -> mMessagesList.smoothScrollToPosition(0));
         mFabToBottom.hide();
 
+        mNewMessagePopupTextView = (TextView) v.findViewById(R.id.new_message_popup);
+        mNewMessagePopupTextView.setOnClickListener(v1 -> {
+            mMessagesList.smoothScrollToPosition(0);
+            hideNewMessagePopup();
+        });
+
         v.findViewById(R.id.markdown_button).setOnClickListener(v1 -> {
             DialogMarkdownFragment dialog = new DialogMarkdownFragment();
             dialog.setTargetFragment(ChatRoomFragment.this, DialogMarkdownFragment.REQUEST_CODE);
@@ -140,6 +156,13 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
             joinRoomButton.setVisibility(View.VISIBLE);
             joinRoomButton.setOnClickListener(v1 -> mPresenter.joinToRoom(mOverviewRoom.name));
         }
+    }
+
+    private void hideNewMessagePopup() {
+        mNewMessagePopupTextView.animate()
+                .alpha(0)
+                .withEndAction(() -> mNewMessagePopupTextView.setVisibility(View.GONE))
+                .start();
     }
 
     private void loadRoom() {
@@ -156,12 +179,16 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         mPresenter.bindView(this);
         loadRoom();
+
+        LocalBroadcastManager.getInstance(getActivity())
+                .registerReceiver(mNewMessageReceiver, new IntentFilter(MainActivity.BROADCAST_NEW_MESSAGE));
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mNewMessageReceiver);
         mPresenter.unbindView();
     }
 
@@ -296,6 +323,11 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
             showFab(newState);
             loadNewMessages();
+
+            if (newState == RecyclerView.SCROLL_STATE_DRAGGING &&
+                    mNewMessagePopupTextView.getVisibility() == View.VISIBLE) {
+                hideNewMessagePopup();
+            }
         }
     };
 
@@ -414,6 +446,59 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mRoom = model;
     }
 
+    private BroadcastReceiver mNewMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY);
+            final MessageModel message = intent.getParcelableExtra(MESSAGE_INTENT_KEY);
+
+            if (!roomId.equals(mRoom.id)) {
+                return;
+            }
+
+            if (mMessagesAdapter != null) {
+                for (int i = 0; i < mMessagesArr.size(); i++) { // If updated message or send message
+                    MessageViewModel item = mMessagesArr.get(i);
+
+                    // Send message
+                    if (message.text.equals(item.text) &&
+                            item.sent.equals(StatusMessage.SENDING.name())) {
+                        return;
+                    }
+
+                    // Update message
+                    if (!item.sent.equals(StatusMessage.NO_SEND.name())
+                            && !item.sent.equals(StatusMessage.SENDING.name())
+                            && item.id.equals(message.id)) {
+                        return;
+                    }
+                }
+
+                mMessagesArr.add(0, MessageMapper.mapToView(message));
+                mMessagesAdapter.notifyItemInserted(0);
+
+                int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
+
+                if (firstVisible == 0) {
+                    mMessagesList.smoothScrollToPosition(0);
+                } else {
+                    showNewMessagePopup();
+                }
+            }
+        }
+    };
+
+    private void showNewMessagePopup() {
+        mNewMessagePopupTextView.animate()
+                .alpha(1)
+                .setDuration(500)
+                .withStartAction(() -> {
+                    mNewMessagePopupTextView.setAlpha(0);
+                    mNewMessagePopupTextView.setVisibility(View.VISIBLE);
+                })
+                .start();
+    }
+
     public void onEvent(RefreshMessagesRoomEvent room) {
         if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
             Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
@@ -431,8 +516,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         }
     }
 
-    public void onEvent(NewMessageEvent message) {
-        if (!message.getRoom().id.equals(mRoom.id)) {
+    public void onEvent(NewMessageEvent event) {
+        if (!event.getRoom().id.equals(mRoom.id)) {
             return;
         }
 
@@ -441,7 +526,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 MessageViewModel item = mMessagesArr.get(i);
 
                 // Send message
-                if (message.getMessage().text.equals(item.text) &&
+                if (event.getMessage().text.equals(item.text) &&
                         item.sent.equals(StatusMessage.SENDING.name())) {
                     return;
                 }
@@ -449,12 +534,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
                 // Update message
                 if (!item.sent.equals(StatusMessage.NO_SEND.name())
                         && !item.sent.equals(StatusMessage.SENDING.name())
-                        && item.id.equals(message.getMessage().id)) {
+                        && item.id.equals(event.getMessage().id)) {
                     return;
                 }
             }
 
-            mMessagesArr.add(0, message.getMessage());
+            mMessagesArr.add(0, event.getMessage());
             mMessagesAdapter.notifyItemInserted(0);
 
             int firstVisible = mListLayoutManager.findFirstVisibleItemPosition();
