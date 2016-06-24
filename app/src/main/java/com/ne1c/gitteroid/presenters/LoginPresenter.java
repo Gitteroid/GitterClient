@@ -38,18 +38,12 @@ public class LoginPresenter extends BasePresenter<LoginView> {
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
-    public void onCreate() {
-
-    }
-
-    @Override
     public void onDestroy() {
-
+        mSubscriptions.unsubscribe();
     }
 
     public String getAuthUrl() {

@@ -18,7 +18,7 @@ import rx.subscriptions.CompositeSubscription;
 
 public class MainPresenter extends BasePresenter<MainView> {
     private MainView mView;
-    private CompositeSubscription mSubscriptions;
+    private CompositeSubscription mSubscriptions = new CompositeSubscription();
 
     private DataManger mDataManger;
     private RxSchedulersFactory mSchedulersFactory;
@@ -37,23 +37,19 @@ public class MainPresenter extends BasePresenter<MainView> {
 
     @Override
     public void unbindView() {
-        mSubscriptions.unsubscribe();
         mView = null;
     }
 
     @Override
-    public void onCreate() {
-    }
-
-    @Override
     public void onDestroy() {
-
+        mSubscriptions.unsubscribe();
     }
 
     public void loadProfile() {
         Subscription sub = mDataManger.getProfile()
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(userModel -> mView != null)
                 .subscribe(userModel -> {
                     mView.showProfile(userModel);
                 }, throwable -> { mView.showError(R.string.error); });
@@ -70,6 +66,7 @@ public class MainPresenter extends BasePresenter<MainView> {
         Subscription sub = mDataManger.leaveFromRoom(roomId)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(response -> mView != null)
                 .subscribe(response -> {
                     if (response) {
                         mView.leavedFromRoom();
@@ -90,6 +87,7 @@ public class MainPresenter extends BasePresenter<MainView> {
         Subscription sub = mDataManger.getRooms(fresh)
                 .subscribeOn(mSchedulersFactory.io())
                 .observeOn(mSchedulersFactory.androidMainThread())
+                .filter(roomModels -> mView != null)
                 .map(roomModels -> {
                     ArrayList<RoomViewModel> visibleList = new ArrayList<>();
                     for (RoomModel room : roomModels) {

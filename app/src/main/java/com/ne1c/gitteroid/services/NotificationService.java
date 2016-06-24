@@ -15,11 +15,11 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
-import android.util.Log;
 
 import com.ne1c.gitteroid.Application;
 import com.ne1c.gitteroid.R;
@@ -33,34 +33,31 @@ import com.ne1c.gitteroid.utils.Utils;
 import java.util.List;
 
 import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
 public class NotificationService extends Service {
-    public static final int NOTIF_REQUEST_CODE = 1000;
-    public static final int NOTIF_CODE = 101;
-
     public static final String BROADCAST_SEND_MESSAGE = "sendMessageBroadcast";
     public static final String FROM_ROOM_EXTRA_KEY = "fromRoom";
     public static final String TO_ROOM_MESSAGE_EXTRA_KEY = "toRoom";
     public static final String SEND_MESSAGE_EXTRA_KEY = "sendMessageToRoom";
 
-    private List<RoomModel> mRooms;
-    private CompositeSubscription mMessagesSubscriptions;
+    private static final int NOTIF_REQUEST_CODE = 1000;
+    private static final int NOTIF_CODE = 101;
 
-    private Subscription mRoomsSubscription;
+    private List<RoomModel> mRooms;
+    private CompositeSubscription mSubscriptions = new CompositeSubscription();
 
     private GitterStreamer mStreamer;
 
-    private boolean mEnableNotif = true;
-    private boolean mSound = true;
-    private boolean mVibrate = true;
+    private boolean mEnableNotif;
+    private boolean mSound;
+    private boolean mVibrate;
+
     // Get messages only with user name
-    private boolean mWithUserName = false;
+    private boolean mWithUserName;
 
     private DataManger mDataManger;
-
 
     @Override
     public void onCreate() {
@@ -69,11 +66,18 @@ public class NotificationService extends Service {
         mDataManger = ((Application) getApplication()).getDataManager();
         mStreamer = ((Application) getApplication()).getStreamer();
 
+        createNetworkReceiver();
+    }
+
+    private void createNetworkReceiver() {
         IntentFilter filterNetwork = new IntentFilter();
         filterNetwork.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(networkChangeReceiver, filterNetwork);
+    }
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    private void loadFlagsFromPrefs() {
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
         mEnableNotif = prefs.getBoolean("enable_notif", true);
         mSound = prefs.getBoolean("notif_sound", true);
         mVibrate = prefs.getBoolean("notif_vibro", true);
@@ -82,63 +86,53 @@ public class NotificationService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null) {
-            mEnableNotif = intent.getBooleanExtra("enable_notif", true);
-            mSound = intent.getBooleanExtra("notif_sound", true);
-            mVibrate = intent.getBooleanExtra("notif_vibro", true);
-            mWithUserName = intent.getBooleanExtra("notif_username", false);
-        }
-
-        if (mRoomsSubscription != null && !mRoomsSubscription.isUnsubscribed()) {
-            mRoomsSubscription.unsubscribe();
-        }
-
-        mRoomsSubscription = mDataManger.getRooms(false)
-                .subscribe(roomModels -> {
-                    mRooms = roomModels;
-
-                    createSubscribers();
-                }, throwable -> {
-                    Log.e("notification_service", "onStartCommand: ", throwable);
-                });
+        loadFlagsFromPrefs();
 
         return START_STICKY;
     }
 
-    private void createSubscribers() {
-        if (mMessagesSubscriptions != null && !mMessagesSubscriptions.isUnsubscribed()) {
-            mMessagesSubscriptions.unsubscribe();
-        }
+    private void createRoomsSubscribers() {
+        Subscription sub = mDataManger.getRooms(false)
+                .subscribeOn(Schedulers.io())
+                .subscribe(roomModels -> {
+                    mRooms = roomModels;
 
-        mMessagesSubscriptions = new CompositeSubscription();
-        for (final RoomModel room : mRooms) {
-            Subscription sub = mStreamer.getMessageStream(room.id)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(message -> {
-                        if (message.text != null) {
-                            mDataManger.addSingleMessage(room.id, message);
+                    for (RoomModel room : mRooms) {
+                        Subscription sub1 = mStreamer.getMessageStream(room.id)
+                                .subscribeOn(Schedulers.io())
+                                .filter(message -> message.text != null)
+                                .subscribe(message -> {
+                                    notifyAboutMessage(room, message);
+                                }, throwable -> {});
 
-                            sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
-                                    .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
-                                    .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));
+                        mSubscriptions.add(sub1);
+                    }
+                }, throwable -> {
+                });
 
-                            if (mEnableNotif && !message.fromUser.id.equals(Utils.getInstance().getUserPref().id)) {
-                                final String username = Utils.getInstance().getUserPref().username;
+        mSubscriptions.add(sub);
+    }
 
-                                if (mWithUserName && message.text.contains(username) &&
-                                        !message.fromUser.username.equals(username)) {
-                                    sendNotificationMessage(room, message);
-                                } else if (!mWithUserName) {
-                                    sendNotificationMessage(room, message);
-                                }
-                            }
-                        }
-                    }, throwable -> {
-                    }, () -> {
-                    });
 
-            mMessagesSubscriptions.add(sub);
+    private void notifyAboutMessage(RoomModel room, MessageModel message) {
+        mDataManger.addSingleMessage(room.id, message);
+
+        LocalBroadcastManager.getInstance(this)
+                .sendBroadcast(new Intent(MainActivity.BROADCAST_NEW_MESSAGE)
+                        .putExtra(MainActivity.MESSAGE_INTENT_KEY, message)
+                        .putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id));
+
+        boolean isOwnerAccount = message.fromUser.id.equals(Utils.getInstance().getUserPref().id);
+
+        if (mEnableNotif && !isOwnerAccount) {
+            final String username = Utils.getInstance().getUserPref().username;
+
+            if (mWithUserName && message.text.contains(username) &&
+                    !message.fromUser.username.equals(username)) {
+                sendNotificationMessage(room, message);
+            } else if (!mWithUserName) {
+                sendNotificationMessage(room, message);
+            }
         }
     }
 
@@ -157,24 +151,17 @@ public class NotificationService extends Service {
     }
 
     private void unsubscribeAll() {
-        if (!mMessagesSubscriptions.isUnsubscribed()) {
-            mMessagesSubscriptions.unsubscribe();
-        }
-
-        if (!mRoomsSubscription.isUnsubscribed()) {
-            mRoomsSubscription.unsubscribe();
-        }
+        mSubscriptions.unsubscribe();
+        mSubscriptions.clear();
     }
 
     private BroadcastReceiver networkChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (Utils.getInstance().isNetworkConnected() && mRooms != null) {
-                createSubscribers();
+            if (Utils.getInstance().isNetworkConnected()) {
+                createRoomsSubscribers();
             } else {
-                if (mMessagesSubscriptions != null && !mMessagesSubscriptions.isUnsubscribed()) {
-                    mMessagesSubscriptions.unsubscribe();
-                }
+                unsubscribeAll();
             }
         }
     };
@@ -182,8 +169,7 @@ public class NotificationService extends Service {
     private void sendNotificationMessage(RoomModel room, MessageModel message) {
         Intent notifIntent = new Intent(getApplicationContext(), MainActivity.class);
         notifIntent.putExtra(FROM_ROOM_EXTRA_KEY, room);
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        notifIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 getApplicationContext(),
@@ -202,6 +188,7 @@ public class NotificationService extends Service {
                         .setSmallIcon(R.drawable.ic_notif_message)
                         .setTicker(text)
                         .setContentText(text)
+                        .setNumber(room.unreadItems)
                         .setContentTitle(room.name);
 
         NotificationManagerCompat notifMgr = NotificationManagerCompat.from(getApplicationContext());

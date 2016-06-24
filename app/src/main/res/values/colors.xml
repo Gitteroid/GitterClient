@@ -3,6 +3,7 @@
     <color name="colorPrimaryDark">#512DA8</color>
     <color name="colorPrimary">#673AB7</color>
     <color name="colorAccent">#ff4081</color>
+    <color name="colorAccentTransparent">#e1ff4081</color>
     <!--<color name="colorAccent">#8181F7</color>-->
     <color name="bgItemMessage">#FFFFFF</color>
     <color name="unreadMessage">#00b100</color>
@@ -10,6 +11,6 @@
     <color name="hide_color">#32494949</color>
     <color name="hide_press_color">#3c292929</color>
     <color name="darkTextColor">#263238</color>
-    <color name="fabBackground">#96000000</color>
+    <color name="fabBackground">#34495e</color>
     <color name="navDrawerBackground">#383435</color>
 </resources>

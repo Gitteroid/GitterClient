@@ -51,8 +51,6 @@ public class RoomsListFragment extends BaseFragment implements OnStartDragListen
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-
-        mPresenter.onCreate();
     }
 
     @Override

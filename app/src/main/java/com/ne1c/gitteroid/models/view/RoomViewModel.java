@@ -14,6 +14,14 @@ public class RoomViewModel implements Parcelable {
     public boolean hide;
     public int listPosition = -1;
 
+    public String getAvatarUrl() {
+        if (name.contains("/")) {
+            return "https://avatars.githubusercontent.com/" + name.substring(0, name.indexOf("/"));
+        } else {
+            return "https://avatars.githubusercontent.com/" + name;
+        }
+    }
+
     @Override
     public int describeContents() {
         return 0;
