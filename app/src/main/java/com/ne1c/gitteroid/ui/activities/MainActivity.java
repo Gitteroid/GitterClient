@@ -458,11 +458,15 @@ public class MainActivity extends BaseActivity implements MainView {
                 }
                 break;
             case R.id.action_leave:
-                if (getSelectedRoom() != null && getSelectedRoom().oneToOne) {
-                    Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
-                    break;
+                final RoomViewModel selectedRoom = getSelectedRoom();
+
+                if (selectedRoom != null) {
+                    if (selectedRoom.oneToOne) {
+                        Toast.makeText(getApplicationContext(), R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show();
+                    } else {
+                        mPresenter.leaveFromRoom(getSelectedRoom().id);
+                    }
                 }
-                mPresenter.leaveFromRoom(getSelectedRoom().id);
 
                 break;
             case R.id.close_room:
@@ -482,6 +486,16 @@ public class MainActivity extends BaseActivity implements MainView {
             Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show();
         } else if (mRoomTabs.getTabCount() == 1) {
             Toast.makeText(this, R.string.cannt_close_single_room, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void closeRoom(boolean force) {
+        if (force) {
+            final int nowPos = mRoomTabs.getSelectedTabPosition();
+            mRoomsInTabs.remove(nowPos);
+            mRoomsViewPager.getAdapter().notifyDataSetChanged();
+        } else {
+            closeRoom();
         }
     }
 
@@ -673,7 +687,29 @@ public class MainActivity extends BaseActivity implements MainView {
 
     @Override
     public void leavedFromRoom() {
-        finish();
+        final String name = getSelectedRoom().name;
+        closeRoom(true);
+
+        mDrawer.removeItemByPosition(getPositionRoomInDrawer(name));
+        mDrawer.getAdapter().notifyAdapterDataSetChanged();
+
+        for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+            if (mRoomsInDrawer.get(i).name.equals(name)) {
+                mRoomsInDrawer.remove(i);
+                break;
+            }
+        }
+
+        for (int i = 0; i < mRoomsList.size(); i++) {
+            if (mRoomsList.get(i).name.equals(name)) {
+                mRoomsList.remove(i);
+                break;
+            }
+        }
+
+
+
+        mDrawer.setSelectionAtPosition(ROOM_IN_DRAWER_OFFSET_TOP);
     }
 
     private void showRoomsListDialog() {
@@ -692,7 +728,7 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private RoomViewModel getSelectedRoom() {
-        final int index = mDrawer.getCurrentSelectedPosition() - ROOM_IN_DRAWER_OFFSET_BOTTOM;
+        final int index = mDrawer.getCurrentSelectedPosition() - ROOM_IN_DRAWER_OFFSET_TOP;
 
         if (index >= 0 && index < mRoomsInDrawer.size()) {
             return mRoomsInDrawer.get(index);
