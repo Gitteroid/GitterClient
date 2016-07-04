@@ -107,7 +107,7 @@ public class MainActivity extends BaseActivity implements MainView {
             startActivity(new Intent(getApplicationContext(), LoginActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            finish();
+            overridePendingTransition(0, 0);
             return;
         }
 
