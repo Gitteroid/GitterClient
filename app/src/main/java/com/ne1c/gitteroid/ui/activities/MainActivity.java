@@ -453,8 +453,6 @@ public class MainActivity extends BaseActivity implements MainView {
             case R.id.action_refresh:
                 if (getSelectedRoom() != null) {
                     EventBus.getDefault().post(new RefreshMessagesRoomEvent(getSelectedRoom()));
-
-                    mPresenter.loadRooms(true);
                 }
                 break;
             case R.id.action_leave:
@@ -692,7 +690,7 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private RoomViewModel getSelectedRoom() {
-        final int index = mDrawer.getCurrentSelectedPosition() - ROOM_IN_DRAWER_OFFSET_BOTTOM;
+        final int index = mDrawer.getCurrentSelectedPosition() - ROOM_IN_DRAWER_OFFSET_TOP;
 
         if (index >= 0 && index < mRoomsInDrawer.size()) {
             return mRoomsInDrawer.get(index);

@@ -100,6 +100,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         } else {
             mRoom = getArguments().getParcelable("room");
         }
+
+        EventBus.getDefault().register(this);
     }
 
     @Override
@@ -388,6 +390,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     public void onDestroy() {
         mComponent = null;
         mPresenter.onDestroy();
+        EventBus.getDefault().register(this);
 
         super.onDestroy();
     }
@@ -417,10 +420,8 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         }
     }
 
-    private void loadMessageRoomServer(final RoomViewModel roomModel) {
-        mMessagesAdapter.setRoom(roomModel);
-
-        mPresenter.loadNetworkMessages(roomModel.id, mStartNumberLoadMessages + mCountLoadMessages);
+    private void loadMessageRoomServer() {
+        mPresenter.loadNetworkMessages(mRoom.id, mStartNumberLoadMessages + mCountLoadMessages);
     }
 
     private void loadMessages(RoomViewModel model) {
@@ -500,11 +501,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     public void onEvent(RefreshMessagesRoomEvent room) {
-        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
-            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-        } else {
+        if (room.getRoomModel().id.equals(mRoom.id)) {
             mIsRefreshing = true;
-            loadMessageRoomServer(room.getRoomModel());
+            showListProgressBar();
+            loadMessageRoomServer();
         }
     }
 
@@ -575,10 +575,6 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         mIsRefreshing = false;
         mIsLoadBeforeIdMessages = false;
-
-//        if (error.contains("401")) {
-//            getActivity().sendBroadcast(new Intent(MainActivity.BROADCAST_UNAUTHORIZED));
-//        }
 
         Toast.makeText(getActivity(), resId, Toast.LENGTH_SHORT).show();
     }
