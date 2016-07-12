@@ -70,7 +70,7 @@ public class MainActivity extends BaseActivity implements MainView {
     public final static String MESSAGE_INTENT_KEY = "message";
     public final static String ROOM_ID_INTENT_KEY = "room";
 
-    private final int ROOM_IN_DRAWER_OFFSET_BOTTOM = 3; // All, Settings, Sign Out
+    private final int ROOM_IN_DRAWER_OFFSET_BOTTOM = 4; // All, Search, Settings, Sign Out
     private final int ROOM_IN_DRAWER_OFFSET_TOP = 2; // Header, Home
 
     private final String ROOMS_BUNDLE = "rooms_bundle";
@@ -248,6 +248,14 @@ public class MainActivity extends BaseActivity implements MainView {
                 .withIcon(R.drawable.ic_format_list_bulleted)
                 .withSelectable(false));
 
+        mDrawerItems.add(new PrimaryDrawerItem()
+                .withName(getString(R.string.search_room))
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withIcon(R.drawable.ic_magnify)
+                .withSelectable(false));
+
         mDrawerItems.add(new DividerDrawerItem());
 
         mDrawerItems.add(new PrimaryDrawerItem()
@@ -310,8 +318,8 @@ public class MainActivity extends BaseActivity implements MainView {
         mRoomsViewPager.getAdapter().notifyDataSetChanged();
 
         // Remove old items
-        // 4 but items: "Home", "All", "Divider", "Settings", "Sign Out".
-        while (mDrawer.getDrawerItems().size() != 5) {
+        // 4 but items: "Home", "All", "Search", "Divider", "Settings", "Sign Out".
+        while (mDrawer.getDrawerItems().size() != 6) {
             mDrawer.removeItemByPosition(ROOM_IN_DRAWER_OFFSET_TOP); // 2? Wtf?
         }
     }
@@ -379,24 +387,13 @@ public class MainActivity extends BaseActivity implements MainView {
         // If get intent from notification
         if (mRoomsList != null) {
             RoomModel intentRoom = intent.getParcelableExtra(NotificationService.FROM_ROOM_EXTRA_KEY);
-            RoomViewModel roomViewModel = RoomMapper.mapToView(intentRoom);
-            // If selected room not equal room id from notification, than load room
-//            if (mActiveRoom == null || !mActiveRoom.id.equals(intentRoom.id)) {
-//                mActiveRoom = roomViewModel;
-//
-//                int selectedNavItem = 0;
-//                for (int i = 0; i < mRoomsList.size(); i++) {
-//                    if (mRoomsList.get(i).id.equals(mActiveRoom.id)) {
-//                        selectedNavItem = i + 1;
-//                    }
-//                }
-//
-//                mDrawer.setSelectionAtPosition(selectedNavItem, true);
-//                if (mRoomsList.size() > 0) {
-//                    EventBus.getDefault().post(mActiveRoom);
-//                }
-//                //  setTitle(mRoomsList.get(selectedNavItem - 1).name);
-//            }
+
+            RoomViewModel notifRoom = RoomMapper.mapToView(intentRoom);
+            RoomViewModel selectedRoom = getSelectedRoom();
+
+            if (selectedRoom != null && !selectedRoom.name.equals(notifRoom.name)) {
+                pickRoom(notifRoom);
+            }
 
             mDrawer.closeDrawer();
         }
@@ -515,6 +512,8 @@ public class MainActivity extends BaseActivity implements MainView {
                 signOut();
             } else if (name.equals(getString(R.string.all))) {
                 showRoomsListDialog();
+            } else if (name.equals(getString(R.string.search_room))) {
+                startActivity(new Intent(getApplicationContext(), SearchRoomActivity.class));
             } else if (mRoomsInDrawer.size() > 0) {
                 clickOnRoomInDrawer(name);
             }
