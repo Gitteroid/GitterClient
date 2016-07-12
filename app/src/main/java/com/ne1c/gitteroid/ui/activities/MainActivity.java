@@ -57,8 +57,6 @@ import com.ne1c.gitteroid.ui.fragments.PickRoomsDialogFragment;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.Utils;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -160,7 +158,7 @@ public class MainActivity extends BaseActivity implements MainView {
                 final String name = mRoomsInTabs.get(position).name;
                 setTitle(name);
 
-                mDrawer.setSelectionAtPosition(getPositionRoomInDrawer(name), false);
+                mDrawer.setSelectionAtPosition(getPositionRoomInDrawer(name) + 1, false);
             }
 
             @Override
@@ -184,7 +182,7 @@ public class MainActivity extends BaseActivity implements MainView {
         }
     }
 
-    private void initWithSavedInstanceState(@NotNull Bundle savedInstanceState) {
+    private void initWithSavedInstanceState(Bundle savedInstanceState) {
         final ArrayList<RoomViewModel> roomsList = savedInstanceState.getParcelableArrayList(ROOMS_BUNDLE);
         mRoomsInDrawer.addAll(savedInstanceState.getParcelableArrayList(ROOMS_IN_DRAWER_BUNDLE));
         mRoomsInTabs.addAll(savedInstanceState.getParcelableArrayList(ROOMS_IN_TABS_BUNDLE));
@@ -637,8 +635,13 @@ public class MainActivity extends BaseActivity implements MainView {
             // Remove badge
             mDrawer.updateItem(item.withBadge(new StringHolder(null)));
         } else {
+            BadgeStyle badgeStyle = new BadgeStyle(getResources().getColor(R.color.md_green_500),
+                    getResources().getColor(R.color.md_green_700));
+            badgeStyle.withTextColor(getResources().getColor(android.R.color.white));
+
             final String badgeText = model.unreadItems >= 100 ? "99+" : Integer.toString(model.unreadItems);
-            mDrawer.updateItem(item.withBadge(badgeText));
+
+            mDrawer.updateItem(item.withBadge(badgeText).withBadgeStyle(badgeStyle));
         }
 
         mDrawer.getAdapter().notifyDataSetChanged();
@@ -682,7 +685,7 @@ public class MainActivity extends BaseActivity implements MainView {
     private int getPositionRoomInDrawer(String name) {
         for (int i = 0; i < mRoomsInDrawer.size(); i++) {
             if (mRoomsInDrawer.get(i).name.equals(name)) {
-                return i + ROOM_IN_DRAWER_OFFSET_TOP;
+                return (i + ROOM_IN_DRAWER_OFFSET_TOP) - 1;
             }
         }
 
@@ -710,7 +713,7 @@ public class MainActivity extends BaseActivity implements MainView {
 
             mDrawer.setSelectionAtPosition(newPosition);
         } else {
-            final int position = getPositionRoomInDrawer(model.name);
+            final int position = getPositionRoomInDrawer(model.name) + 1;
             mDrawer.setSelectionAtPosition(position);
         }
     }
