@@ -319,7 +319,9 @@ public class MainActivity extends BaseActivity implements MainView {
     }
 
     private void addRoomsToDrawer(ArrayList<RoomViewModel> roomsList, boolean restore) {
-        mRoomsList.addAll(roomsList);
+        if (mRoomsInDrawer.size() == 0) {
+            mRoomsInDrawer.addAll(roomsList);
+        }
 
         if (restore) {
             for (int i = 0; i < mRoomsInDrawer.size(); i++) {
@@ -327,20 +329,12 @@ public class MainActivity extends BaseActivity implements MainView {
                         ROOM_IN_DRAWER_OFFSET_TOP);
             }
         } else {
-            for (int i = 0; i < mRoomsList.size(); i++) {
-                final RoomViewModel room = mRoomsList.get(i);
-                if (room.unreadItems > 0) {
-                    mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
-                            ROOM_IN_DRAWER_OFFSET_TOP);
+            for (int i = 0; i < mRoomsInDrawer.size(); i++) {
+                final RoomViewModel room = mRoomsInDrawer.get(i);
 
-                    mRoomsInDrawer.add(room);
-                }
+                mDrawer.addItemAtPosition(formatRoomToDrawerItem(room),
+                        ROOM_IN_DRAWER_OFFSET_TOP);
             }
-        }
-
-        if (mRoomsInDrawer.size() == 0 && mRoomsList.size() > 0 && !restore) {
-            final int endValue = mRoomsList.size() >= 4 ? 4 : mRoomsInDrawer.size();
-            mRoomsInDrawer.addAll(mRoomsList.subList(0, endValue));
         }
 
         Collections.reverse(mRoomsInDrawer);
@@ -672,6 +666,12 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     public void leavedFromRoom() {
         finish();
+    }
+
+    @Override
+    public void saveAllRooms(ArrayList<RoomViewModel> rooms) {
+        mRoomsList.clear();
+        mRoomsList.addAll(rooms);
     }
 
     private void showRoomsListDialog() {

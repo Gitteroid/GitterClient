@@ -390,7 +390,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     public void onDestroy() {
         mComponent = null;
         mPresenter.onDestroy();
-        EventBus.getDefault().register(this);
+        EventBus.getDefault().unregister(this);
 
         super.onDestroy();
     }
