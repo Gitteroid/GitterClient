@@ -4,36 +4,27 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="@android:color/background_light"
+              android:orientation="vertical"
               tools:context=".ui.activities.LoginActivity">
 
+    <include layout="@layout/toolbar"/>
+
+
     <FrameLayout
-        android:id="@+id/shadow_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <RelativeLayout
-            android:id="@+id/content_layout"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical">
 
-            <!--<ProgressBar-->
-            <!--android:id="@+id/progress_bar"-->
-            <!--style="?android:attr/progressBarStyleHorizontal"-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="4dp"-->
-            <!--android:layout_alignParentTop="true"-->
-            <!--android:indeterminate="true"-->
-            <!--android:paddingBottom="-4dp"-->
-            <!--android:paddingTop="-4dp"-->
-            <!--android:visibility="gone"/>-->
-
             <ImageView
                 android:id="@+id/logo_img"
                 android:layout_width="256dp"
                 android:layout_height="128dp"
-                android:layout_centerInParent="true"
+                android:layout_gravity="center"
                 android:layout_marginBottom="24dp"
                 android:src="@drawable/logo"/>
 
@@ -43,31 +34,27 @@
                 android:layout_height="match_parent"
                 android:visibility="gone"/>
 
-            <me.zhanghai.android.materialprogressbar.MaterialProgressBar
-                android:id="@+id/progress_bar"
-                style="@style/Widget.MaterialProgressBar.ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="3dp"
-                android:layout_alignParentTop="true"
-                android:background="@null"
-                android:indeterminate="true"
-                android:visibility="gone"
-                app:mpb_progressStyle="horizontal"/>
-
             <Button
                 android:id="@+id/auth_but"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/logo_img"
-                android:layout_centerInParent="true"
+                android:layout_gravity="center"
                 android:background="?selectableItemBackground"
                 android:elevation="0dp"
                 android:minWidth="120dp"
                 android:text="@string/sign_in"
                 android:textColor="@color/colorPrimaryDark"
                 android:textSize="16sp"/>
-        </RelativeLayout>
+        </LinearLayout>
 
-        <include layout="@layout/toolbar"/>
+        <me.zhanghai.android.materialprogressbar.MaterialProgressBar
+            android:id="@+id/progress_bar"
+            style="@style/Widget.MaterialProgressBar.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:background="@null"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:mpb_progressStyle="horizontal"/>
     </FrameLayout>
 </LinearLayout>
