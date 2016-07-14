@@ -1,5 +1,6 @@
 package com.ne1c.gitteroid.presenters;
 
+import com.ne1c.gitteroid.TestRxSchedulerFactory;
 import com.ne1c.gitteroid.dataproviders.DataManger;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.Utils;
