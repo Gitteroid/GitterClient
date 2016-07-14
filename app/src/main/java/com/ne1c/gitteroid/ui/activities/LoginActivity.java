@@ -105,7 +105,7 @@ public class LoginActivity extends BaseActivity implements LoginView {
 
     @Override
     public void successAuth() {
-        startActivity(new Intent(getApplicationContext(), RoomsActivity.class)
+        startActivity(new Intent(getApplicationContext(), MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
         finish();
     }

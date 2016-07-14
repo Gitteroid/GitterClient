@@ -3,7 +3,6 @@ package com.ne1c.gitteroid.presenters;
 import com.ne1c.gitteroid.R;
 import com.ne1c.gitteroid.dataproviders.DataManger;
 import com.ne1c.gitteroid.models.RoomMapper;
-import com.ne1c.gitteroid.models.data.RoomModel;
 import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.RxSchedulersFactory;
@@ -22,6 +21,8 @@ public class MainPresenter extends BasePresenter<MainView> {
 
     private DataManger mDataManger;
     private RxSchedulersFactory mSchedulersFactory;
+
+    private ArrayList<RoomViewModel> mCachedAllRooms = new ArrayList<>();
 
     @Inject
     public MainPresenter(RxSchedulersFactory factory, DataManger dataManger) {
@@ -52,7 +53,9 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .filter(userModel -> mView != null)
                 .subscribe(userModel -> {
                     mView.showProfile(userModel);
-                }, throwable -> { mView.showError(R.string.error); });
+                }, throwable -> {
+                    mView.showError(R.string.error);
+                });
 
         mSubscriptions.add(sub);
     }
@@ -89,16 +92,42 @@ public class MainPresenter extends BasePresenter<MainView> {
                 .observeOn(mSchedulersFactory.androidMainThread())
                 .filter(roomModels -> mView != null)
                 .map(roomModels -> {
-                    ArrayList<RoomViewModel> visibleList = new ArrayList<>();
-                    for (RoomModel room : roomModels) {
-                        if (!room.hide) {
-                            visibleList.add(RoomMapper.mapToView(room));
+                    mCachedAllRooms.clear();
+                    mCachedAllRooms.addAll(RoomMapper.mapToView(roomModels));
+
+                    ArrayList<RoomViewModel> rooms = new ArrayList<>();
+
+                    // Add rooms with unread messages
+                    for (RoomViewModel model : mCachedAllRooms) {
+                        if (model.unreadItems > 0) {
+                            rooms.add(model);
                         }
                     }
 
-                    return visibleList;
+                    // Collect minimum 4 rooms with no oneToOne rooms
+                    if (rooms.size() < 4) {
+                        for (RoomViewModel model : mCachedAllRooms) {
+                            if (model.unreadItems <= 0 && !model.oneToOne && rooms.size() < 4) {
+                                rooms.add(model);
+                            }
+                        }
+                    }
+
+                    // Collect minimum any rooms
+                    if (rooms.size() < 4) {
+                        for (RoomViewModel model : mCachedAllRooms) {
+                            if (model.unreadItems <= 0 && model.oneToOne && rooms.size() < 4) {
+                                rooms.add(model);
+                            }
+                        }
+                    }
+
+                    return rooms;
                 })
-                .subscribe(mView::showRooms, throwable -> {
+                .subscribe(rooms -> {
+                    mView.showRooms(rooms);
+                    mView.saveAllRooms(mCachedAllRooms);
+                }, throwable -> {
                     mView.showError(R.string.error_load_rooms);
                 });
 

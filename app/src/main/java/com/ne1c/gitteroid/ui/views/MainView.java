@@ -15,4 +15,6 @@ public interface MainView {
     void showError(@StringRes int resId);
 
     void leavedFromRoom();
+
+    void saveAllRooms(ArrayList<RoomViewModel> rooms);
 }
