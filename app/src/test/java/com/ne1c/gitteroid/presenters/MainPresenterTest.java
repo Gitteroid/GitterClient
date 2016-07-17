@@ -1,7 +1,11 @@
 package com.ne1c.gitteroid.presenters;
 
+import com.ne1c.gitteroid.RoomsGenerator;
 import com.ne1c.gitteroid.TestRxSchedulerFactory;
 import com.ne1c.gitteroid.dataproviders.DataManger;
+import com.ne1c.gitteroid.models.data.RoomModel;
+import com.ne1c.gitteroid.models.data.UserModel;
+import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.Utils;
 
@@ -15,9 +19,13 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.util.ArrayList;
+
 import rx.Observable;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -83,9 +91,67 @@ public class MainPresenterTest {
         verify(mView, times(1)).showError(anyInt());
     }
 
+    @Test
+    public void testLoadProfile_success() {
+        PowerMockito.when(Utils.getInstance().isNetworkConnected()).thenReturn(false);
+
+        UserModel user = mock(UserModel.class);
+
+        when(mDataManger.getProfile()).thenReturn(Observable.just(user));
+
+        mPresenter.loadProfile();
+
+        verify(mView, times(1)).showProfile(user);
+        verify(mView, never()).showError(anyInt());
+    }
+
+    @Test
+    public void testLoadProfile_fail() {
+        when(mDataManger.getProfile()).thenReturn(Observable.error(new Throwable()));
+
+        mPresenter.loadProfile();
+
+        verify(mView, never()).showProfile(any(UserModel.class));
+        verify(mView, times(1)).showError(anyInt());
+    }
+
+    @Test
+    public void testLoadRooms_success_withUnreadMessages() {
+        when(mDataManger.getRooms(true)).thenReturn(Observable.just(getWithUnreadMessagesRooms()));
+
+        mPresenter.loadRooms(true);
+
+        verify(mView, atLeastOnce()).showRooms(any(ArrayList.class.asSubclass(RoomViewModel.class)));
+    }
+
+    @Test
+    public void testLoadRooms_noFresh_success() {
+
+    }
+
+    @Test
+    public void testLoadRooms_fail() {
+
+    }
+
+    @Test
+    public void testLoadRooms_noNetwork() {
+
+    }
+
     @After
     public void end() {
         mPresenter.unbindView();
         mPresenter.onDestroy();
+    }
+
+    private ArrayList<RoomModel> getWithUnreadMessagesRooms() {
+        ArrayList<RoomModel> result = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            RoomModel roomModel = RoomsGenerator.generateRoom();
+            roomModel.unreadItems = 1;
+        }
+
+        return result;
     }
 }
