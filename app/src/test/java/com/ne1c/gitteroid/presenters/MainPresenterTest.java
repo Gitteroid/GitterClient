@@ -5,7 +5,6 @@ import com.ne1c.gitteroid.TestRxSchedulerFactory;
 import com.ne1c.gitteroid.dataproviders.DataManger;
 import com.ne1c.gitteroid.models.data.RoomModel;
 import com.ne1c.gitteroid.models.data.UserModel;
-import com.ne1c.gitteroid.models.view.RoomViewModel;
 import com.ne1c.gitteroid.ui.views.MainView;
 import com.ne1c.gitteroid.utils.Utils;
 
@@ -117,21 +116,20 @@ public class MainPresenterTest {
 
     @Test
     public void testLoadRooms_success_withUnreadMessages() {
-        when(mDataManger.getRooms(true)).thenReturn(Observable.just(getWithUnreadMessagesRooms()));
+        when(mDataManger.getRooms(true)).thenReturn(Observable.just(any()));
 
         mPresenter.loadRooms(true);
 
-        verify(mView, atLeastOnce()).showRooms(any(ArrayList.class.asSubclass(RoomViewModel.class)));
-    }
-
-    @Test
-    public void testLoadRooms_noFresh_success() {
-
+        verify(mView, atLeastOnce()).showRooms(any(ArrayList.class));
     }
 
     @Test
     public void testLoadRooms_fail() {
+        when(mDataManger.getRooms(true)).thenReturn(Observable.error(new Throwable()));
 
+        mPresenter.loadRooms(true);
+
+        verify(mView, atLeastOnce()).showError(anyInt());
     }
 
     @Test

@@ -5,10 +5,8 @@ import com.ne1c.gitteroid.models.data.RoomModel;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-
 public class RoomsGenerator {
+    public static final String ROOM_ID = "abc123";
     public static ArrayList<RoomModel> generateList(int count) {
         ArrayList<RoomModel> list = new ArrayList<>();
 
@@ -22,10 +20,10 @@ public class RoomsGenerator {
     public static RoomModel generateRoom() {
         RoomModel room = new RoomModel();
 
-        room.id = anyString();
+        room.id = ROOM_ID;
         room.oneToOne = new Random().nextBoolean();
-        room.name = anyString();
-        room.unreadItems = anyInt();
+        room.name = "321abc";
+        room.unreadItems = new Random().nextInt(10);
 
         return room;
     }
