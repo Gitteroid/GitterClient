@@ -412,7 +412,10 @@ public class MainActivity extends BaseActivity implements MainView {
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-        mDrawerToggle.syncState();
+
+        if (mDrawerToggle != null) {
+            mDrawerToggle.syncState();
+        }
     }
 
     @Override
@@ -700,7 +703,6 @@ public class MainActivity extends BaseActivity implements MainView {
                 break;
             }
         }
-
 
 
         mDrawer.setSelectionAtPosition(ROOM_IN_DRAWER_OFFSET_TOP);

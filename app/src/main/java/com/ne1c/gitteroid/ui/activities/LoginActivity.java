@@ -89,7 +89,7 @@ public class LoginActivity extends BaseActivity implements LoginView {
         if (mAuthWebView.getVisibility() == View.VISIBLE && mAuthWebView.canGoBack()) {
             mAuthWebView.goBack();
         } else {
-            onBackPressed();
+            super.onBackPressed();
         }
     }
 
