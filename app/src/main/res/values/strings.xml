@@ -65,4 +65,6 @@
     <string name="scroll_to_new_messages">Scroll to new messages</string>
     <string name="write_a_message">Write a message</string>
     <string name="no_result">No result</string>
+    <string name="no_messages_try_to_load">No messages for this room. Try to press refresh for load messages.</string>
+    <string name="refresh">Refresh</string>
 </resources>
