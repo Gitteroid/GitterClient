@@ -93,7 +93,7 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
     }
 
     // Load messages from network
-    public void loadNetworkMessages(String roomId, int limit) {
+    public void loadMessages(String roomId, int limit) {
         if (!Utils.getInstance().isNetworkConnected()) {
             mView.showError(R.string.no_network);
             return;
@@ -117,81 +117,6 @@ public class ChatRoomPresenter extends BasePresenter<ChatView> {
                 }, throwable -> {
                     mView.hideListProgress();
                     mView.hideTopProgressBar();
-                });
-
-        mSubscriptions.add(sub);
-    }
-
-    // Load messages from database, then load from network if possible
-    public void loadMessages(String roomId, int limit) {
-        final boolean[] fromNetwork = {false};
-        final boolean[] fromDatabase = {false};
-
-        if (mCachedMessages.size() > 0) {
-            mView.showMessages(mCachedMessages);
-            return;
-        }
-
-        if (!Utils.getInstance().isNetworkConnected()) {
-            Subscription sub = mDataManger.getMessages(roomId, limit, false)
-                    .map(MessageMapper::mapToView)
-                    .subscribe(mView::showMessages);
-
-            mSubscriptions.add(sub);
-
-            return;
-        }
-
-        Subscription sub = mDataManger.getMessages(roomId, limit, true)
-                .map(MessageMapper::mapToView)
-                .doOnNext(messages -> {
-                    if (fromDatabase[0]) {
-                        fromDatabase[0] = false;
-                        fromNetwork[0] = true;
-                    } else {
-                        fromDatabase[0] = true;
-                    }
-                })
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .filter(messageViewModels -> mView != null)
-                .subscribe(messages -> {
-                    if (fromDatabase[0] && messages.size() == 0) {
-                        mView.showListProgressBar();
-                    } else if (fromDatabase[0] && messages.size() > 0) {
-                        mView.showTopProgressBar();
-                    }
-
-                    if (fromNetwork[0]) {
-                        mView.hideListProgress();
-                        mView.hideTopProgressBar();
-                    }
-
-                    if (messages.size() > 0) {
-                        mView.showMessages(messages);
-                    }
-                }, throwable -> {
-                    mView.hideListProgress();
-                    mView.hideTopProgressBar();
-                });
-
-        mSubscriptions.add(sub);
-    }
-
-    // Load messages from database
-    public void loadCachedMessages(String roomId) {
-        Subscription sub = mDataManger.getMessages(roomId, 10, false)
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
-                .filter(messages -> mView != null)
-                .map(MessageMapper::mapToView)
-                .map(messages -> {
-                    mCachedMessages.clear();
-                    mCachedMessages.addAll(messages);
-                    return messages;
-                })
-                .subscribe(mView::showMessages, throwable -> {
-                    mView.showError(R.string.error);
                 });
 
         mSubscriptions.add(sub);

@@ -11,7 +11,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -22,6 +21,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,6 +54,7 @@ import javax.inject.Inject;
 import de.greenrobot.event.EventBus;
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
+import static android.view.View.GONE;
 import static com.ne1c.gitteroid.ui.activities.MainActivity.MESSAGE_INTENT_KEY;
 import static com.ne1c.gitteroid.ui.activities.MainActivity.ROOM_ID_INTENT_KEY;
 
@@ -67,6 +68,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private MaterialProgressBar mTopProgressBar;
     private FloatingActionButton mFabToBottom;
     private TextView mNewMessagePopupTextView;
+    private LinearLayout mNoMessagesLayout;
 
     private ArrayList<MessageViewModel> mMessagesArr = new ArrayList<>();
     private RoomViewModel mRoom;
@@ -132,12 +134,12 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mListLayoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, true);
         mMessagesList.setLayoutManager(mListLayoutManager);
         mMessagesList.setItemViewCacheSize(50);
-        mMessagesList.setItemAnimator(new DefaultItemAnimator());
-        mMessagesList.getItemAnimator().setAddDuration(300);
 
         mFabToBottom = (FloatingActionButton) v.findViewById(R.id.fab_to_bottom);
         mFabToBottom.setOnClickListener(v1 -> mMessagesList.smoothScrollToPosition(0));
         mFabToBottom.hide();
+
+        mNoMessagesLayout = (LinearLayout) v.findViewById(R.id.no_messages_layout);
 
         mNewMessagePopupTextView = (TextView) v.findViewById(R.id.new_message_popup);
         mNewMessagePopupTextView.setOnClickListener(v1 -> {
@@ -152,7 +154,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         });
 
         if (mOverviewRoom != null) {
-            v.findViewById(R.id.input_layout).setVisibility(View.GONE);
+            v.findViewById(R.id.input_layout).setVisibility(GONE);
 
             Button joinRoomButton = (Button) v.findViewById(R.id.join_room_button);
             joinRoomButton.setVisibility(View.VISIBLE);
@@ -163,7 +165,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     private void hideNewMessagePopup() {
         mNewMessagePopupTextView.animate()
                 .alpha(0)
-                .withEndAction(() -> mNewMessagePopupTextView.setVisibility(View.GONE))
+                .withEndAction(() -> mNewMessagePopupTextView.setVisibility(GONE))
                 .start();
     }
 
@@ -180,7 +182,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         super.onStart();
 
         mPresenter.bindView(this);
-        loadRoom();
+
+        if (messagesIsNotLoaded()) {
+            loadRoom();
+        }
 
         LocalBroadcastManager.getInstance(getActivity())
                 .registerReceiver(mNewMessageReceiver, new IntentFilter(MainActivity.BROADCAST_NEW_MESSAGE));
@@ -279,7 +284,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         initSavedState(savedInstanceState);
 
         if (mIsRefreshing) {
-            mMessagesList.setVisibility(View.GONE);
+            mMessagesList.setVisibility(GONE);
             showListProgressBar();
         }
 
@@ -421,30 +426,22 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     }
 
     private void loadMessageRoomServer() {
-        mPresenter.loadNetworkMessages(mRoom.id, mStartNumberLoadMessages + mCountLoadMessages);
+        mPresenter.loadMessages(mRoom.id, mStartNumberLoadMessages + mCountLoadMessages);
     }
 
     private void loadMessages(RoomViewModel model) {
         hideListProgress();
         hideTopProgressBar();
 
+        mRoom = model;
         mCountLoadMessages = 0;
 
-        mMessagesArr.clear();
-        mMessagesAdapter.notifyDataSetChanged();
-
-        mMessagesAdapter.setRoom(model);
-
-        if (!Utils.getInstance().isNetworkConnected() && getView() != null) {
-            Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_SHORT).show();
-        }
+        mMessagesAdapter.setRoom(mRoom);
 
         mIsRefreshing = false;
         mIsLoadBeforeIdMessages = false;
 
         mPresenter.loadMessages(model.id, mStartNumberLoadMessages);
-
-        mRoom = model;
     }
 
     private BroadcastReceiver mNewMessageReceiver = new BroadcastReceiver() {
@@ -558,6 +555,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
         mMessagesAdapter.notifyDataSetChanged();
 
+        if (mNoMessagesLayout.getVisibility() == View.VISIBLE) {
+            mNoMessagesLayout.setVisibility(GONE);
+        }
+
         if (mMessageListSavedState != null) {
             mMessagesList.getLayoutManager().onRestoreInstanceState(mMessageListSavedState);
             mMessageListSavedState = null;
@@ -577,6 +578,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
         mIsLoadBeforeIdMessages = false;
 
         Toast.makeText(getActivity(), resId, Toast.LENGTH_SHORT).show();
+
+        if (messagesIsNotLoaded()) {
+            mNoMessagesLayout.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
@@ -679,7 +684,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     @Override
     public void hideTopProgressBar() {
         if (mTopProgressBar.getVisibility() == View.VISIBLE) {
-            mTopProgressBar.setVisibility(View.GONE);
+            mTopProgressBar.setVisibility(GONE);
         }
     }
 
@@ -687,7 +692,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     public void showListProgressBar() {
         hideTopProgressBar();
 
-        mMessagesList.setVisibility(View.GONE);
+        mMessagesList.setVisibility(GONE);
         mProgressBar.setVisibility(View.VISIBLE);
 
         mIsRefreshing = true;
@@ -697,7 +702,7 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
     public void hideListProgress() {
         if (mMessagesList.getVisibility() != View.VISIBLE) {
             mMessagesList.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(View.GONE);
+            mProgressBar.setVisibility(GONE);
         }
 
         mIsRefreshing = false;
@@ -720,6 +725,10 @@ public class ChatRoomFragment extends BaseFragment implements ChatView {
 
     public static ChatRoomFragment newInstance(RoomViewModel room) {
         return newInstance(room, false);
+    }
+
+    private boolean messagesIsNotLoaded() {
+        return mMessagesAdapter == null || mMessagesAdapter.getItemCount() == 0;
     }
 
     public static ChatRoomFragment newInstance(RoomViewModel room, boolean overview) {
