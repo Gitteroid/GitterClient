@@ -2,29 +2,13 @@ package com.ne1c.gitteroid.api
 
 import com.ne1c.gitteroid.api.responses.JoinRoomResponse
 import com.ne1c.gitteroid.api.responses.StatusResponse
-import com.ne1c.gitteroid.models.data.AuthResponseModel
-import com.ne1c.gitteroid.models.data.MessageModel
-import com.ne1c.gitteroid.models.data.RoomModel
-import com.ne1c.gitteroid.models.data.SearchRoomsResponse
-import com.ne1c.gitteroid.models.data.UserModel
-
-import java.util.ArrayList
-
+import com.ne1c.gitteroid.models.data.*
 import okhttp3.ResponseBody
-import retrofit2.http.DELETE
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.Query
-import retrofit2.http.Url
+import retrofit2.http.*
 import rx.Observable
+import java.util.*
 
 interface GitterApi {
-
     @GET("/v1/rooms")
     fun getCurrentUserRooms(@Header("Authorization") access_token: String): Observable<ArrayList<RoomModel>>
 
