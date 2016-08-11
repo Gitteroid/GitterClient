@@ -3,31 +3,30 @@ package com.ne1c.gitteroid.presenters
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.models.MessageMapper
+import com.ne1c.gitteroid.models.data.MessageModel
 import com.ne1c.gitteroid.models.data.StatusMessage
-import com.ne1c.gitteroid.models.data.UserModel
 import com.ne1c.gitteroid.models.view.MessageViewModel
 import com.ne1c.gitteroid.ui.views.ChatView
 import com.ne1c.gitteroid.utils.RxSchedulersFactory
 import com.ne1c.gitteroid.utils.Utils
-
-import java.util.ArrayList
-
-import javax.inject.Inject
-
-import rx.Subscription
+import com.ne1c.rainbowmvp.base.BasePresenter
+import rx.functions.Action1
+import rx.functions.Func1
 import rx.subscriptions.CompositeSubscription
+import java.util.*
 
-class ChatRoomPresenter
-@Inject
-constructor(private val mSchedulersFactory: RxSchedulersFactory, private val mDataManger: DataManger) : BasePresenter<ChatView>() {
-    private var mView: ChatView? = null
+class ChatRoomPresenter(private val mSchedulersFactory: RxSchedulersFactory,
+                        private val mDataManger: DataManger) : BasePresenter<ChatView>() {
+    companion object {
+        val TAG: String = ChatRoomPresenter::class.java.simpleName
+    }
 
     private var mSubscriptions: CompositeSubscription? = null
 
     private val mCachedMessages = ArrayList<MessageViewModel>()
 
     override fun bindView(view: ChatView) {
-        mView = view
+        super.bindView(view)
         mSubscriptions = CompositeSubscription()
     }
 
@@ -45,13 +44,17 @@ constructor(private val mSchedulersFactory: RxSchedulersFactory, private val mDa
             return
         }
 
-        val sub = mDataManger.sendMessage(roomId, text).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).map<MessageViewModel>(Func1<MessageModel, MessageViewModel> { MessageMapper.mapToView(it) }).map<MessageViewModel>({ message ->
-            mCachedMessages.add(message)
-            message
-        }).filter { messageViewModel -> mView != null }.subscribe(Action1<MessageViewModel> { mView!!.deliveredMessage(it) }
-        ) { throwable -> mView!!.errorDeliveredMessage() }
+//        ({ model: MessageViewModel -> mView?.deliveredMessage(model) },
+        val sub = mDataManger.sendMessage(roomId, text)
+                .subscribeOn(mSchedulersFactory.io())
+                .observeOn(mSchedulersFactory.androidMainThread())
+                .map { MessageMapper.mapToView(it) }
+                .map { mCachedMessages.add(it) }
+                .filter { mView != null }
+                .subscribe()
+//                        { throwable -> mView!!.errorDeliveredMessage() })
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 
 
