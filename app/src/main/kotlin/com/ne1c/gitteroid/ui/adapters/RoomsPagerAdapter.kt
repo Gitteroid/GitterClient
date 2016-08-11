@@ -3,12 +3,11 @@ package com.ne1c.gitteroid.ui.adapters
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
+import android.support.v4.view.PagerAdapter
 import android.view.View
-
 import com.ne1c.gitteroid.models.view.RoomViewModel
 import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment
-
-import java.util.ArrayList
+import java.util.*
 
 class RoomsPagerAdapter(fm: FragmentManager, private val mRoomsList: ArrayList<RoomViewModel>) : FragmentPagerAdapter(fm) {
 

@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.net.ConnectivityManager
 import android.os.IBinder
@@ -15,26 +14,21 @@ import android.preference.PreferenceManager
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 import android.support.v4.content.LocalBroadcastManager
-import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
-
-import com.ne1c.gitteroid.GitteroidApplication
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.api.GitterStreamer
 import com.ne1c.gitteroid.dataproviders.DataManger
+import com.ne1c.gitteroid.di.DependencyManager
+import com.ne1c.gitteroid.di.base.NetworkService
 import com.ne1c.gitteroid.models.data.MessageModel
 import com.ne1c.gitteroid.models.data.RoomModel
 import com.ne1c.gitteroid.ui.activities.MainActivity
-import com.ne1c.gitteroid.utils.Utils
-
-import rx.Subscription
 import rx.schedulers.Schedulers
 import rx.subscriptions.CompositeSubscription
 
 class NotificationService : Service() {
-
     private var mRooms: List<RoomModel>? = null
     private val mSubscriptions = CompositeSubscription()
 
@@ -48,12 +42,14 @@ class NotificationService : Service() {
     private var mWithUserName: Boolean = false
 
     private var mDataManger: DataManger? = null
+    private var mNetworkService: NetworkService? = null
 
     override fun onCreate() {
         super.onCreate()
 
-        mDataManger = (application as GitteroidApplication).dataManager
-        mStreamer = (application as GitteroidApplication).streamer
+        mDataManger = DependencyManager.INSTANCE.dataManager
+        mStreamer = DependencyManager.INSTANCE.gitterStreamer
+        mNetworkService = DependencyManager.INSTANCE.networkService
 
         createNetworkReceiver()
     }
@@ -99,12 +95,12 @@ class NotificationService : Service() {
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(MainActivity.BROADCAST_NEW_MESSAGE).putExtra(MainActivity.MESSAGE_INTENT_KEY, message).putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id))
 
-        val isOwnerAccount = message.fromUser.id == Utils.instance.userPref.id
+        val isOwnerAccount = message.fromUser.id == mDataManger?.getUser()?.id
 
         if (mEnableNotif && !isOwnerAccount) {
-            val username = Utils.instance.userPref.username
+            val username = mDataManger?.getUser()?.username
 
-            if (mWithUserName && message.text.contains(username) &&
+            if (mWithUserName && message.text.contains(username!!) &&
                     message.fromUser.username != username) {
                 sendNotificationMessage(room, message)
             } else if (!mWithUserName) {
@@ -131,7 +127,7 @@ class NotificationService : Service() {
 
     private val networkChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (Utils.instance.isNetworkConnected) {
+            if (mNetworkService!!.isConnected()) {
                 createRoomsSubscribers()
             } else {
                 unsubscribeAll()

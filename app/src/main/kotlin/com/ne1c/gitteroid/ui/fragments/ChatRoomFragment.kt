@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Parcelable
 import android.preference.PreferenceManager
@@ -14,21 +13,12 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
-
+import android.widget.*
 import com.ne1c.gitteroid.R
-import com.ne1c.gitteroid.di.components.ChatRoomComponent
 import com.ne1c.gitteroid.di.components.DaggerChatRoomComponent
-import com.ne1c.gitteroid.di.modules.ChatRoomPresenterModule
 import com.ne1c.gitteroid.events.NewMessageEvent
 import com.ne1c.gitteroid.events.ReadMessagesEvent
 import com.ne1c.gitteroid.events.RefreshMessagesRoomEvent
@@ -43,21 +33,12 @@ import com.ne1c.gitteroid.ui.activities.MainActivity
 import com.ne1c.gitteroid.ui.adapters.MessagesAdapter
 import com.ne1c.gitteroid.ui.views.ChatView
 import com.ne1c.gitteroid.utils.MarkdownUtils
-import com.ne1c.gitteroid.utils.Utils
-
-import java.util.ArrayList
-import java.util.Collections
-
-import javax.inject.Inject
-
+import com.ne1c.rainbowmvp.base.BaseFragment
 import de.greenrobot.event.EventBus
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar
+import java.util.*
 
-import android.view.View.GONE
-import com.ne1c.gitteroid.ui.activities.MainActivity.MESSAGE_INTENT_KEY
-import com.ne1c.gitteroid.ui.activities.MainActivity.ROOM_ID_INTENT_KEY
-
-class ChatRoomFragment : BaseFragment(), ChatView {
+class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     private var mMessageEditText: EditText? = null
     private var mSendButton: ImageButton? = null
     private var mMessagesList: RecyclerView? = null
@@ -691,7 +672,6 @@ class ChatRoomFragment : BaseFragment(), ChatView {
     }
 
     companion object {
-
         @JvmOverloads fun newInstance(room: RoomViewModel, overview: Boolean = false): ChatRoomFragment {
             val bundle = Bundle()
             bundle.putParcelable("room", room)
@@ -703,4 +683,6 @@ class ChatRoomFragment : BaseFragment(), ChatView {
             return fragment
         }
     }
+
+    override fun getPresenterTag(): String = ChatRoomPresenter.TAG
 }

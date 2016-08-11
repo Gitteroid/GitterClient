@@ -41,7 +41,7 @@ interface GitterApi {
 
     @FormUrlEncoded
     @POST
-    fun authorization(@Url authUrl: String,
+    fun     authorization(@Url authUrl: String,
                       @Field("client_id") client_id: String,
                       @Field("client_secret") client_secret: String,
                       @Field("code") code: String,

@@ -5,12 +5,10 @@ import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import android.view.ViewGroup
 import android.widget.FrameLayout
-
+import com.ne1c.gitteroid.GitteroidApplication
 import com.ne1c.gitteroid.ui.fragments.PreferencesFragment
-import com.ne1c.gitteroid.utils.Utils
 
 class SettingsActivity : AppCompatActivity() {
-
     private val FRAGMENT_CONTAINER_ID = Integer.valueOf(666)!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +46,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun finish() {
-        Utils.instance.startNotificationService()
+        (application as GitteroidApplication).startNotificationService()
         super@SettingsActivity.finish()
     }
 }

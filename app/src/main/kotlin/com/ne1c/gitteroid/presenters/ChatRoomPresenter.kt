@@ -2,27 +2,25 @@ package com.ne1c.gitteroid.presenters
 
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.dataproviders.DataManger
+import com.ne1c.gitteroid.di.base.ExecutorService
+import com.ne1c.gitteroid.di.base.NetworkService
 import com.ne1c.gitteroid.models.MessageMapper
 import com.ne1c.gitteroid.models.data.MessageModel
 import com.ne1c.gitteroid.models.data.StatusMessage
 import com.ne1c.gitteroid.models.view.MessageViewModel
 import com.ne1c.gitteroid.ui.views.ChatView
-import com.ne1c.gitteroid.utils.RxSchedulersFactory
-import com.ne1c.gitteroid.utils.Utils
 import com.ne1c.rainbowmvp.base.BasePresenter
-import rx.functions.Action1
-import rx.functions.Func1
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
-class ChatRoomPresenter(private val mSchedulersFactory: RxSchedulersFactory,
-                        private val mDataManger: DataManger) : BasePresenter<ChatView>() {
+class ChatRoomPresenter(private val executor: ExecutorService,
+                        private val dataManager: DataManger,
+                        private val networkService: NetworkService) : BasePresenter<ChatView>() {
     companion object {
         val TAG: String = ChatRoomPresenter::class.java.simpleName
     }
 
     private var mSubscriptions: CompositeSubscription? = null
-
     private val mCachedMessages = ArrayList<MessageViewModel>()
 
     override fun bindView(view: ChatView) {
@@ -35,114 +33,138 @@ class ChatRoomPresenter(private val mSchedulersFactory: RxSchedulersFactory,
     }
 
     override fun onDestroy() {
-        mSubscriptions!!.unsubscribe()
+        mSubscriptions?.unsubscribe()
     }
 
     fun sendMessage(roomId: String, text: String) {
-        if (!Utils.instance.isNetworkConnected) {
-            mView!!.showError(R.string.no_network)
+        if (!networkService.isConnected()) {
+            mView?.showError(R.string.no_network)
             return
         }
 
-//        ({ model: MessageViewModel -> mView?.deliveredMessage(model) },
-        val sub = mDataManger.sendMessage(roomId, text)
-                .subscribeOn(mSchedulersFactory.io())
-                .observeOn(mSchedulersFactory.androidMainThread())
+        val sub = dataManager.sendMessage(roomId, text)
                 .map { MessageMapper.mapToView(it) }
-                .map { mCachedMessages.add(it) }
-                .filter { mView != null }
-                .subscribe()
-//                        { throwable -> mView!!.errorDeliveredMessage() })
+                .map {
+                    mCachedMessages.add(it)
+                    return@map it
+                }
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .subscribe({ mView?.deliveredMessage(it) },
+                        { mView?.errorDeliveredMessage() })
 
         mSubscriptions?.add(sub)
     }
 
 
     fun loadMessagesBeforeId(roomId: String, limit: Int, beforeId: String) {
-        if (!Utils.instance.isNetworkConnected) {
-            mView!!.showError(R.string.no_network)
+        if (!networkService.isConnected()) {
+            mView?.showError(R.string.no_network)
             return
         }
 
-        val sub = mDataManger.getMessagesBeforeId(roomId, limit, beforeId).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).map<ArrayList<MessageViewModel>>(Func1<ArrayList<MessageModel>, ArrayList<MessageViewModel>> { MessageMapper.mapToView(it) }).map<ArrayList<MessageViewModel>>({ messages ->
-            mCachedMessages.addAll(messages)
-            mCachedMessages
-        }).filter { messages -> mView != null }.subscribe(Action1<ArrayList<MessageViewModel>> { mView!!.showLoadBeforeIdMessages(it) }) { throwable -> mView!!.hideTopProgressBar() }
+        val sub = dataManager.getMessagesBeforeId(roomId, limit, beforeId)
+                .map { MessageMapper.mapToView(it) }
+                .map {
+                    mCachedMessages.addAll(it)
+                    return@map it
+                }
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .subscribe({ mView?.showLoadBeforeIdMessages(it) },
+                        { throwable -> mView?.hideTopProgressBar() })
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 
     // Load messages from network
     fun loadMessages(roomId: String, limit: Int) {
-        if (!Utils.instance.isNetworkConnected) {
-            mView!!.showError(R.string.no_network)
+        if (!networkService.isConnected()) {
+            mView?.showError(R.string.no_network)
             return
         }
 
-        mView!!.showListProgressBar()
+        mView?.showListProgressBar()
 
-        val sub = mDataManger.getMessages(roomId, limit, true).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).map<ArrayList<MessageViewModel>>(Func1<ArrayList<MessageModel>, ArrayList<MessageViewModel>> { MessageMapper.mapToView(it) }).map<ArrayList<MessageViewModel>>({ messages ->
-            mCachedMessages.clear()
-            mCachedMessages.addAll(messages)
-            messages
-        }).filter { messages -> mView != null }.subscribe({ messages ->
-            mView!!.showMessages(messages)
-            mView!!.hideListProgress()
+        val sub = dataManager.getMessages(roomId, limit, true)
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .map { MessageMapper.mapToView(it) }
+                .map { messages ->
+                    mCachedMessages.clear()
+                    mCachedMessages.addAll(messages)
+                    return@map messages
+                }.subscribe({
+            mView?.showMessages(it)
+            mView?.hideListProgress()
         }) { throwable ->
-            mView!!.hideListProgress()
-            mView!!.hideTopProgressBar()
+            mView?.hideListProgress()
+            mView?.hideTopProgressBar()
         }
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 
     fun updateMessages(roomId: String, messageId: String, text: String) {
-        if (!Utils.instance.isNetworkConnected) {
-            mView!!.showError(R.string.no_network)
+        if (!networkService.isConnected()) {
+            mView?.showError(R.string.no_network)
             return
         }
 
-        val sub = mDataManger.updateMessage(roomId, messageId, text).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).filter { messageModel -> mView != null }.map<MessageViewModel>(Func1<MessageModel, MessageViewModel> { MessageMapper.mapToView(it) }).subscribe(Action1<MessageViewModel> { mView!!.showUpdateMessage(it) }) { throwable -> mView!!.showError(R.string.updated_error) }
+        val sub = dataManager.updateMessage(roomId, messageId, text)
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .map { MessageMapper.mapToView(it) }
+                .subscribe({ mView?.showUpdateMessage(it) },
+                        { throwable -> mView?.showError(R.string.updated_error) })
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 
     fun markMessageAsRead(first: Int, last: Int, roomId: String, ids: Array<String>) {
-        if (!Utils.instance.isNetworkConnected) {
+        if (!networkService.isConnected()) {
             return
         }
 
-        val sub = mDataManger.readMessages(roomId, ids).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).filter { success -> mView != null && success!! }.subscribe({ success -> mView!!.successReadMessages(first, last, roomId, ids.size - 1) }) { throwable -> }
+        val sub = dataManager.readMessages(roomId, ids)
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .filter { it }
+                .subscribe({ mView?.successReadMessages(first, last, roomId, ids.size - 1) },
+                        { throwable -> })
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 
     fun createSendMessage(text: String): MessageViewModel {
-        val user = Utils.instance.userPref
+        val user = dataManager.getUser()
         val message = MessageViewModel()
 
         message.sent = StatusMessage.SENDING.name
         message.fromUser = user
         message.text = text
-        message.urls = ArrayList<Urls>()
+        message.urls = ArrayList<MessageModel.Urls>()
 
         return message
     }
 
     fun joinToRoom(roomUri: String) {
-        if (!Utils.instance.isNetworkConnected) {
-            mView!!.showError(R.string.no_network)
+        if (!networkService.isConnected()) {
+            mView?.showError(R.string.no_network)
             return
         }
 
-        val sub = mDataManger.joinToRoom(roomUri).subscribeOn(mSchedulersFactory.io()).observeOn(mSchedulersFactory.androidMainThread()).filter { response -> mView != null }.subscribe({ responseBody ->
-            if (responseBody.error == null) {
-                mView!!.joinToRoom()
-            } else {
-                mView!!.showError(R.string.error)
-            }
-        }) { throwable -> mView!!.showError(R.string.error) }
+        val sub = dataManager.joinToRoom(roomUri)
+                .subscribeOn(executor.getSubscribeOn())
+                .observeOn(executor.getObserveOn())
+                .subscribe({ responseBody ->
+                    if (responseBody.error === null) {
+                        mView?.joinToRoom()
+                    } else {
+                        mView?.showError(R.string.error)
+                    }
+                }) { throwable -> mView?.showError(R.string.error) }
 
-        mSubscriptions!!.add(sub)
+        mSubscriptions?.add(sub)
     }
 }

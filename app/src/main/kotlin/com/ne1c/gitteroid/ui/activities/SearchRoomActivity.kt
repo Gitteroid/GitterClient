@@ -6,20 +6,11 @@ import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.widget.EditText
 import android.widget.LinearLayout
-
 import com.ne1c.gitteroid.R
-import com.ne1c.gitteroid.di.components.DaggerSearchRoomComponent
-import com.ne1c.gitteroid.di.components.SearchRoomComponent
 import com.ne1c.gitteroid.presenters.SearchRoomPresenter
+import com.ne1c.rainbowmvp.base.BaseActivity
 
-import javax.inject.Inject
-
-class SearchRoomActivity : BaseActivity() {
-    @Inject
-    internal var mPresenter: SearchRoomPresenter? = null
-
-    private var mComponent: SearchRoomComponent? = null
-
+class SearchRoomActivity : BaseActivity<SearchRoomPresenter>() {
     private var mSearchEditText: EditText? = null
     private var mNoResultLayout: LinearLayout? = null
     private val mResultRecyclerView: RecyclerView? = null
@@ -39,18 +30,6 @@ class SearchRoomActivity : BaseActivity() {
         findViewById(R.id.clear_imageButton).setOnClickListener { v -> mSearchEditText!!.text.clear() }
     }
 
-    override fun initDiComponent() {
-        mComponent = DaggerSearchRoomComponent.builder().applicationComponent(appComponent).build()
-
-        mComponent!!.inject(this)
-    }
-
-    override fun onDestroy() {
-        mComponent = null
-
-        super.onDestroy()
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -58,4 +37,6 @@ class SearchRoomActivity : BaseActivity() {
 
         return super.onOptionsItemSelected(item)
     }
+
+    override fun getPresenterTag(): String = SearchRoomPresenter.TAG
 }

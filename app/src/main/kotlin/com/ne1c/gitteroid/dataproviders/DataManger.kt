@@ -1,26 +1,34 @@
 package com.ne1c.gitteroid.dataproviders
 
+import android.content.SharedPreferences
 import com.ne1c.gitteroid.api.GitterApi
 import com.ne1c.gitteroid.api.responses.JoinRoomResponse
-import com.ne1c.gitteroid.models.data.AuthResponseModel
-import com.ne1c.gitteroid.models.data.MessageModel
-import com.ne1c.gitteroid.models.data.RoomModel
-import com.ne1c.gitteroid.models.data.SearchRoomsResponse
-import com.ne1c.gitteroid.models.data.UserModel
+import com.ne1c.gitteroid.models.data.*
 import com.ne1c.gitteroid.models.view.RoomViewModel
-import com.ne1c.gitteroid.utils.Utils
-
-import java.util.ArrayList
-import java.util.Collections
-import java.util.HashMap
-
-import javax.inject.Inject
-
 import rx.Observable
+import java.util.*
 
-open class DataManger
-@Inject
-constructor(private val mApi: GitterApi, private val mClientDatabase: ClientDatabase) {
+open class DataManger(private val mApi: GitterApi,
+                      private val mClientDatabase: ClientDatabase,
+                      private val mUserPreferences: SharedPreferences) {
+
+    companion object {
+        val USERINFO_PREF = "userinfo"
+
+        val GITTER_FAYE_URL = "https://ws.gitter.im/faye"
+        val GITTER_URL = "https://gitter.im"
+        val GITHUB_URL = "http://github.com"
+        val GITTER_API_URL = "https://api.gitter.im"
+        val ID_PREF_KEY = "id"
+        val USERNAME_PREF_KEY = "username"
+        val DISPLAY_NAME_PREF_KEY = "displayName"
+        val URL_NAME_PREF_KEY = "url"
+        val AVATAR_SMALL_PREF_KEY = "avatarUrlSmall"
+        val AVATAR_MEDIUM_PREF_KEY = "avatarUrlMedium"
+        val ACCESS_TOKEN_PREF_KEY = "access_token"
+        val EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN"
+        val TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE"
+    }
 
     // Primary cache in memory
     private val mCachedRooms = ArrayList<RoomModel>()
@@ -28,116 +36,60 @@ constructor(private val mApi: GitterApi, private val mClientDatabase: ClientData
     private var mCurrentUser: UserModel? = null
 
     fun getRooms(fresh: Boolean): Observable<ArrayList<RoomModel>> {
-        val serverRooms = mApi.getCurrentUserRooms(Utils.instance.bearer).onErrorResumeNext(Observable.just(ArrayList<RoomModel>()))
-
-        val dbRooms = mClientDatabase.rooms
-
         if (fresh) {
-            return Observable.zip(serverRooms, dbRooms) { server, db ->
-                val synchronizedRooms = getSynchronizedRooms(server, db)
-
-                mClientDatabase.updateRooms(synchronizedRooms)
-                synchronizedRooms
-            }
+            return mApi.getCurrentUserRooms(bearer)
+                    .onErrorResumeNext(mClientDatabase.rooms)
         } else {
-            if (mCachedRooms.size == 0) {
-                return@Observable.zip mClientDatabase . rooms . map < ArrayList < RoomModel > > { roomModels ->
-                    mCachedRooms.clear()
-                    mCachedRooms.addAll(roomModels)
-
-                    roomModels
-                }
-            } else {
-                return@mClientDatabase.getRooms()
-                        .map Observable . just < ArrayList < RoomModel > > mCachedRooms
-            }
+            return Observable.just(mCachedRooms)
         }
-    }
-
-    // Return new ArrayList that will synchronized with database
-    private fun getSynchronizedRooms(fromNetworkRooms: ArrayList<RoomModel>, dbRooms: ArrayList<RoomModel>): ArrayList<RoomModel> {
-        val synchronizedRooms = fromNetworkRooms.clone() as ArrayList<RoomModel>
-
-        // Data exist in db ang get from server
-        if (dbRooms.size > 0 && fromNetworkRooms.size > 0) {
-            for (r1 in dbRooms) {
-                for (r2 in synchronizedRooms) {
-                    if (r1.id == r2.id) {
-                        r2.hide = r1.hide
-                        r2.listPosition = r1.listPosition
-                    }
-                }
-            }
-
-            Collections.sort(synchronizedRooms, RoomModel.SortedByPosition())
-
-        } else if (dbRooms.size > 0 && fromNetworkRooms.size == 0) { // If data exist only in db
-            Collections.sort(dbRooms, RoomModel.SortedByPosition())
-
-            return dbRooms
-        } else if (dbRooms.size == 0 && fromNetworkRooms.size > 0) { // If data  not exist in db, only server
-            sortByTypes(fromNetworkRooms)
-
-            return fromNetworkRooms
-        }
-
-        return synchronizedRooms
     }
 
     fun leaveFromRoom(roomId: String): Observable<Boolean> {
-        return mApi.leaveRoom(Utils.instance.bearer, roomId, Utils.instance.userPref.id).map<StatusResponse>({ statusResponse ->
-            mCachedMessages.remove(roomId)
-            mClientDatabase.removeRoom(roomId)
-            statusResponse
-        }).map<Boolean>({ statusResponse -> statusResponse.success })
+        return mApi.leaveRoom(bearer, roomId, getUser().id)
+                .map({
+                    mCachedMessages.remove(roomId)
+                    mClientDatabase.removeRoom(roomId)
+                    return@map it
+                })
+                .map({ it.success })
     }
 
-    val profile: Observable<UserModel>
-        get() {
-            if (mCurrentUser == null) {
-                mCurrentUser = Utils.instance.userPref
+    fun getProfile(): Observable<UserModel> {
+        if (mCurrentUser == null) {
+            mCurrentUser = getUser()
 
-                val currentUserFromNetwork = mApi.getCurrentUser(Utils.instance.bearer).map<UserModel>({ userModels ->
-                    val user = userModels.get(0)
-                    Utils.instance.writeUserToPref(user)
-                    mCurrentUser = user
-
-                    user
-                })
-
-                return Observable.concat(Observable.just<UserModel>(mCurrentUser), currentUserFromNetwork)
-            }
-
-            return Observable.just<UserModel>(mCurrentUser)
+            return mApi.getCurrentUser(bearer)
+                    .map { userModels ->
+                        val user = userModels[0]
+                        mCurrentUser = user
+                        return@map user
+                    }
+                    .onErrorResumeNext { Observable.just(mCurrentUser) }
         }
+
+        return Observable.just(mCurrentUser)
+    }
 
     fun getMessages(roomId: String, limit: Int, fresh: Boolean): Observable<ArrayList<MessageModel>> {
         if (fresh) {
-            return Observable.concat(mClientDatabase.getMessages(roomId),
-                    mApi.getMessagesRoom(Utils.instance.bearer, roomId, limit)).map<ArrayList<MessageModel>>({ messageModels ->
-                mCachedMessages.put(roomId, messageModels)
-                updateLastMessagesInDb(roomId, messageModels)
+            return mApi.getMessagesRoom(bearer, roomId, limit)
+                    .map({ messageModels ->
+                        mCachedMessages.put(roomId, messageModels)
+                        updateLastMessagesInDb(roomId, messageModels)
 
-                messageModels
-            })
+                        return@map messageModels
+                    })
         } else {
             if (mCachedMessages[roomId] == null) {
-                return@Observable.concat(mClientDatabase.getMessages(roomId),
-                        mApi.getMessagesRoom(Utils.getInstance().bearer, roomId, limit))
-                        .map mClientDatabase . getMessages roomId.map<ArrayList<MessageModel>> { messageModels ->
-                    mCachedMessages.put(roomId, messageModels)
-                    messageModels
-                }
+                return mClientDatabase.getMessages(roomId)
             } else {
-                return@mClientDatabase.getMessages(roomId)
-                        .map Observable . just < ArrayList < MessageModel > > mCachedMessages[roomId]
+                return Observable.just(mCachedMessages[roomId])
             }
         }
     }
 
     fun getMessagesBeforeId(roomId: String, limit: Int, beforeId: String): Observable<ArrayList<MessageModel>> {
-        return mApi.getMessagesBeforeId(Utils.instance.bearer,
-                roomId, limit, beforeId)
+        return mApi.getMessagesBeforeId(bearer, roomId, limit, beforeId)
     }
 
     fun addSingleMessage(roomId: String, model: MessageModel) {
@@ -177,14 +129,15 @@ constructor(private val mApi: GitterApi, private val mClientDatabase: ClientData
     }
 
     fun updateMessage(roomId: String, messageId: String, text: String): Observable<MessageModel> {
-        return mApi.updateMessage(Utils.instance.bearer, roomId, messageId, text).map<MessageModel>({ model ->
-            mClientDatabase.updateSpecificMessage(roomId, model)
-            model
-        })
+        return mApi.updateMessage(bearer, roomId, messageId, text)
+                .map({ model ->
+                    mClientDatabase.updateSpecificMessage(roomId, model)
+                    model
+                })
     }
 
     fun updateRooms(rooms: ArrayList<RoomModel>) {
-        mClientDatabase.updateRooms(getSynchronizedRooms(rooms, mCachedRooms))
+        //mClientDatabase.updateRooms(getSynchronizedRooms(rooms, mCachedRooms))
     }
 
     fun updateRooms(rooms: ArrayList<RoomViewModel>, wasEdit: Boolean) {
@@ -201,43 +154,86 @@ constructor(private val mApi: GitterApi, private val mClientDatabase: ClientData
     }
 
     fun readMessages(roomId: String, ids: Array<String>): Observable<Boolean> {
-        return mApi.readMessages(Utils.instance.bearer,
-                Utils.instance.userPref.id, roomId, ids).map<Boolean>({ statusResponse -> statusResponse.success }).map<Boolean>({ response ->
-            if (response!!) {
-                for (room in mCachedRooms) {
-                    if (room == roomId) {
-                        room.unreadItems -= ids.size
+        return mApi.readMessages(bearer, getUser().id, roomId, ids)
+                .map({ it.success })
+                .map({ response ->
+                    if (response) {
+                        for (room in mCachedRooms) {
+                            if (room.id === roomId) {
+                                room.unreadItems -= ids.size
+                            }
+                        }
+
+                        updateRooms(mCachedRooms)
                     }
-                }
 
-                updateRooms(mCachedRooms)
-            }
-
-            response
-        })
+                    return@map response
+                })
     }
 
     fun sendMessage(roomId: String, text: String): Observable<MessageModel> {
-        return mApi.sendMessage(Utils.instance.bearer, roomId, text)
+        return mApi.sendMessage(bearer, roomId, text)
     }
 
     fun searchRooms(query: String): Observable<SearchRoomsResponse> {
-        return mApi.searchRooms(Utils.instance.bearer, query, 30, 0)
+        return mApi.searchRooms(bearer, query, 30, 0)
     }
 
     fun searchRoomsWithOffset(query: String, offset: Int): Observable<SearchRoomsResponse> {
-        return mApi.searchRooms(Utils.instance.bearer, query, 10, offset)
+        return mApi.searchRooms(bearer, query, 10, offset)
     }
 
-    fun authorization(client_id: String, client_secret: String, code: String, grant_type: String, redirect_url: String): Observable<AuthResponseModel> {
-        return mApi.authorization("https://gitter.im/login/oauth/token",
-                client_id, client_secret, code, grant_type, redirect_url)
+    fun authorization(client_id: String, client_secret: String, code: String,
+                      grant_type: String, redirect_url: String): Observable<AuthResponseModel> {
+        return mApi.authorization("https://gitter.im/login/oauth/token", client_id, client_secret,
+                code, grant_type, redirect_url)
     }
 
     fun joinToRoom(roomUri: String): Observable<JoinRoomResponse> {
-        return mApi.joinRoom(Utils.instance.bearer, roomUri).map<JoinRoomResponse>({ joinRoomResponse ->
-            mClientDatabase.addSingleRoom(joinRoomResponse)
-            joinRoomResponse
-        })
+        return mApi.joinRoom(bearer, roomUri)
+                .map({ joinRoomResponse ->
+                    mClientDatabase.addSingleRoom(joinRoomResponse)
+                    joinRoomResponse
+                })
+    }
+
+    fun getUser(): UserModel {
+        val model = UserModel()
+
+        if (!mUserPreferences.all.isEmpty()) {
+            model.id = mUserPreferences.getString(ID_PREF_KEY, "")
+            model.username = mUserPreferences.getString(USERNAME_PREF_KEY, "")
+            model.displayName = mUserPreferences.getString(DISPLAY_NAME_PREF_KEY, "")
+            model.url = mUserPreferences.getString(URL_NAME_PREF_KEY, "")
+            model.avatarUrlSmall = mUserPreferences.getString(AVATAR_SMALL_PREF_KEY, "")
+            model.avatarUrlMedium = mUserPreferences.getString(AVATAR_MEDIUM_PREF_KEY, "")
+
+            return model
+        }
+
+        return model
+    }
+
+    fun saveUser(model: AuthResponseModel) {
+        mUserPreferences.edit()
+                .putString(ACCESS_TOKEN_PREF_KEY, model.access_token)
+                .putString(EXPIRIES_IN_PREF_KEY, model.expires_in)
+                .putString(TOKEN_TYPE_PREF_KEY, model.token_type)
+                .apply()
+    }
+
+    val bearer: String
+        get() = "Bearer " + mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "")
+
+    fun isAuthorize(): Boolean {
+        return !mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "").isEmpty()
+    }
+
+    fun cleatProfile() {
+        mUserPreferences.edit()
+                .putString(ACCESS_TOKEN_PREF_KEY, "")
+                .putString(EXPIRIES_IN_PREF_KEY, "")
+                .putString(TOKEN_TYPE_PREF_KEY, "")
+                .apply()
     }
 }
