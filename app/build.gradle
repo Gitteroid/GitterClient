@@ -2,7 +2,8 @@ apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
 apply plugin: 'me.tatarka.retrolambda'
 apply plugin: 'com.neenbedankt.android-apt'
-apply plugin: 'jacoco'
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 24
@@ -37,41 +38,9 @@ android {
         exclude 'META-INF/maven/com.google.guava/guava/pom.properties'
         exclude 'META-INF/maven/com.google.guava/guava/pom.xml'
     }
-}
-
-jacoco {
-    toolVersion = "0.7.1.201405082137"
-}
-
-def coverageSourceDirs = [
-        '../app/src'
-]
-
-task jacocoTestReport(type: JacocoReport, dependsOn: "testDebug") {
-    group = "Reporting"
-    description = "Generate Jacoco coverage reports"
-
-    classDirectories = fileTree(
-            dir: '../app/build/intermediates/classes',
-            excludes: ['**/R.class',
-                       '**/R$*.class',
-                       '**/*$ViewInjector*.*',
-                       '**/BuildConfig.*',
-                       '**/Manifest*.*']
-    )
-
-    additionalSourceDirs = files(coverageSourceDirs)
-    sourceDirectories = files(coverageSourceDirs)
-    executionData = files('../app/build/jacoco/testDebug.exec')
-
-    reports {
-        xml.enabled = true
-        html.enabled = true
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.0'
 }
 
 retrolambda {
@@ -102,6 +71,8 @@ dependencies {
     compile 'com.android.support:cardview-v7:24.1.1'
     compile 'me.zhanghai.android.materialprogressbar:library:1.1.4'
     compile 'com.github.ne1c:rainbowmvp:1.0'
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.3"
 
     compile 'com.google.dagger:dagger:2.0.1'
     compile 'javax.annotation:jsr250-api:1.0'

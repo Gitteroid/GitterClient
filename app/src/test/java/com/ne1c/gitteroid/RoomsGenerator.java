@@ -20,10 +20,10 @@ public class RoomsGenerator {
     public static RoomModel generateRoom() {
         RoomModel room = new RoomModel();
 
-        room.id = ROOM_ID;
-        room.oneToOne = new Random().nextBoolean();
-        room.name = "321abc";
-        room.unreadItems = new Random().nextInt(10);
+        room.setId(ROOM_ID);
+        room.setOneToOne(new Random().nextBoolean());
+        room.setName("321abc");
+        room.setUnreadItems(new Random().nextInt(10));
 
         return room;
     }

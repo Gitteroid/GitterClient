@@ -147,7 +147,7 @@ public class MainPresenterTest {
         ArrayList<RoomModel> result = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             RoomModel roomModel = RoomsGenerator.generateRoom();
-            roomModel.unreadItems = 1;
+            roomModel.setUnreadItems(1);
         }
 
         return result;
