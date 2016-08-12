@@ -236,4 +236,8 @@ open class DataManger(private val mApi: GitterApi,
                 .putString(TOKEN_TYPE_PREF_KEY, "")
                 .apply()
     }
+
+    fun copyToClipboard() {
+
+    }
 }

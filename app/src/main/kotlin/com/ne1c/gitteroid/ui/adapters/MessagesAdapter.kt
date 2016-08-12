@@ -2,6 +2,9 @@ package com.ne1c.gitteroid.ui.adapters
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
@@ -13,28 +16,17 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
-import android.text.style.ForegroundColorSpan
-import android.text.style.StrikethroughSpan
-import android.text.style.StyleSpan
-import android.text.style.URLSpan
-import android.text.style.UnderlineSpan
+import android.text.style.*
 import android.text.util.Linkify
 import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.PopupMenu
-import android.widget.TextView
-import android.widget.Toast
-
+import android.widget.*
 import com.bumptech.glide.Glide
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.dataproviders.DataManger
+import com.ne1c.gitteroid.di.DependencyManager
 import com.ne1c.gitteroid.models.data.StatusMessage
 import com.ne1c.gitteroid.models.view.MessageViewModel
 import com.ne1c.gitteroid.models.view.RoomViewModel
@@ -44,20 +36,17 @@ import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment
 import com.ne1c.gitteroid.ui.fragments.EditMessageFragment
 import com.ne1c.gitteroid.ui.fragments.LinksDialogFragment
 import com.ne1c.gitteroid.utils.MarkdownUtils
-import com.ne1c.gitteroid.utils.Utils
-
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.ArrayList
-import java.util.Calendar
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import java.util.regex.Matcher
-
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
 
-class MessagesAdapter(private val mDataManager: DataManger, private val mActivity: Activity, private val mMessages: ArrayList<MessageViewModel>, private val mMessageEditText: EditText) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ChatRoomFragment.ReadMessageCallback {
+class MessagesAdapter(private val mDataManager: DataManger,
+                      private val mActivity: Activity,
+                      private val mMessages: ArrayList<MessageViewModel>,
+                      private val mMessageEditText: EditText) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ChatRoomFragment.ReadMessageCallback {
     private var mRoom: RoomViewModel? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -334,7 +323,7 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
 
     private fun processingIndicator(indicator: ImageView, message: MessageViewModel) {
         if (message.unread) {
-            if (message.fromUser.id != Utils.instance.userPref.id) {
+            if (message.fromUser.id != mDataManager.getUser().id) {
                 indicator.setImageResource(R.color.unreadMessage)
             }
         } else {
@@ -390,7 +379,7 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
 
     // Set icon status for message: send, sending or no send
     private fun setIconMessage(statusMessage: ImageView, message: MessageViewModel) {
-        if (message.fromUser.id == Utils.instance.userPref.id) {
+        if (message.fromUser.id == mDataManager.getUser().id) {
             if (statusMessage.visibility == View.INVISIBLE) {
                 statusMessage.visibility = View.VISIBLE
             }
@@ -407,21 +396,19 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
         }
     }
 
-    private fun getParentLayoutClick(message: MessageViewModel): View.OnClickListener {
-        return { v -> mMessageEditText.append("@" + message.fromUser.username + " ") }
-    }
+    private fun getParentLayoutClick(message: MessageViewModel): View.OnClickListener = View.OnClickListener { mMessageEditText.append("@" + message.fromUser.username + " ") }
 
     private fun getAvatarImageClick(message: MessageViewModel): View.OnClickListener {
-        return { v ->
+        return View.OnClickListener {
             mActivity.startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse(Utils.GITHUB_URL + "/" + message.fromUser.username)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    Uri.parse(DataManger.GITHUB_URL + "/" + message.fromUser.username)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 
     private fun getMenuClick(message: MessageViewModel, position: Int): View.OnClickListener {
-        return { v ->
+        return View.OnClickListener { v ->
             val menu = PopupMenu(mActivity, v)
-            if (message.fromUser.id == Utils.instance.userPref.id) {
+            if (message.fromUser.id == mDataManager.getUser().id) {
                 menu.inflate(R.menu.menu_message_user)
                 showMenuUser(menu, message, position)
             } else {
@@ -440,7 +427,7 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                     args.putParcelable("message", message)
                     fragment.arguments = args
                     fragment.show(mActivity.fragmentManager, "dialogEdit")
-                    return@menu.setOnMenuItemClickListener true
+                    return@setOnMenuItemClickListener true
                 }
                 R.id.delete_message_menu -> {
                     mDataManager.updateMessage(mRoom!!.id, message.id, "").subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe({ messageModel ->
@@ -448,14 +435,14 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                         message.text = ""
                         notifyItemChanged(position)
                     }) { throwable -> Toast.makeText(mActivity, R.string.deleted_error, Toast.LENGTH_SHORT).show() }
-                    return@menu.setOnMenuItemClickListener true
+                    return@setOnMenuItemClickListener true
                 }
                 R.id.copy_text_menu -> {
-                    Utils.instance.copyToClipboard(message.text)
-                    return@menu.setOnMenuItemClickListener true
+                    copyToClipboard(message.text)
+                    return@setOnMenuItemClickListener true
                 }
                 R.id.retry_send_menu -> {
-                    if (Utils.instance.isNetworkConnected) {
+                    if (DependencyManager.INSTANCE.networkService!!.isConnected()) {
                         if (mMessages[position].sent == StatusMessage.NO_SEND.name && mMessages[position].text == message.text) {
                             // Update status message
                             mMessages[position].sent = StatusMessage.SENDING.name
@@ -469,7 +456,7 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                         Toast.makeText(mActivity, R.string.no_network, Toast.LENGTH_SHORT).show()
                     }
 
-                    return@menu.setOnMenuItemClickListener true
+                    return@setOnMenuItemClickListener true
                 }
                 R.id.links_menu -> {
                     val links = LinksDialogFragment()
@@ -478,10 +465,10 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                     links.arguments = argsLinks
                     links.show(mActivity.fragmentManager, "dialogLinks")
 
-                    return@menu.setOnMenuItemClickListener true
+                    return@setOnMenuItemClickListener true
+
                 }
-                else -> return@menu.setOnMenuItemClickListener
-                false
+                else -> return@setOnMenuItemClickListener false
             }
         }
 
@@ -500,8 +487,8 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.copy_text_menu -> {
-                    Utils.instance.copyToClipboard(message.text)
-                    return@menu.setOnMenuItemClickListener true
+                    copyToClipboard(message.text)
+                    return@setOnMenuItemClickListener true
                 }
                 R.id.links_menu -> {
                     val links = LinksDialogFragment()
@@ -510,10 +497,9 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                     links.arguments = argsLinks
                     links.show(mActivity.fragmentManager, "dialogLinks")
 
-                    return@menu.setOnMenuItemClickListener true
+                    return@setOnMenuItemClickListener true
                 }
-                else -> return@menu.setOnMenuItemClickListener
-                false
+                else -> return@setOnMenuItemClickListener false
             }
         }
 
@@ -541,6 +527,12 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
     override fun read(indicator: ImageView, position: Int) {
         indicator.animate().alpha(0f).setDuration(1000).withLayer()
         mMessages[position].unread = false
+    }
+
+    fun copyToClipboard(text: String) {
+        val clipboard = mActivity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("", text)
+        clipboard.primaryClip = clip
     }
 
     inner class DynamicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -662,7 +654,7 @@ class MessagesAdapter(private val mDataManager: DataManger, private val mActivit
                 return view
             }
 
-        private fun getMentionSpannableText(text: String): Spannable {
+        fun getMentionSpannableText(text: String): Spannable {
             val span = SpannableString(text)
             span.setSpan(StyleSpan(Typeface.ITALIC), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             span.setSpan(UnderlineSpan(), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)

@@ -322,6 +322,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     override fun onStart() {
         super.onStart()
 
+        mPresenter.bindView(this)
         registerReceiver(unauthorizedReceiver, IntentFilter(BROADCAST_UNAUTHORIZED))
     }
 

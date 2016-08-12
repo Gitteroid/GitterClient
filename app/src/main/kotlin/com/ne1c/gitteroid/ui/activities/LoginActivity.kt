@@ -60,8 +60,18 @@ class LoginActivity : BaseActivity<LoginPresenter>(), LoginView {
                         Snackbar.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
 
         mPresenter.bindView(this)
+    }
+
+    override fun onStop() {
+        mPresenter.unbindView()
+
+        super.onStop()
     }
 
     override fun onBackPressed() {

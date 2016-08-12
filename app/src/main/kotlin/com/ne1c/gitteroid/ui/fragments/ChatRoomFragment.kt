@@ -18,7 +18,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import com.ne1c.gitteroid.R
-import com.ne1c.gitteroid.di.components.DaggerChatRoomComponent
+import com.ne1c.gitteroid.di.DependencyManager
 import com.ne1c.gitteroid.events.NewMessageEvent
 import com.ne1c.gitteroid.events.ReadMessagesEvent
 import com.ne1c.gitteroid.events.RefreshMessagesRoomEvent
@@ -63,11 +63,6 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     private var mOverviewRoom: RoomViewModel? = null
 
-    private var mComponent: ChatRoomComponent? = null
-
-    @Inject
-    internal var mPresenter: ChatRoomPresenter? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         retainInstance = true
@@ -93,8 +88,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        initViews(view)
-        setDataToView(savedInstanceState)
+        initViews(view!!)
+        setDataToView(savedInstanceState!!)
     }
 
     private fun initViews(v: View) {
@@ -145,14 +140,14 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     private fun loadRoom() {
         if (mOverviewRoom == null) {
-            loadMessages(mRoom)
+            loadMessages(mRoom!!)
         } else {
-            loadMessages(mOverviewRoom)
+            loadMessages(mOverviewRoom!!)
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onResume() {
+        super.onResume()
 
         mPresenter!!.bindView(this)
 
@@ -163,8 +158,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         LocalBroadcastManager.getInstance(activity).registerReceiver(mNewMessageReceiver, IntentFilter(MainActivity.BROADCAST_NEW_MESSAGE))
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
 
         LocalBroadcastManager.getInstance(activity).unregisterReceiver(mNewMessageReceiver)
         mPresenter!!.unbindView()
@@ -242,10 +237,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     }
 
     private fun setDataToView(savedInstanceState: Bundle) {
-        mMessagesAdapter = MessagesAdapter(appComponent.dataManager,
-                activity,
-                mMessagesArr,
-                mMessageEditText)
+        mMessagesAdapter = MessagesAdapter(DependencyManager.INSTANCE.dataManager!!, activity,
+                mMessagesArr, mMessageEditText!!)
 
         mMessagesList!!.adapter = mMessagesAdapter
         mMessagesList!!.addOnScrollListener(mMessagesScrollListener)
@@ -274,7 +267,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
             if (room != null) {
                 mRoom = room
-                mMessagesAdapter!!.setRoom(mRoom)
+                mMessagesAdapter!!.setRoom(mRoom!!)
             }
 
             val messages = savedInstanceState.getParcelableArrayList<MessageModel>("messages")
@@ -337,7 +330,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     private fun sendMessage() {
         if (!mMessageEditText!!.text.toString().isEmpty()) {
-            if (Utils.instance.isNetworkConnected) {
+            if (DependencyManager.INSTANCE.networkService?.isConnected()!!) {
                 val model = mPresenter!!.createSendMessage(mMessageEditText!!.text.toString())
 
                 mMessagesArr.add(0, model)
@@ -359,8 +352,6 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     }
 
     override fun onDestroy() {
-        mComponent = null
-        mPresenter!!.onDestroy()
         EventBus.getDefault().unregister(this)
 
         super.onDestroy()
@@ -370,7 +361,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         val first = mListLayoutManager!!.findFirstVisibleItemPosition()
         val last = mListLayoutManager!!.findLastVisibleItemPosition()
 
-        if (Utils.instance.isNetworkConnected) {
+        if (DependencyManager.INSTANCE.networkService?.isConnected()!!) {
             val listUnreadIds = ArrayList<String>()
             if (first > -1 && last > -1) {
                 for (i in first..last) {
@@ -402,7 +393,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         mRoom = model
         mCountLoadMessages = 0
 
-        mMessagesAdapter!!.setRoom(mRoom)
+        mMessagesAdapter!!.setRoom(mRoom!!)
 
         mIsRefreshing = false
         mIsLoadBeforeIdMessages = false
@@ -412,8 +403,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     private val mNewMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY)
-            val message = intent.getParcelableExtra<MessageModel>(MESSAGE_INTENT_KEY)
+            val roomId = intent.getStringExtra(MainActivity.ROOM_ID_INTENT_KEY)
+            val message = intent.getParcelableExtra<MessageModel>(MainActivity.MESSAGE_INTENT_KEY)
 
             if (roomId != mRoom!!.id) {
                 return
@@ -655,12 +646,6 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     override fun joinToRoom() {
         activity.onBackPressed()
-    }
-
-    override fun initDiComponent() {
-        mComponent = DaggerChatRoomComponent.builder().applicationComponent(appComponent).chatRoomPresenterModule(ChatRoomPresenterModule()).build()
-
-        mComponent!!.inject(this)
     }
 
     private fun messagesIsNotLoaded(): Boolean {
