@@ -8,30 +8,41 @@ import com.ne1c.gitteroid.ui.views.LoginView
 import com.ne1c.rainbowmvp.base.BasePresenter
 import rx.subscriptions.CompositeSubscription
 
-class LoginPresenter(private val executor: ExecutorService,
-                     private val mDataManager: DataManger,
-                     private val networkService: NetworkService) : BasePresenter<LoginView>() {
+class LoginPresenter : BasePresenter<LoginView> {
     companion object {
         val TAG = LoginPresenter::class.java.simpleName
+
+        private val CLIENT_ID = "e94f6920cfbc194174a942fc1a5541355b124309"
+        private val CLIENT_SECRET = "bb702baf80daabf7809dc4244f46f37252130c5c"
+        private val GRANT_TYPE = "authorization_code"
+        private val REDIRECT_URL = "http://about:blank"
+        private val RESPONSE_TYPE = "code"
+
+        val AUTH_URL = "https://gitter.im/login/oauth/authorize?client_id=$CLIENT_ID&response_type=$RESPONSE_TYPE&redirect_uri=$REDIRECT_URL"
     }
 
-    private val CLIENT_ID = "e94f6920cfbc194174a942fc1a5541355b124309"
-    private val CLIENT_SECRET = "bb702baf80daabf7809dc4244f46f37252130c5c"
-    private val GRANT_TYPE = "authorization_code"
-    private val REDIRECT_URL = "http://about:blank"
-    private val RESPONSE_TYPE = "code"
+    private val executor: ExecutorService
+    private val dataManager: DataManger
+    private val networkService: NetworkService
+    private val subscriptions: CompositeSubscription
 
-    val authUrl = "https://gitter.im/login/oauth/authorize?client_id=$CLIENT_ID&response_type=$RESPONSE_TYPE&redirect_uri=$REDIRECT_URL"
+    constructor(executor: ExecutorService, dataManager: DataManger, networkService: NetworkService) : super() {
+        this.executor = executor
+        this.dataManager = dataManager
+        this.networkService = networkService
+        this.subscriptions = CompositeSubscription()
+    }
 
-    private var mSubscriptions: CompositeSubscription? = null
-
-    override fun bindView(view: LoginView) {
+    override fun bindView(view: LoginView?) {
         super.bindView(view)
-        mSubscriptions = CompositeSubscription()
+
+        if (dataManager.isAuthorize()) {
+            mView.successAuth()
+        }
     }
 
     override fun onDestroy() {
-        mSubscriptions?.unsubscribe()
+        subscriptions.unsubscribe()
     }
 
     fun loadAccessToken(code: String) {
@@ -42,20 +53,18 @@ class LoginPresenter(private val executor: ExecutorService,
 
         mView?.showProgress()
 
-        val sub = mDataManager.authorization(CLIENT_ID, CLIENT_SECRET, code, GRANT_TYPE, REDIRECT_URL)
-                .map({ mDataManager.saveUser(it) })
+        val sub = dataManager.authorization(CLIENT_ID, CLIENT_SECRET, code, GRANT_TYPE, REDIRECT_URL)
+                .map { dataManager.saveUser(it) }
                 .subscribeOn(executor.getSubscribeOn())
                 .observeOn(executor.getObserveOn())
                 .subscribe({
-                    // Write access token to preferences
                     mView?.hideProgress()
                     mView?.successAuth()
                 }, { throwable ->
-                    // If error, then set visible "Sign In" button
                     mView?.hideProgress()
                     mView?.errorAuth(R.string.error_auth)
                 })
 
-        mSubscriptions?.add(sub)
+        subscriptions.add(sub)
     }
 }

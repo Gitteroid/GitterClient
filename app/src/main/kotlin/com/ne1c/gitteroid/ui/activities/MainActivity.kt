@@ -55,10 +55,8 @@ import de.greenrobot.event.EventBus
 import java.util.*
 
 class MainActivity : BaseActivity<MainPresenter>(), MainView {
-
     private val ROOM_IN_DRAWER_OFFSET_BOTTOM = 4 // All, Search, Settings, Sign Out
     private val ROOM_IN_DRAWER_OFFSET_TOP = 2 // Header, Home
-
     private val ROOMS_BUNDLE = "rooms_bundle"
     private val ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle"
     private val ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle"
@@ -82,7 +80,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (DependencyManager.INSTANCE.dataManager?.isAuthorize()!!) {
+        if (!DependencyManager.INSTANCE.dataManager!!.isAuthorize()) {
             startActivity(Intent(applicationContext, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
             overridePendingTransition(0, 0)
             return

@@ -226,7 +226,7 @@ open class DataManger(private val mApi: GitterApi,
         get() = "Bearer " + mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "")
 
     fun isAuthorize(): Boolean {
-        return !mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "").isEmpty()
+          return !mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "").isEmpty()
     }
 
     fun cleatProfile() {

@@ -3,10 +3,10 @@ package com.ne1c.gitteroid.ui.activities
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.support.annotation.StringRes
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.Toolbar
 import android.view.View
-import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -21,43 +21,40 @@ import com.ne1c.rainbowmvp.base.BaseActivity
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar
 
 class LoginActivity : BaseActivity<LoginPresenter>(), LoginView {
-    private var mAuthBut: Button? = null
-    private var mLogoImg: ImageView? = null
-    private var mAuthWebView: WebView? = null
-    private var mProgressBar: MaterialProgressBar? = null
+    private var authBut: Button? = null
+    private var logoImageView: ImageView? = null
+    private var authWebView: WebView? = null
+    private var progressBar: MaterialProgressBar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
-        setSupportActionBar(toolbar)
+        setSupportActionBar(findViewById(R.id.toolbar) as Toolbar)
 
-        mAuthBut = findViewById(R.id.auth_but) as Button
-        mLogoImg = findViewById(R.id.logo_img) as ImageView
-        mAuthWebView = findViewById(R.id.auth_webView) as WebView
-        mProgressBar = findViewById(R.id.progress_bar) as MaterialProgressBar
+        authBut = findViewById(R.id.auth_but) as Button
+        logoImageView = findViewById(R.id.logo_img) as ImageView
+        authWebView = findViewById(R.id.auth_webView) as WebView
+        progressBar = findViewById(R.id.progress_bar) as MaterialProgressBar
 
-        mProgressBar?.useIntrinsicPadding = false
+        progressBar?.useIntrinsicPadding = false
 
-        mAuthWebView?.settings?.cacheMode = WebSettings.LOAD_NO_CACHE
+        authWebView?.settings?.cacheMode = WebSettings.LOAD_NO_CACHE
 
-        mAuthBut?.setOnClickListener { v ->
-            if (DependencyManager.INSTANCE.networkService?.isConnected()!!) {
-                mAuthBut?.visibility = View.GONE
-                mLogoImg?.visibility = View.GONE
+        authBut?.setOnClickListener {
+            if (DependencyManager.INSTANCE.networkService!!.isConnected()) {
+                authBut?.visibility = View.GONE
+                logoImageView?.visibility = View.GONE
 
-                mAuthWebView?.visibility = View.VISIBLE
+                authWebView?.visibility = View.VISIBLE
 
-                mAuthWebView?.settings?.javaScriptEnabled = true
-                mAuthWebView?.settings?.saveFormData = false
-                mAuthWebView?.setWebViewClient(MyWebViewClient())
-                mAuthWebView?.setWebChromeClient(WebChromeClient())
-                mAuthWebView?.loadUrl(mPresenter?.authUrl)
+                authWebView?.settings?.javaScriptEnabled = true
+                authWebView?.settings?.saveFormData = false
+                authWebView?.setWebViewClient(MyWebViewClient())
+                authWebView?.loadUrl(LoginPresenter.AUTH_URL)
             } else {
-                Snackbar.make(window.decorView.findViewById(android.R.id.content),
-                        R.string.no_network,
-                        Snackbar.LENGTH_SHORT).show()
+                val parentView = window.decorView.findViewById(android.R.id.content)
+                Snackbar.make(parentView, R.string.no_network, Snackbar.LENGTH_SHORT).show()
             }
         }
     }
@@ -75,41 +72,43 @@ class LoginActivity : BaseActivity<LoginPresenter>(), LoginView {
     }
 
     override fun onBackPressed() {
-        if (mAuthWebView?.visibility == View.VISIBLE && mAuthWebView?.canGoBack()!!) {
-            mAuthWebView?.goBack()
+        if (authWebView?.visibility == View.VISIBLE && authWebView?.canGoBack()!!) {
+            authWebView?.goBack()
         } else {
             super.onBackPressed()
         }
     }
 
     override fun showProgress() {
-        mProgressBar?.visibility = View.VISIBLE
+        progressBar?.visibility = View.VISIBLE
     }
 
     override fun hideProgress() {
-        mProgressBar?.visibility = View.GONE
+        progressBar?.visibility = View.GONE
     }
 
     override fun successAuth() {
+        authWebView?.visibility = View.GONE
+
         startActivity(Intent(applicationContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
         finish()
     }
 
-    override fun errorAuth(resId: Int) {
+    override fun errorAuth(@StringRes resId: Int) {
         Toast.makeText(applicationContext, resId, Toast.LENGTH_SHORT).show()
 
-        if (mAuthWebView?.visibility == View.VISIBLE) {
-            mAuthBut?.visibility = View.VISIBLE
-            mLogoImg?.visibility = View.VISIBLE
+        if (authWebView?.visibility == View.VISIBLE) {
+            authBut?.visibility = View.VISIBLE
+            logoImageView?.visibility = View.VISIBLE
 
-            mAuthWebView?.visibility = View.GONE
+            authWebView?.visibility = View.GONE
         }
     }
 
     private inner class MyWebViewClient : WebViewClient() {
         private var startLoadToken = false
 
-        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap) {
+        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             showProgress()
 
             // If the authorization is successful, then get access_token
