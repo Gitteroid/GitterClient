@@ -33,7 +33,7 @@ enum class DependencyManager {
             networkService = AndroidNetworkService(context)
             executorService = RxExecutorService()
             dataManager = DataManger(createGitterApi(), clientDatabase!!, userPrefs!!)
-            gitterStreamer = GitterStreamer(createGitterStreamApi())
+            gitterStreamer = GitterStreamer(createGitterStreamApi(), dataManager!!.bearer)
         }
     }
 

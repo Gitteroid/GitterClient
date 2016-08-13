@@ -87,7 +87,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
             //noinspection ResourceType
             setIconMessage(dynamicHolder.statusMessage, message)
 
-            Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(dynamicHolder.avatarImage)
+            Glide.with(mActivity).load(message.fromUser?.avatarUrlSmall).into(dynamicHolder.avatarImage)
         } else {
             val staticHolder = holder as StaticViewHolder
             staticHolder.parentLayout.setOnClickListener(getParentLayoutClick(message))
@@ -102,7 +102,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
             //noinspection ResourceType
             setIconMessage(staticHolder.statusMessage, message)
 
-            Glide.with(mActivity).load(message.fromUser.avatarUrlSmall).into(staticHolder.avatarImage)
+            Glide.with(mActivity).load(message.fromUser?.avatarUrlSmall).into(staticHolder.avatarImage)
         }
     }
 
@@ -314,16 +314,16 @@ class MessagesAdapter(private val mDataManager: DataManger,
     }
 
     private fun getUsername(message: MessageViewModel): String {
-        if (!message.fromUser.username.isEmpty()) {
-            return message.fromUser.username
+        if (!message.fromUser!!.username.isEmpty()) {
+            return message.fromUser!!.username
         } else {
-            return message.fromUser.displayName
+            return message.fromUser!!.displayName
         }
     }
 
     private fun processingIndicator(indicator: ImageView, message: MessageViewModel) {
         if (message.unread) {
-            if (message.fromUser.id != mDataManager.getUser().id) {
+            if (message.fromUser!!.id != mDataManager.getUser().id) {
                 indicator.setImageResource(R.color.unreadMessage)
             }
         } else {
@@ -379,7 +379,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
 
     // Set icon status for message: send, sending or no send
     private fun setIconMessage(statusMessage: ImageView, message: MessageViewModel) {
-        if (message.fromUser.id == mDataManager.getUser().id) {
+        if (message.fromUser!!.id == mDataManager.getUser().id) {
             if (statusMessage.visibility == View.INVISIBLE) {
                 statusMessage.visibility = View.VISIBLE
             }
@@ -396,19 +396,19 @@ class MessagesAdapter(private val mDataManager: DataManger,
         }
     }
 
-    private fun getParentLayoutClick(message: MessageViewModel): View.OnClickListener = View.OnClickListener { mMessageEditText.append("@" + message.fromUser.username + " ") }
+    private fun getParentLayoutClick(message: MessageViewModel): View.OnClickListener = View.OnClickListener { mMessageEditText.append("@" + message.fromUser?.username + " ") }
 
     private fun getAvatarImageClick(message: MessageViewModel): View.OnClickListener {
         return View.OnClickListener {
             mActivity.startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse(DataManger.GITHUB_URL + "/" + message.fromUser.username)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    Uri.parse(DataManger.GITHUB_URL + "/" + message.fromUser?.username)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 
     private fun getMenuClick(message: MessageViewModel, position: Int): View.OnClickListener {
         return View.OnClickListener { v ->
             val menu = PopupMenu(mActivity, v)
-            if (message.fromUser.id == mDataManager.getUser().id) {
+            if (message.fromUser?.id == mDataManager.getUser().id) {
                 menu.inflate(R.menu.menu_message_user)
                 showMenuUser(menu, message, position)
             } else {

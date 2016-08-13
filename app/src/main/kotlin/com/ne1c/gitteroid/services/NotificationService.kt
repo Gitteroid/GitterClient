@@ -80,7 +80,9 @@ class NotificationService : Service() {
             mRooms = roomModels
 
             for (room in mRooms!!) {
-                val sub1 = mStreamer!!.getMessageStream(room.id).subscribeOn(Schedulers.io()).filter { message -> message.text != null }.subscribe({ message -> notifyAboutMessage(room, message) }) { throwable -> }
+                val sub1 = mStreamer!!.getMessageStream(room.id).subscribeOn(Schedulers.io())
+                        .filter { message -> true }
+                        .subscribe({ message -> notifyAboutMessage(room, message) }) { throwable -> }
 
                 mSubscriptions.add(sub1)
             }
@@ -95,13 +97,13 @@ class NotificationService : Service() {
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(MainActivity.BROADCAST_NEW_MESSAGE).putExtra(MainActivity.MESSAGE_INTENT_KEY, message).putExtra(MainActivity.ROOM_ID_INTENT_KEY, room.id))
 
-        val isOwnerAccount = message.fromUser.id == mDataManger?.getUser()?.id
+        val isOwnerAccount = message.fromUser?.id == mDataManger?.getUser()?.id
 
         if (mEnableNotif && !isOwnerAccount) {
             val username = mDataManger?.getUser()?.username
 
             if (mWithUserName && message.text.contains(username!!) &&
-                    message.fromUser.username != username) {
+                    message.fromUser?.username != username) {
                 sendNotificationMessage(room, message)
             } else if (!mWithUserName) {
                 sendNotificationMessage(room, message)
@@ -146,9 +148,9 @@ class NotificationService : Service() {
                 notifIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT)
 
-        val username = message.fromUser.username
+        val username = message.fromUser?.username
         val text = SpannableString(username + ": " + message.text)
-        text.setSpan(StyleSpan(Typeface.BOLD), 0, username.length + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text.setSpan(StyleSpan(Typeface.BOLD), 0, username!!.length + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         text.setSpan(StyleSpan(Typeface.ITALIC), username.length + 1, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         val builder = NotificationCompat.Builder(this).setContentIntent(pendingIntent).setSmallIcon(R.drawable.ic_notif_message).setTicker(text).setContentText(text).setNumber(room.unreadItems).setContentTitle(room.name)

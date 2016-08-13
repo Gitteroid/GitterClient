@@ -12,12 +12,10 @@ import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
-
 import com.bumptech.glide.Glide
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.models.view.RoomViewModel
-
-import java.util.ArrayList
+import java.util.*
 
 class PickRoomsDialogFragment : DialogFragment() {
 
@@ -35,7 +33,7 @@ class PickRoomsDialogFragment : DialogFragment() {
 
                 (itemView.findViewById(R.id.name_textView) as TextView).text = mRooms[position].name
 
-                Glide.with(activity).load(mRooms[position].avatarUrl).error(R.drawable.ic_room).into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
+                Glide.with(activity).load(mRooms[position].getAvatarUrl()).error(R.drawable.ic_room).into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
 
                 return itemView
             }

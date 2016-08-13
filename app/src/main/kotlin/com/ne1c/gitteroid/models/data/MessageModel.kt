@@ -1,137 +1,90 @@
 package com.ne1c.gitteroid.models.data
 
-
 import android.os.Parcel
 import android.os.Parcelable
+import java.util.*
 
-import java.util.ArrayList
+data class MessageModel(
+        var id: String = "",
+        var text: String = "",
+        var html: String = "",
+        var sent: String = "",
+        var editedAt: String = "",
+        var fromUser: UserModel? = null,
+        var unread: Boolean = false,
+        var readBy: Int = 0,
+        var v: Int = 0,
+        var urls: List<Urls> = Collections.emptyList(),
+        var mentions: List<Mentions> = Collections.emptyList()) : Parcelable {
 
-class MessageModel : Parcelable {
-    var id: String
-    var text: String
-    var html: String
-    var sent: String
-    var editedAt: String
-    var fromUser: UserModel
-    var unread: Boolean = false
-    var readBy: Int = 0
-    var urls: List<Urls>
-    var mentions: ArrayList<Mentions>
-    //public String issues;
-    var v: Int = 0
+    data class Mentions(var screenName: String = "",
+                        var userId: String = "") : Parcelable {
+        constructor(source: Parcel) : this(source.readString(), source.readString())
 
-    class Mentions : Parcelable {
-        var screenName: String
-        var userId: String
+        override fun describeContents() = 0
 
-        override fun describeContents(): Int {
-            return 0
-        }
-
-        override fun writeToParcel(dest: Parcel, flags: Int) {
-            dest.writeString(this.screenName)
-            dest.writeString(this.userId)
-        }
-
-        constructor() {
-        }
-
-        protected constructor(`in`: Parcel) {
-            this.screenName = `in`.readString()
-            this.userId = `in`.readString()
+        override fun writeToParcel(dest: Parcel?, flags: Int) {
+            dest?.writeString(screenName)
+            dest?.writeString(userId)
         }
 
         companion object {
-
-            val CREATOR: Parcelable.Creator<Mentions> = object : Parcelable.Creator<Mentions> {
-                override fun createFromParcel(source: Parcel): Mentions {
-                    return Mentions(source)
-                }
-
-                override fun newArray(size: Int): Array<Mentions> {
-                    return arrayOfNulls(size)
-                }
+            @JvmField val CREATOR: Parcelable.Creator<Mentions> = object : Parcelable.Creator<Mentions> {
+                override fun createFromParcel(source: Parcel): Mentions = Mentions(source)
+                override fun newArray(size: Int): Array<Mentions?> = arrayOfNulls(size)
             }
         }
     }
 
-    class Urls : Parcelable {
-        var url: String
+    data class Urls(var url: String = "") : Parcelable {
+        constructor(source: Parcel) : this(source.readString())
 
-        override fun describeContents(): Int {
-            return 0
-        }
+        override fun describeContents() = 0
 
-        override fun writeToParcel(dest: Parcel, flags: Int) {
-            dest.writeString(this.url)
-        }
-
-        constructor() {
-        }
-
-        protected constructor(`in`: Parcel) {
-            this.url = `in`.readString()
+        override fun writeToParcel(dest: Parcel?, flags: Int) {
+            dest?.writeString(url)
         }
 
         companion object {
-
-            val CREATOR: Parcelable.Creator<Urls> = object : Parcelable.Creator<Urls> {
-                override fun createFromParcel(source: Parcel): Urls {
-                    return Urls(source)
-                }
-
-                override fun newArray(size: Int): Array<Urls> {
-                    return arrayOfNulls(size)
-                }
+            @JvmField val CREATOR: Parcelable.Creator<Urls> = object : Parcelable.Creator<Urls> {
+                override fun createFromParcel(source: Parcel): Urls = Urls(source)
+                override fun newArray(size: Int): Array<Urls?> = arrayOfNulls(size)
             }
         }
     }
 
-    override fun describeContents(): Int {
-        return 0
-    }
+    constructor(source: Parcel) : this(source.readString(),
+            source.readString(),
+            source.readString(),
+            source.readString(),
+            source.readString(),
+            source.readParcelable(UserModel::class.java.classLoader),
+            1.equals(source.readInt()),
+            source.readInt(),
+            source.readInt(),
+            source.createTypedArrayList(Urls.CREATOR),
+            source.createTypedArrayList(Mentions.CREATOR))
 
-    override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeString(this.id)
-        dest.writeString(this.text)
-        dest.writeString(this.html)
-        dest.writeString(this.sent)
-        dest.writeString(this.editedAt)
-        dest.writeParcelable(this.fromUser, 0)
-        dest.writeByte(if (unread) 1.toByte() else 0.toByte())
-        dest.writeInt(this.readBy)
-        dest.writeTypedList(urls)
-        dest.writeTypedList(mentions)
-        dest.writeInt(this.v)
-    }
+    override fun describeContents() = 0
 
-    constructor() {
-    }
-
-    protected constructor(`in`: Parcel) {
-        this.id = `in`.readString()
-        this.text = `in`.readString()
-        this.html = `in`.readString()
-        this.sent = `in`.readString()
-        this.editedAt = `in`.readString()
-        this.fromUser = `in`.readParcelable<UserModel>(UserModel::class.java.classLoader)
-        this.unread = `in`.readByte().toInt() != 0
-        this.readBy = `in`.readInt()
-        this.urls = `in`.createTypedArrayList(Urls.CREATOR)
-        this.mentions = `in`.createTypedArrayList(Mentions.CREATOR)
-        this.v = `in`.readInt()
+    override fun writeToParcel(dest: Parcel?, flags: Int) {
+        dest?.writeString(id)
+        dest?.writeString(text)
+        dest?.writeString(html)
+        dest?.writeString(sent)
+        dest?.writeString(editedAt)
+        dest?.writeParcelable(fromUser, 0)
+        dest?.writeInt((if (unread) 1 else 0))
+        dest?.writeInt(readBy)
+        dest?.writeInt(v)
+        dest?.writeTypedList(urls)
+        dest?.writeTypedList(mentions)
     }
 
     companion object {
-
-        val CREATOR: Parcelable.Creator<MessageModel> = object : Parcelable.Creator<MessageModel> {
-            override fun createFromParcel(source: Parcel): MessageModel {
-                return MessageModel(source)
-            }
-
-            override fun newArray(size: Int): Array<MessageModel> {
-                return arrayOfNulls(size)
-            }
+        @JvmField val CREATOR: Parcelable.Creator<MessageModel> = object : Parcelable.Creator<MessageModel> {
+            override fun createFromParcel(source: Parcel): MessageModel = MessageModel(source)
+            override fun newArray(size: Int): Array<MessageModel?> = arrayOfNulls(size)
         }
     }
 }

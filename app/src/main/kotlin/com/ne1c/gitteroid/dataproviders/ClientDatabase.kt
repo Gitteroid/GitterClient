@@ -2,18 +2,13 @@ package com.ne1c.gitteroid.dataproviders
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-
 import com.ne1c.gitteroid.models.data.MessageModel
 import com.ne1c.gitteroid.models.data.RoomModel
 import com.ne1c.gitteroid.models.data.UserModel
-
-import java.util.ArrayList
-import java.util.Collections
-
 import rx.Observable
+import java.util.*
 
 class ClientDatabase(context: Context) {
 
@@ -25,7 +20,7 @@ class ClientDatabase(context: Context) {
     }
 
     val rooms: Observable<ArrayList<RoomModel>>
-        get() = Observable.fromCallable<ArrayList<RoomModel>>(Callable<ArrayList<RoomModel>> { this.getSyncRooms() })
+        get() = Observable.fromCallable({ this.syncRooms })
 
     val syncRooms: ArrayList<RoomModel>
         get() {
@@ -143,7 +138,7 @@ class ClientDatabase(context: Context) {
         cv.put(COLUMN_HTML, model.html)
         cv.put(COLUMN_SENT, model.sent)
         cv.put(COLUMN_EDITED_AT, model.editedAt)
-        cv.put(COLUMN_FROM_USER_ID, model.fromUser.id)
+        cv.put(COLUMN_FROM_USER_ID, model.fromUser?.id)
         cv.put(COLUMN_UNREAD, if (model.unread) 1 else 0)
         cv.put(COLUMN_READ_BY, model.readBy)
         cv.put(COLUMN_VERSION, model.v)
@@ -157,7 +152,7 @@ class ClientDatabase(context: Context) {
 
         mDatabase.insert(MESSAGES_TABLE, null, cv)
 
-        insertUsers(ArrayList(listOf(model.fromUser)))
+        insertUsers(ArrayList(listOf(model.fromUser!!)))
 
         mDatabase.setTransactionSuccessful()
         mDatabase.endTransaction()
@@ -334,7 +329,7 @@ class ClientDatabase(context: Context) {
             cv.put(COLUMN_HTML, model.html)
             cv.put(COLUMN_SENT, model.sent)
             cv.put(COLUMN_EDITED_AT, model.editedAt)
-            cv.put(COLUMN_FROM_USER_ID, model.fromUser.id)
+            cv.put(COLUMN_FROM_USER_ID, model.fromUser?.id)
             cv.put(COLUMN_UNREAD, if (model.unread) 1 else 0)
             cv.put(COLUMN_READ_BY, model.readBy)
             cv.put(COLUMN_VERSION, model.v)
@@ -346,7 +341,7 @@ class ClientDatabase(context: Context) {
 
             cv.put(COLUMN_URLS, urls)
 
-            users.add(model.fromUser)
+            users.add(model.fromUser!!)
 
             mDatabase.insert(MESSAGES_TABLE, null, cv)
         }
@@ -367,7 +362,7 @@ class ClientDatabase(context: Context) {
         cv.put(COLUMN_HTML, model.html)
         cv.put(COLUMN_SENT, model.sent)
         cv.put(COLUMN_EDITED_AT, model.editedAt)
-        cv.put(COLUMN_FROM_USER_ID, model.fromUser.id)
+        cv.put(COLUMN_FROM_USER_ID, model.fromUser?.id)
         cv.put(COLUMN_UNREAD, if (model.unread) 1 else 0)
         cv.put(COLUMN_READ_BY, model.readBy)
         cv.put(COLUMN_VERSION, model.v)

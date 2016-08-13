@@ -310,7 +310,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         badgeStyle.withTextColor(resources.getColor(android.R.color.white))
 
         val badgeText = if (room.unreadItems == 100) "99+" else Integer.toString(room.unreadItems)
-        val item = ImagePrimaryDrawerItem().withIcon(R.drawable.ic_room).withIcon(ImageHolder(room.avatarUrl)).withIconColor(Color.WHITE).withIconTintingEnabled(true).withName(room.name).withTextColor(Color.WHITE).withSelectedTextColor(Color.BLACK).withSelectedColorRes(R.color.md_white_1000).withSelectable(true) as ImagePrimaryDrawerItem
+        val item = ImagePrimaryDrawerItem().withIcon(R.drawable.ic_room).withIcon(ImageHolder(room.getAvatarUrl())).withIconColor(Color.WHITE).withIconTintingEnabled(true).withName(room.name).withTextColor(Color.WHITE).withSelectedTextColor(Color.BLACK).withSelectedColorRes(R.color.md_white_1000).withSelectable(true) as ImagePrimaryDrawerItem
 
         if (room.unreadItems != 0) {
             return item.withBadge(badgeText).withBadgeStyle(badgeStyle) as ImagePrimaryDrawerItem

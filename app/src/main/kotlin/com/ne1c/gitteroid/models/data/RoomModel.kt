@@ -3,66 +3,24 @@ package com.ne1c.gitteroid.models.data
 import android.os.Parcel
 import android.os.Parcelable
 
-import java.util.ArrayList
-import java.util.Comparator
+import java.util.*
 
-open class RoomModel : Parcelable {
-    var id: String
-    var name: String
-    var topic: String
-    var oneToOne: Boolean = false
-    var users = ArrayList<UserModel>()
-    var unreadItems: Int = 0
-    var userCount: Int = 0
-    var mentions: Int = 0
-    var lastAccessTime: String
-    var lurk: Boolean = false
-    var url: String
-    var githubType: String
-    var hide: Boolean = false
-    var v: Int = 0
-    var listPosition = -1
-
-
-    override fun describeContents(): Int {
-        return 0
-    }
-
-    override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeString(this.id)
-        dest.writeString(this.name)
-        dest.writeString(this.topic)
-        dest.writeByte(if (oneToOne) 1.toByte() else 0.toByte())
-        dest.writeList(this.users)
-        dest.writeInt(this.unreadItems)
-        dest.writeInt(this.userCount)
-        dest.writeInt(this.mentions)
-        dest.writeString(this.lastAccessTime)
-        dest.writeByte(if (lurk) 1.toByte() else 0.toByte())
-        dest.writeString(this.url)
-        dest.writeString(this.githubType)
-        dest.writeInt(this.v)
-    }
-
-    constructor() {
-    }
-
-    protected constructor(`in`: Parcel) {
-        this.id = `in`.readString()
-        this.name = `in`.readString()
-        this.topic = `in`.readString()
-        this.oneToOne = `in`.readByte().toInt() != 0
-        this.users = ArrayList<UserModel>()
-        `in`.readList(this.users, ArrayList<*>::class.java!!.getClassLoader())
-        this.unreadItems = `in`.readInt()
-        this.userCount = `in`.readInt()
-        this.mentions = `in`.readInt()
-        this.lastAccessTime = `in`.readString()
-        this.lurk = `in`.readByte().toInt() != 0
-        this.url = `in`.readString()
-        this.githubType = `in`.readString()
-        this.v = `in`.readInt()
-    }
+open class RoomModel(
+        var id: String = "",
+        var name: String = "",
+        var topic: String = "",
+        var oneToOne: Boolean = false,
+        var users: ArrayList<UserModel> = ArrayList(),
+        var unreadItems: Int = 0,
+        var userCount: Int = 0,
+        var mentions: Int = 0,
+        var lastAccessTime: String = "",
+        var lurk: Boolean = false,
+        var url: String = "",
+        var githubType: String = "",
+        var hide: Boolean = false,
+        var v: Int = 0,
+        var listPosition: Int = -1) : Parcelable {
 
     class SortedByName : Comparator<RoomModel> {
         override fun compare(r1: RoomModel, r2: RoomModel): Int {
@@ -82,31 +40,46 @@ open class RoomModel : Parcelable {
         }
     }
 
+    constructor(source: Parcel) : this(source.readString(),
+            source.readString(),
+            source.readString(),
+            1.equals(source.readInt()),
+            source.createTypedArrayList(UserModel.CREATOR),
+            source.readInt(),
+            source.readInt(),
+            source.readInt(),
+            source.readString(),
+            1.equals(source.readInt()),
+            source.readString(),
+            source.readString(),
+            1.equals(source.readInt()),
+            source.readInt(),
+            source.readInt())
+
+    override fun describeContents() = 0
+
+    override fun writeToParcel(dest: Parcel?, flags: Int) {
+        dest?.writeString(id)
+        dest?.writeString(name)
+        dest?.writeString(topic)
+        dest?.writeInt((if (oneToOne) 1 else 0))
+        dest?.writeTypedList(users)
+        dest?.writeInt(unreadItems)
+        dest?.writeInt(userCount)
+        dest?.writeInt(mentions)
+        dest?.writeString(lastAccessTime)
+        dest?.writeInt((if (lurk) 1 else 0))
+        dest?.writeString(url)
+        dest?.writeString(githubType)
+        dest?.writeInt((if (hide) 1 else 0))
+        dest?.writeInt(v)
+        dest?.writeInt(listPosition)
+    }
+
     companion object {
-
-        // r1 - old list, r2 - new list
-        // copy position, status hideRoom from r1 to r2
-        fun margeRooms(r1: ArrayList<RoomModel>, r2: ArrayList<RoomModel>): ArrayList<RoomModel> {
-            for (r1Model in r1) {
-                for (r2Model in r2) {
-                    if (r1Model.id == r2Model.id) {
-                        r2Model.hide = r1Model.hide
-                        r2Model.listPosition = r1Model.listPosition
-                    }
-                }
-            }
-
-            return r2
-        }
-
-        val CREATOR: Parcelable.Creator<RoomModel> = object : Parcelable.Creator<RoomModel> {
-            override fun createFromParcel(source: Parcel): RoomModel {
-                return RoomModel(source)
-            }
-
-            override fun newArray(size: Int): Array<RoomModel> {
-                return arrayOfNulls(size)
-            }
+        @JvmField val CREATOR: Parcelable.Creator<RoomModel> = object : Parcelable.Creator<RoomModel> {
+            override fun createFromParcel(source: Parcel): RoomModel = RoomModel(source)
+            override fun newArray(size: Int): Array<RoomModel?> = arrayOfNulls(size)
         }
     }
 }

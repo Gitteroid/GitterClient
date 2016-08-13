@@ -5,51 +5,38 @@ import android.os.Parcelable
 
 import com.ne1c.gitteroid.models.data.MessageModel
 import com.ne1c.gitteroid.models.data.UserModel
+import java.util.*
 
-class MessageViewModel : Parcelable {
-    var id: String
-    var text: String
-    var sent: String
-    var fromUser: UserModel
-    var unread: Boolean = false
-    var urls: List<MessageModel.Urls>
+data class MessageViewModel(
+        var id: String = "",
+        var text: String = "",
+        var sent: String = "",
+        var fromUser: UserModel? = null,
+        var unread: Boolean = false,
+        var urls: List<MessageModel.Urls> = Collections.emptyList()) : Parcelable {
 
+    constructor(source: Parcel) : this(source.readString(),
+            source.readString(),
+            source.readString(),
+            source.readParcelable(UserModel::class.java.classLoader),
+            1.equals(source.readInt()),
+            source.createTypedArrayList(MessageModel.Urls.CREATOR))
 
-    override fun describeContents(): Int {
-        return 0
-    }
+    override fun describeContents() = 0
 
-    override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeString(this.id)
-        dest.writeString(this.text)
-        dest.writeString(this.sent)
-        dest.writeParcelable(this.fromUser, flags)
-        dest.writeByte(if (unread) 1.toByte() else 0.toByte())
-        dest.writeTypedList(urls)
-    }
-
-    constructor() {
-    }
-
-    protected constructor(`in`: Parcel) {
-        this.id = `in`.readString()
-        this.text = `in`.readString()
-        this.sent = `in`.readString()
-        this.fromUser = `in`.readParcelable<UserModel>(UserModel::class.java.classLoader)
-        this.unread = `in`.readByte().toInt() != 0
-        this.urls = `in`.createTypedArrayList(MessageModel.Urls.CREATOR)
+    override fun writeToParcel(dest: Parcel?, flags: Int) {
+        dest?.writeString(id)
+        dest?.writeString(text)
+        dest?.writeString(sent)
+        dest?.writeParcelable(fromUser, 0)
+        dest?.writeInt((if (unread) 1 else 0))
+        dest?.writeTypedList(urls)
     }
 
     companion object {
-
-        val CREATOR: Parcelable.Creator<MessageViewModel> = object : Parcelable.Creator<MessageViewModel> {
-            override fun createFromParcel(source: Parcel): MessageViewModel {
-                return MessageViewModel(source)
-            }
-
-            override fun newArray(size: Int): Array<MessageViewModel> {
-                return arrayOfNulls(size)
-            }
+        @JvmField val CREATOR: Parcelable.Creator<MessageViewModel> = object : Parcelable.Creator<MessageViewModel> {
+            override fun createFromParcel(source: Parcel): MessageViewModel = MessageViewModel(source)
+            override fun newArray(size: Int): Array<MessageViewModel?> = arrayOfNulls(size)
         }
     }
 }

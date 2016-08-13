@@ -1,11 +1,7 @@
 package com.ne1c.gitteroid.utils
 
 import android.util.Patterns
-
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.Collections
-import java.util.regex.Matcher
+import java.util.*
 import java.util.regex.Pattern
 
 class MarkdownUtils(message: String?) {
@@ -33,12 +29,12 @@ class MarkdownUtils(message: String?) {
         }
     }
 
-    private fun convertWithPatterns(message: String): List<String> {
+    private fun convertWithPatterns(message: String): MutableList<String> {
         var message = message
         if (mParsedString == null) {
             mParsedString = ArrayList<String>()
         } else {
-            return mParsedString
+            return mParsedString as MutableList<String>
         }
 
         message = message.replace(SINGLELINE_CODE_PATTERN.pattern().toRegex(), "{" + SINGLELINE_CODE.toString() + "}")
@@ -87,14 +83,14 @@ class MarkdownUtils(message: String?) {
             mParsedString!!.addAll(Arrays.asList(*splitted))
         }
 
-        return mParsedString
+        return mParsedString as ArrayList<String>
     }
 
     private fun readMultilineCode(message: String): List<String> {
         val matcher = MULTILINE_CODE_PATTERN.matcher(message)
 
         if (mMultilineCode != null) {
-            return mMultilineCode
+            return mMultilineCode as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -109,7 +105,7 @@ class MarkdownUtils(message: String?) {
 
                 mMultilineCode!!.add(code)
             } while (matcher.find())
-            return mMultilineCode
+            return mMultilineCode as ArrayList<String>
         }
 
         return emptyList()
@@ -119,7 +115,7 @@ class MarkdownUtils(message: String?) {
         val matcher = SINGLELINE_CODE_PATTERN.matcher(message)
 
         if (mSinglelineCode != null) {
-            return mSinglelineCode
+            return mSinglelineCode as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -129,7 +125,7 @@ class MarkdownUtils(message: String?) {
                 mSinglelineCode!!.add(matcher.group().replace("`", ""))
             } while (matcher.find())
 
-            return mSinglelineCode
+            return mSinglelineCode as ArrayList<String>
         }
 
         return emptyList()
@@ -139,7 +135,7 @@ class MarkdownUtils(message: String?) {
         val matcher = BOLD_PATTERN.matcher(message)
 
         if (mBold != null) {
-            return mBold
+            return mBold as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -149,17 +145,17 @@ class MarkdownUtils(message: String?) {
                 mBold!!.add(matcher.group().replace("**", ""))
             } while (matcher.find())
 
-            return mBold
+            return mBold as ArrayList<String>
         }
 
         return emptyList()
     }
 
-    private fun readStrikethrough(message: String): List<String> {
+    private fun readStrikethrough(message: String): MutableList<String> {
         val matcher = STRIKETHROUGH_PATTERN.matcher(message)
 
         if (mStrikethrough != null) {
-            return mStrikethrough
+            return mStrikethrough as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -169,17 +165,17 @@ class MarkdownUtils(message: String?) {
                 mStrikethrough!!.add(matcher.group().replace("~~", ""))
             } while (matcher.find())
 
-            return mStrikethrough
+            return mStrikethrough as ArrayList<String>
         }
 
-        return emptyList()
+        return emptyList<String>() as MutableList<String>
     }
 
     private fun readQuote(message: String): List<String> {
         val matcher = QUOTE_PATTERN.matcher(message)
 
         if (mQuote != null) {
-            return mQuote
+            return mQuote as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -201,7 +197,7 @@ class MarkdownUtils(message: String?) {
                 mQuote!!.add(text)
             } while (matcher.find())
 
-            return mQuote
+            return mQuote as ArrayList<String>
         }
 
         return emptyList()
@@ -211,7 +207,7 @@ class MarkdownUtils(message: String?) {
         val matcher = ITALICS_PATTERN.matcher(message)
 
         if (mItalics != null) {
-            return mItalics
+            return mItalics as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -222,7 +218,7 @@ class MarkdownUtils(message: String?) {
                 mItalics!!.add(text.substring(1, text.length - 1))
             } while (matcher.find())
 
-            return mItalics
+            return mItalics as ArrayList<String>
         }
 
         return emptyList()
@@ -232,7 +228,7 @@ class MarkdownUtils(message: String?) {
         val matcher = GITTER_LINK_PATTERN.matcher(message)
 
         if (mGitterLinks != null) {
-            return mGitterLinks
+            return mGitterLinks as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -242,7 +238,7 @@ class MarkdownUtils(message: String?) {
                 mGitterLinks!!.add(matcher.group().replaceFirst("\\[]\\((\\bhttp\\b|\\bhttps\\b)://\\)".toRegex(), ""))
             } while (matcher.find())
 
-            return mGitterLinks
+            return mGitterLinks as ArrayList<String>
         }
 
         return emptyList()
@@ -252,7 +248,7 @@ class MarkdownUtils(message: String?) {
         val matcher = LINK_PATTERN.matcher(message)
 
         if (mLinks != null) {
-            return mLinks
+            return mLinks as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -262,7 +258,7 @@ class MarkdownUtils(message: String?) {
                 mLinks!!.add(matcher.group())
             } while (matcher.find())
 
-            return mLinks
+            return mLinks as ArrayList<String>
         }
 
         return emptyList()
@@ -273,7 +269,7 @@ class MarkdownUtils(message: String?) {
         val full_matcher = IMAGE_LINK_PATTERN.matcher(message)
 
         if (mImageLinks != null) {
-            return mImageLinks
+            return mImageLinks as MutableList<Any>
         }
 
         if (preview_matcher.find()) {
@@ -288,7 +284,7 @@ class MarkdownUtils(message: String?) {
                 mImageLinks!!.add(link)
             } while (preview_matcher.find())
 
-            return mImageLinks
+            return mImageLinks as MutableList<Any>
         } else if (full_matcher.find()) {
             mImageLinks = ArrayList<Any>()
 
@@ -296,7 +292,7 @@ class MarkdownUtils(message: String?) {
                 mImageLinks!!.add(full_matcher.group().replaceFirst("!\\[.*?]\\(".toRegex(), "").replace(")", ""))
             } while (full_matcher.find())
 
-            return mImageLinks
+            return mImageLinks as MutableList<Any>
         }
 
         return emptyList()
@@ -306,7 +302,7 @@ class MarkdownUtils(message: String?) {
         val matcher = ISSUE_PATTERN.matcher(message)
 
         if (mIssues != null) {
-            return mIssues
+            return mIssues as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -316,7 +312,7 @@ class MarkdownUtils(message: String?) {
                 mIssues!!.add(matcher.group().replace("#", ""))
             } while (matcher.find())
 
-            return mIssues
+            return mIssues as ArrayList<String>
         }
 
         return emptyList()
@@ -326,7 +322,7 @@ class MarkdownUtils(message: String?) {
         val matcher = MENTION_PATTERN.matcher(message)
 
         if (mMentions != null) {
-            return mMentions
+            return mMentions as MutableList<String>
         }
 
         if (matcher.find()) {
@@ -336,7 +332,7 @@ class MarkdownUtils(message: String?) {
                 mMentions!!.add(matcher.group())
             } while (matcher.find())
 
-            return mMentions
+            return mMentions as ArrayList<String>
         }
 
         return emptyList()
