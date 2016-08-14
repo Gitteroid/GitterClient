@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.preference.PreferenceManager
 import com.crashlytics.android.Crashlytics
+import com.crashlytics.android.core.CrashlyticsCore
 import com.ne1c.gitteroid.di.DependencyManager
 import com.ne1c.gitteroid.di.PresenterStorage
 import com.ne1c.gitteroid.services.NotificationService
@@ -14,7 +15,15 @@ class GitteroidApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Fabric.with(this, Crashlytics())
+        val core = CrashlyticsCore.Builder()
+                .disabled(BuildConfig.DEBUG)
+                .build()
+
+        val crashlytics = Crashlytics.Builder()
+                .core(core)
+                .build()
+
+        Fabric.with(this, crashlytics)
 
         DependencyManager.INSTANCE.init(this)
         PresenterFactory.init(PresenterStorage())
