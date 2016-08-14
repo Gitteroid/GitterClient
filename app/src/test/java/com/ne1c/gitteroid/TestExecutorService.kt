@@ -5,7 +5,7 @@ import rx.Scheduler
 import rx.schedulers.Schedulers
 
 class TestExecutorService: ExecutorService {
-    override fun getSubscribeOn(): Scheduler = Schedulers.io()
+    override fun getSubscribeOn(): Scheduler = Schedulers.immediate()
 
-    override fun getObserveOn(): Scheduler = Schedulers.io()
+    override fun getObserveOn(): Scheduler = Schedulers.immediate()
 }

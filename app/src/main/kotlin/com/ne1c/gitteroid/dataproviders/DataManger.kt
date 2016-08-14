@@ -26,8 +26,8 @@ open class DataManger(private val mApi: GitterApi,
         val AVATAR_SMALL_PREF_KEY = "avatarUrlSmall"
         val AVATAR_MEDIUM_PREF_KEY = "avatarUrlMedium"
         val ACCESS_TOKEN_PREF_KEY = "access_token"
-        val EXPIRIES_IN_PREF_KEY = "EXPIRIES_IN"
-        val TOKEN_TYPE_PREF_KEY = "TOKEN_TYPE"
+        val EXPIRES_IN_PREF_KEY = "expires_in"
+        val TOKEN_TYPE_PREF_KEY = "token_type"
     }
 
     // Primary cache in memory
@@ -217,7 +217,7 @@ open class DataManger(private val mApi: GitterApi,
     fun saveUser(model: AuthResponseModel) {
         mUserPreferences.edit()
                 .putString(ACCESS_TOKEN_PREF_KEY, model.access_token)
-                .putString(EXPIRIES_IN_PREF_KEY, model.expires_in)
+                .putString(EXPIRES_IN_PREF_KEY, model.expires_in)
                 .putString(TOKEN_TYPE_PREF_KEY, model.token_type)
                 .apply()
     }
@@ -232,7 +232,7 @@ open class DataManger(private val mApi: GitterApi,
     fun cleatProfile() {
         mUserPreferences.edit()
                 .putString(ACCESS_TOKEN_PREF_KEY, "")
-                .putString(EXPIRIES_IN_PREF_KEY, "")
+                .putString(EXPIRES_IN_PREF_KEY, "")
                 .putString(TOKEN_TYPE_PREF_KEY, "")
                 .apply()
     }
