@@ -8,7 +8,7 @@ import retrofit2.http.*
 import rx.Observable
 import java.util.*
 
-interface GitterApi {
+open interface GitterApi {
     @GET("/v1/rooms")
     fun getCurrentUserRooms(@Header("Authorization") access_token: String): Observable<ArrayList<RoomModel>>
 

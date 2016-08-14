@@ -10,7 +10,7 @@ import com.ne1c.gitteroid.models.data.UserModel
 import rx.Observable
 import java.util.*
 
-class ClientDatabase(context: Context) {
+open class ClientDatabase(context: Context) {
 
     private val mDatabase: SQLiteDatabase
 
