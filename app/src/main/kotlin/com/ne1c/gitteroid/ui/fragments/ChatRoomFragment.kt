@@ -34,8 +34,9 @@ import com.ne1c.gitteroid.ui.adapters.MessagesAdapter
 import com.ne1c.gitteroid.ui.views.ChatView
 import com.ne1c.gitteroid.utils.MarkdownUtils
 import com.ne1c.rainbowmvp.base.BaseFragment
-import de.greenrobot.event.EventBus
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
 import java.util.*
 
 class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
@@ -89,7 +90,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         super.onViewCreated(view, savedInstanceState)
 
         initViews(view!!)
-        setDataToView(savedInstanceState!!)
+        setDataToView(savedInstanceState)
     }
 
     private fun initViews(v: View) {
@@ -236,7 +237,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         super.onSaveInstanceState(outState)
     }
 
-    private fun setDataToView(savedInstanceState: Bundle) {
+    private fun setDataToView(savedInstanceState: Bundle?) {
         mMessagesAdapter = MessagesAdapter(DependencyManager.INSTANCE.dataManager!!, activity,
                 mMessagesArr, mMessageEditText!!)
 
@@ -448,7 +449,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         }.start()
     }
 
-    fun onEvent(room: RefreshMessagesRoomEvent) {
+    @Subscribe
+    fun nofityRefreshMessages(room: RefreshMessagesRoomEvent) {
         if (room.roomModel.id == mRoom!!.id) {
             mIsRefreshing = true
             showListProgressBar()
@@ -456,7 +458,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         }
     }
 
-    fun onEvent(message: UpdateMessageEvent) {
+    @Subscribe
+    fun notifyUpdateMessage(message: UpdateMessageEvent) {
         val newMessage = message.messageModel
 
         if (newMessage != null) {
@@ -464,7 +467,8 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         }
     }
 
-    fun onEvent(event: NewMessageEvent) {
+    @Subscribe
+    fun notifyNewMessage(event: NewMessageEvent) {
         if (event.room.id != mRoom!!.id) {
             return
         }
@@ -657,7 +661,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     }
 
     companion object {
-        @JvmOverloads fun newInstance(room: RoomViewModel, overview: Boolean = false): ChatRoomFragment {
+        @JvmOverloads fun  newInstance(room: RoomViewModel, overview: Boolean = false): ChatRoomFragment {
             val bundle = Bundle()
             bundle.putParcelable("room", room)
             bundle.putBoolean("overview", overview)

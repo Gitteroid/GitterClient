@@ -168,7 +168,7 @@ class MarkdownUtils(message: String?) {
             return mStrikethrough as ArrayList<String>
         }
 
-        return emptyList<String>() as MutableList<String>
+        return mutableListOf()
     }
 
     private fun readQuote(message: String): List<String> {

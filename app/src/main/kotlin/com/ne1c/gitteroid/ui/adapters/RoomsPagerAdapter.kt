@@ -2,14 +2,15 @@ package com.ne1c.gitteroid.ui.adapters
 
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
-import android.support.v4.app.FragmentPagerAdapter
+import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.view.PagerAdapter
 import android.view.View
 import com.ne1c.gitteroid.models.view.RoomViewModel
 import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment
 import java.util.*
 
-class RoomsPagerAdapter(fm: FragmentManager, private val mRoomsList: ArrayList<RoomViewModel>) : FragmentPagerAdapter(fm) {
+class RoomsPagerAdapter(fm: FragmentManager,
+                        private val mRoomsList: ArrayList<RoomViewModel>) : FragmentStatePagerAdapter(fm) {
 
     override fun isViewFromObject(view: View?, `object`: Any): Boolean {
         return super.isViewFromObject(view, `object`)
@@ -21,10 +22,6 @@ class RoomsPagerAdapter(fm: FragmentManager, private val mRoomsList: ArrayList<R
 
     override fun getPageTitle(position: Int): CharSequence {
         return mRoomsList[position].name
-    }
-
-    override fun getItemId(position: Int): Long {
-        return mRoomsList[position].id.hashCode().toLong()
     }
 
     override fun getItemPosition(`object`: Any?): Int {

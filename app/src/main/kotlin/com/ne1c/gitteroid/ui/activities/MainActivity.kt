@@ -51,7 +51,8 @@ import com.ne1c.gitteroid.ui.adapters.RoomsPagerAdapter
 import com.ne1c.gitteroid.ui.fragments.PickRoomsDialogFragment
 import com.ne1c.gitteroid.ui.views.MainView
 import com.ne1c.rainbowmvp.base.BaseActivity
-import de.greenrobot.event.EventBus
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
 import java.util.*
 
 class MainActivity : BaseActivity<MainPresenter>(), MainView {
@@ -63,11 +64,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     private val ROOMS_PAGER_STATE_BUNDLE = "rooms_pager_state_bundle"
 
     private var mRoomsViewPager: ViewPager? = null
-
     private var mDrawerToggle: ActionBarDrawerToggle? = null
-
     private var mRoomTabs: TabLayout? = null
-
     private var mDrawer: Drawer? = null
     private val mDrawerItems = ArrayList<IDrawerItem<*, *>>()
     private var mAccountHeader: AccountHeader? = null
@@ -76,27 +74,23 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     private val mRoomsList = ArrayList<RoomViewModel>()
     private val mRoomsInDrawer = ArrayList<RoomViewModel>() // Rooms that user will see
     private val mRoomsInTabs = ArrayList<RoomViewModel>()
+    private var mStateWasRestored = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         if (!DependencyManager.INSTANCE.dataManager!!.isAuthorize()) {
-            startActivity(Intent(applicationContext, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            startActivity(Intent(applicationContext, LoginActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
             overridePendingTransition(0, 0)
             return
         }
 
         setContentView(R.layout.activity_main)
 
-        mPresenter?.bindView(this)
-
-        EventBus.getDefault().register(this)
-        LocalBroadcastManager.getInstance(this).registerReceiver(mNewMessageReceiver, IntentFilter(BROADCAST_NEW_MESSAGE))
-
         initViews()
-
         initState(savedInstanceState)
-
         initDrawerImageLoader()
 
         startService(Intent(this, NotificationService::class.java))
@@ -104,12 +98,10 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     private fun initViews() {
         val toolbar = findViewById(R.id.toolbar) as Toolbar
-        setSupportActionBar(toolbar)
 
-        if (supportActionBar != null) {
-            supportActionBar?.setDisplayHomeAsUpEnabled(true)
-            supportActionBar?.setHomeButtonEnabled(true)
-        }
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
 
         mRoomsViewPager = findViewById(R.id.rooms_viewPager) as ViewPager
         mRoomsViewPager?.adapter = RoomsPagerAdapter(supportFragmentManager, mRoomsInTabs)
@@ -139,33 +131,27 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     private fun initState(savedInstanceState: Bundle?) {
         if (savedInstanceState != null) {
-            initWithSavedInstanceState(savedInstanceState)
-        } else {
-            initWithoutSavedInstanceState()
-        }
-    }
+            cleanDrawer()
 
-    private fun initWithSavedInstanceState(savedInstanceState: Bundle) {
-        val roomsList = savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_BUNDLE)
-        mRoomsInDrawer.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_DRAWER_BUNDLE))
-        mRoomsInTabs.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_TABS_BUNDLE))
+            val roomsList = savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_BUNDLE)
+            mRoomsInDrawer.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_DRAWER_BUNDLE))
+            mRoomsInTabs.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_TABS_BUNDLE))
 
-        addRoomsToDrawer(roomsList, true)
+            addRoomsToDrawer(roomsList, true)
 
-        val pagerAdapterState = savedInstanceState.getParcelable<Parcelable>(ROOMS_PAGER_STATE_BUNDLE)
-        mRoomsViewPager?.adapter?.restoreState(pagerAdapterState, classLoader)
-
-        if (mRoomTabs != null) {
             for (i in mRoomsInTabs.indices) {
-                mRoomTabs?.addTab(mRoomTabs?.newTab()!!, i)
+                mRoomTabs?.addTab(mRoomTabs?.newTab()!!.setText(mRoomsInTabs[i].name), i)
             }
-        }
-        mRoomsViewPager?.adapter?.notifyDataSetChanged()
-    }
 
-    private fun initWithoutSavedInstanceState() {
-        mPresenter?.loadRooms(DependencyManager.INSTANCE.networkService?.isConnected()!!)
-        mPresenter?.loadProfile()
+            val pagerAdapterState = savedInstanceState.getParcelable<Parcelable>(ROOMS_PAGER_STATE_BUNDLE)
+            mRoomsViewPager?.adapter?.restoreState(pagerAdapterState, classLoader)
+            mRoomsViewPager?.adapter?.notifyDataSetChanged()
+
+            mStateWasRestored = true
+
+            val posInDrawer = getPositionRoomInDrawer(selectedRoom!!.name)
+            mDrawer?.setSelectionAtPosition(posInDrawer, false)
+        }
     }
 
     private fun initDrawerImageLoader() {
@@ -184,13 +170,20 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         val drawerLayout = findViewById(R.id.parent_layout) as DrawerLayout
         mDrawerToggle = ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name)
 
-        mPresenter?.loadProfile()
-
         createAccountHeader()
 
         mDrawerItems.add(PrimaryDrawerItem()
                 .withIcon(R.drawable.ic_home)
                 .withName(getString(R.string.home))
+                .withTextColor(Color.WHITE)
+                .withIconColor(Color.WHITE)
+                .withIconTintingEnabled(true)
+                .withSelectable(false)
+                .withSetSelected(false))
+
+        mDrawerItems.add(PrimaryDrawerItem()
+                .withIcon(R.drawable.ic_room)
+                .withName(getString(R.string.no_rooms))
                 .withTextColor(Color.WHITE)
                 .withIconColor(Color.WHITE)
                 .withIconTintingEnabled(true)
@@ -241,8 +234,10 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 .withTranslucentStatusBar(true)
                 .withSliderBackgroundColorRes(R.color.navDrawerBackground)
                 .addDrawerItems(*mDrawerItems.toTypedArray())
-                .withOnDrawerItemClickListener(mDrawerItemClickListener)
+                .withOnDrawerItemClickListener(drawerItemClickListener)
                 .build()
+
+        mDrawer?.setSelection(-1) // Pick no_rooms
     }
 
     private fun createAccountHeader() {
@@ -269,7 +264,6 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         mRoomsList.clear()
         mRoomsInDrawer.clear()
         mRoomTabs?.removeAllTabs()
-        mRoomsViewPager?.adapter?.notifyDataSetChanged()
 
         // Remove old items
         // 4 but items: "Home", "All", "Search", "Divider", "Settings", "Sign Out".
@@ -321,6 +315,14 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         super.onStart()
 
         mPresenter.bindView(this)
+        mPresenter.loadProfile()
+
+        if (!mStateWasRestored) {
+            mPresenter.loadRooms()
+        }
+
+        EventBus.getDefault().register(this)
+        LocalBroadcastManager.getInstance(this).registerReceiver(newMessageReceiver, IntentFilter(BROADCAST_NEW_MESSAGE))
         registerReceiver(unauthorizedReceiver, IntentFilter(BROADCAST_UNAUTHORIZED))
     }
 
@@ -328,27 +330,25 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         super.onNewIntent(intent)
 
         // If get intent from notification
-        if (mRoomsList != null) {
-            val intentRoom = intent.getParcelableExtra<RoomModel>(NotificationService.FROM_ROOM_EXTRA_KEY)
+        val intentRoom = intent.getParcelableExtra<RoomModel>(NotificationService.FROM_ROOM_EXTRA_KEY)
 
-            val notifRoom = RoomMapper.mapToView(intentRoom)
-            val selectedRoom = selectedRoom
+        val notifRoom = RoomMapper.mapToView(intentRoom)
+        val selectedRoom = selectedRoom
 
-            if (selectedRoom != null && selectedRoom.name != notifRoom.name) {
-                pickRoom(notifRoom)
-            }
-
-            mDrawer?.closeDrawer()
+        if (selectedRoom?.name != notifRoom.name) {
+            pickRoom(notifRoom)
         }
+
+        mDrawer?.closeDrawer()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
         outState.putParcelableArrayList(ROOMS_BUNDLE, mRoomsList)
         outState.putParcelableArrayList(ROOMS_IN_DRAWER_BUNDLE, mRoomsInDrawer)
         outState.putParcelableArrayList(ROOMS_IN_TABS_BUNDLE, mRoomsInTabs)
         outState.putParcelable(ROOMS_PAGER_STATE_BUNDLE, mRoomsViewPager?.adapter?.saveState())
-
-        super.onSaveInstanceState(outState)
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -373,22 +373,22 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         val id = item.itemId
 
         when (id) {
-            android.R.id.home -> if (mDrawer?.isDrawerOpen!!) {
-                mDrawer?.openDrawer()
-            } else {
-                mDrawer?.closeDrawer()
-            }
-            R.id.action_refresh -> if (selectedRoom != null) {
-                EventBus.getDefault().post(RefreshMessagesRoomEvent(selectedRoom!!))
-            }
-            R.id.action_leave -> {
-                val selectedRoom = selectedRoom
-
+            android.R.id.home ->
+                if (!mDrawer?.isDrawerOpen!!) {
+                    mDrawer?.openDrawer()
+                } else {
+                    mDrawer?.closeDrawer()
+                }
+            R.id.action_refresh ->
                 if (selectedRoom != null) {
-                    if (selectedRoom.oneToOne) {
+                    EventBus.getDefault().post(RefreshMessagesRoomEvent(selectedRoom!!))
+                }
+            R.id.action_leave -> {
+                if (selectedRoom != null) {
+                    if (selectedRoom!!.oneToOne) {
                         Toast.makeText(applicationContext, R.string.leave_from_one_to_one, Toast.LENGTH_SHORT).show()
                     } else {
-                        mPresenter?.leaveFromRoom(selectedRoom.id)
+                        mPresenter?.leaveFromRoom(selectedRoom!!.id)
                     }
                 }
             }
@@ -421,11 +421,12 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     override fun onStop() {
-        mPresenter?.unbindView()
+        mPresenter.unbindView()
+        EventBus.getDefault().unregister(this)
 
         try {
             unregisterReceiver(unauthorizedReceiver)
-            unregisterReceiver(mNewMessageReceiver)
+            unregisterReceiver(newMessageReceiver)
         } catch (e: IllegalArgumentException) {
             // Broadcast receiver not registered
         }
@@ -433,14 +434,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         super.onStop()
     }
 
-    override fun onDestroy() {
-        EventBus.getDefault().unregister(this)
-        super.onDestroy()
-    }
-
-    private val mDrawerItemClickListener = Drawer.OnDrawerItemClickListener { view, position, drawerItem ->
+    private val drawerItemClickListener = Drawer.OnDrawerItemClickListener { view, position, drawerItem ->
         val item = drawerItem as PrimaryDrawerItem
-
         val name = item.name.text
 
         if (name == getString(R.string.home)) {
@@ -459,7 +454,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
         mDrawer?.closeDrawer()
 
-        true
+        return@OnDrawerItemClickListener true
     }
 
     private fun clickOnRoomInDrawer(name: String) {
@@ -468,12 +463,11 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 if (name == model.name) {
                     title = model.name
 
-                    val lastIndex = mRoomTabs?.tabCount
-                    mRoomTabs?.addTab(mRoomTabs?.newTab()!!, lastIndex!!)
-                    mRoomsInTabs.add(lastIndex!!, model)
-                    mRoomsViewPager?.adapter?.notifyDataSetChanged()
+                    val lastIndex = mRoomTabs!!.tabCount
+                    mRoomsInTabs.add(lastIndex, model)
 
-                    mRoomsViewPager?.currentItem = lastIndex
+                    mRoomsViewPager?.adapter?.notifyDataSetChanged()
+                    mRoomsViewPager?.currentItem = mRoomTabs!!.tabCount
                 }
             }
         } else {
@@ -512,7 +506,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         }
     }
 
-    private val mNewMessageReceiver = object : BroadcastReceiver() {
+    private val newMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val roomId = intent.getStringExtra(ROOM_ID_INTENT_KEY)
 
@@ -546,7 +540,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     // Update Badge in navigation item, if message was read
-    fun onEvent(event: ReadMessagesEvent) {
+    @Subscribe
+    fun updateBudgetReadMessages(event: ReadMessagesEvent) {
         val idSelectedRoom = selectedRoom?.id
 
         for (i in mRoomsInDrawer.indices) {

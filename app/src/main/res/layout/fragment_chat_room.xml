@@ -121,8 +121,9 @@
             <EditText
                 android:id="@+id/message_edit_text"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_horizontal"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:padding="4dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="@string/write_a_message"

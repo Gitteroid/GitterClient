@@ -1,6 +1,5 @@
 package com.ne1c.gitteroid.ui.fragments
 
-import android.app.Dialog
 import android.app.DialogFragment
 import android.os.Bundle
 import android.text.TextUtils
@@ -9,12 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
-
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.events.UpdateMessageEvent
 import com.ne1c.gitteroid.models.view.MessageViewModel
-
-import de.greenrobot.event.EventBus
+import org.greenrobot.eventbus.EventBus
 
 class EditMessageFragment : DialogFragment() {
 
