@@ -68,4 +68,6 @@
     <string name="no_messages_try_to_load">No messages for this room. Try to press refresh for load messages.</string>
     <string name="refresh">Refresh</string>
     <string name="no_rooms">No rooms</string>
+    <string name="wait_for_loading_rooms">Wait for loading rooms…</string>
+    <string name="retry">Retry</string>
 </resources>

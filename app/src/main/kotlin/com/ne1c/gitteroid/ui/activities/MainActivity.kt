@@ -19,7 +19,9 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.widget.Toolbar
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import com.bumptech.glide.Glide
 import com.mikepenz.materialdrawer.AccountHeader
@@ -46,8 +48,9 @@ import com.ne1c.gitteroid.models.data.UserModel
 import com.ne1c.gitteroid.models.view.RoomViewModel
 import com.ne1c.gitteroid.presenters.MainPresenter
 import com.ne1c.gitteroid.services.NotificationService
-import com.ne1c.gitteroid.ui.ImagePrimaryDrawerItem
 import com.ne1c.gitteroid.ui.adapters.RoomsPagerAdapter
+import com.ne1c.gitteroid.ui.drawer.ImagePrimaryDrawerItem
+import com.ne1c.gitteroid.ui.drawer.ProgressDrawerItem
 import com.ne1c.gitteroid.ui.fragments.PickRoomsDialogFragment
 import com.ne1c.gitteroid.ui.views.MainView
 import com.ne1c.rainbowmvp.base.BaseActivity
@@ -62,6 +65,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     private val ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle"
     private val ROOMS_IN_TABS_BUNDLE = "rooms_in_tabs_bundle"
     private val ROOMS_PAGER_STATE_BUNDLE = "rooms_pager_state_bundle"
+    private val SELECTED_ROOM_BUNDLE = "SELECTED_ROOM_BUNDLE"
 
     private var mRoomsViewPager: ViewPager? = null
     private var mDrawerToggle: ActionBarDrawerToggle? = null
@@ -70,6 +74,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     private val mDrawerItems = ArrayList<IDrawerItem<*, *>>()
     private var mAccountHeader: AccountHeader? = null
     private val mMainProfile = ProfileDrawerItem()
+    private var mLoadRoomsProgressView: LinearLayout? = null
+    private var mErrorLoadRoomsView: LinearLayout? = null
 
     private val mRoomsList = ArrayList<RoomViewModel>()
     private val mRoomsInDrawer = ArrayList<RoomViewModel>() // Rooms that user will see
@@ -126,6 +132,16 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         mRoomTabs = findViewById(R.id.rooms_tab) as TabLayout
         mRoomTabs?.setupWithViewPager(mRoomsViewPager)
 
+        mLoadRoomsProgressView = findViewById(R.id.load_rooms_layout) as LinearLayout
+
+        mErrorLoadRoomsView = findViewById(R.id.error_load_rooms_layout) as LinearLayout
+        mErrorLoadRoomsView?.findViewById(R.id.retry_button)?.setOnClickListener {
+            mErrorLoadRoomsView?.visibility = View.GONE
+            mLoadRoomsProgressView?.visibility = View.VISIBLE
+
+            mPresenter.loadRooms()
+        }
+
         setNavigationView()
     }
 
@@ -149,8 +165,11 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
             mStateWasRestored = true
 
-            val posInDrawer = getPositionRoomInDrawer(selectedRoom!!.name)
-            mDrawer?.setSelectionAtPosition(posInDrawer, false)
+            selectedRoom = savedInstanceState.getParcelable(SELECTED_ROOM_BUNDLE)
+            if (selectedRoom != null) {
+                val posInDrawer = getPositionRoomInDrawer(selectedRoom!!.name)
+                mDrawer?.setSelectionAtPosition(posInDrawer, false)
+            }
         }
     }
 
@@ -181,12 +200,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 .withSelectable(false)
                 .withSetSelected(false))
 
-        mDrawerItems.add(PrimaryDrawerItem()
-                .withIcon(R.drawable.ic_room)
-                .withName(getString(R.string.no_rooms))
-                .withTextColor(Color.WHITE)
-                .withIconColor(Color.WHITE)
-                .withIconTintingEnabled(true)
+        mDrawerItems.add(ProgressDrawerItem()
                 .withSelectable(false)
                 .withSetSelected(false))
 
@@ -319,6 +333,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
         if (!mStateWasRestored) {
             mPresenter.loadRooms()
+        } else {
+            mLoadRoomsProgressView?.visibility = View.GONE
         }
 
         EventBus.getDefault().register(this)
@@ -333,7 +349,6 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         val intentRoom = intent.getParcelableExtra<RoomModel>(NotificationService.FROM_ROOM_EXTRA_KEY)
 
         val notifRoom = RoomMapper.mapToView(intentRoom)
-        val selectedRoom = selectedRoom
 
         if (selectedRoom?.name != notifRoom.name) {
             pickRoom(notifRoom)
@@ -349,6 +364,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         outState.putParcelableArrayList(ROOMS_IN_DRAWER_BUNDLE, mRoomsInDrawer)
         outState.putParcelableArrayList(ROOMS_IN_TABS_BUNDLE, mRoomsInTabs)
         outState.putParcelable(ROOMS_PAGER_STATE_BUNDLE, mRoomsViewPager?.adapter?.saveState())
+        outState.putParcelable(SELECTED_ROOM_BUNDLE, selectedRoom)
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -490,7 +506,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     private fun signOut() {
-        DependencyManager.INSTANCE.dataManager?.cleatProfile()
+        DependencyManager.INSTANCE.dataManager.cleatProfile()
         startActivity(Intent(applicationContext, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
@@ -578,6 +594,14 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     override fun showRooms(rooms: ArrayList<RoomViewModel>) {
+        if (mLoadRoomsProgressView?.visibility == View.VISIBLE) {
+            mLoadRoomsProgressView?.visibility = View.GONE
+        }
+
+        if (mErrorLoadRoomsView?.visibility == View.VISIBLE) {
+            mErrorLoadRoomsView?.visibility == View.GONE
+        }
+
         setItemsDrawer(rooms)
     }
 
@@ -642,7 +666,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         return -1
     }
 
-    private val selectedRoom: RoomViewModel?
+    private var selectedRoom: RoomViewModel? = null
         get() {
             val index = mDrawer?.currentSelectedPosition!! - ROOM_IN_DRAWER_OFFSET_TOP
 
@@ -667,6 +691,18 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
             val position = getPositionRoomInDrawer(model.name) + 1
             mDrawer?.setSelectionAtPosition(position)
         }
+    }
+
+    override fun errorLoadRooms() {
+        if (mRoomsList.size == 0) {
+            if (mDrawer!!.drawerItems[1] is ProgressDrawerItem) {
+                (mDrawer!!.drawerItems[1] as ProgressDrawerItem).mode = ProgressDrawerItem.Mode.NO_LOADING_TEXT
+                mDrawer!!.adapter.notifyAdapterItemChanged(1)
+            }
+        }
+
+        mLoadRoomsProgressView?.visibility = View.GONE
+        mErrorLoadRoomsView?.visibility = View.VISIBLE
     }
 
     override fun getPresenterTag(): String = MainPresenter.TAG

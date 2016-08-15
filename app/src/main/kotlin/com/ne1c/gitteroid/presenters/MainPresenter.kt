@@ -118,7 +118,10 @@ class MainPresenter : BasePresenter<MainView> {
                 }).subscribe({
             mView?.showRooms(it)
             mView?.saveAllRooms(cachedAllRooms)
-        }, { mView?.showError(R.string.error_load_rooms) })
+        }, {
+            mView?.showError(R.string.error_load_rooms)
+            mView?.errorLoadRooms()
+        })
 
         subscriptions.add(sub)
     }

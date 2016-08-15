@@ -1,4 +1,4 @@
-package com.ne1c.gitteroid.ui
+package com.ne1c.gitteroid.ui.drawer
 
 
 import android.view.View
