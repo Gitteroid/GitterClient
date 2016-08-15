@@ -19,22 +19,26 @@ import java.util.concurrent.TimeUnit
 enum class DependencyManager {
     INSTANCE;
 
-    var dataManager: DataManger? = null
-    var clientDatabase: ClientDatabase? = null
-    var userPrefs: SharedPreferences? = null
-    var networkService: NetworkService? = null
-    var executorService: ExecutorService? = null
-    var gitterStreamer: GitterStreamer? = null
+    lateinit var dataManager: DataManger
+        private set
+    lateinit var clientDatabase: ClientDatabase
+        private set
+    lateinit var userPrefs: SharedPreferences
+        private set
+    lateinit var networkService: NetworkService
+        private set
+    lateinit var executorService: ExecutorService
+        private set
+    lateinit var gitterStreamer: GitterStreamer
+        private set
 
     fun init(context: Context) {
-        if (needInit()) {
-            userPrefs = context.getSharedPreferences(DataManger.USERINFO_PREF, Context.MODE_PRIVATE)
-            clientDatabase = ClientDatabase(context)
-            networkService = AndroidNetworkService(context)
-            executorService = RxExecutorService()
-            dataManager = DataManger(createGitterApi(), clientDatabase!!, userPrefs!!)
-            gitterStreamer = GitterStreamer(createGitterStreamApi(), dataManager!!.bearer)
-        }
+        userPrefs = context.getSharedPreferences(DataManger.USERINFO_PREF, Context.MODE_PRIVATE)
+        clientDatabase = ClientDatabase(context)
+        networkService = AndroidNetworkService(context)
+        executorService = RxExecutorService()
+        dataManager = DataManger(createGitterApi(), clientDatabase, userPrefs)
+        gitterStreamer = GitterStreamer(createGitterStreamApi(), dataManager.bearer)
     }
 
     private fun createGitterApi(): GitterApi {
@@ -66,11 +70,5 @@ enum class DependencyManager {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(GitterStreamApi::class.java)
-    }
-
-    private fun needInit(): Boolean {
-        return dataManager == null || clientDatabase == null ||
-                userPrefs == null || networkService == null ||
-                executorService == null
     }
 }
