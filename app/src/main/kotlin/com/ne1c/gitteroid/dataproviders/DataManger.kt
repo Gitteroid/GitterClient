@@ -46,12 +46,12 @@ open class DataManger(private val mApi: GitterApi,
 
     fun leaveFromRoom(roomId: String): Observable<Boolean> {
         return mApi.leaveRoom(bearer, roomId, getUser().id)
+                .flatMap { if (!it.success) throw Throwable() else return@flatMap Observable.just(true) }
                 .map({
                     mCachedMessages.remove(roomId)
                     mClientDatabase.removeRoom(roomId)
                     return@map it
                 })
-                .map({ it.success })
     }
 
     fun getProfile(): Observable<UserModel> {
@@ -226,7 +226,7 @@ open class DataManger(private val mApi: GitterApi,
         get() = "Bearer " + mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "")
 
     fun isAuthorize(): Boolean {
-          return !mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "").isEmpty()
+        return !mUserPreferences.getString(ACCESS_TOKEN_PREF_KEY, "").isEmpty()
     }
 
     fun cleatProfile() {
