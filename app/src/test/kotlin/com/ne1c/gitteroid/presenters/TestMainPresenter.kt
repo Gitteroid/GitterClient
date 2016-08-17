@@ -6,16 +6,19 @@ import com.ne1c.gitteroid.api.GitterApi
 import com.ne1c.gitteroid.api.responses.StatusResponse
 import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.NetworkService
+import com.ne1c.gitteroid.models.data.RoomModel
 import com.ne1c.gitteroid.models.data.UserModel
 import com.ne1c.gitteroid.ui.views.MainView
+import com.nhaarman.mockito_kotlin.capture
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito
+import org.mockito.Mockito.*
 import org.mockito.runners.MockitoJUnitRunner
 import rx.Observable
+import java.util.*
 
 @RunWith(MockitoJUnitRunner::class)
 class TestMainPresenter {
@@ -34,7 +37,7 @@ class TestMainPresenter {
 
     @Before
     fun setup() {
-        dataManager = Mockito.spy(DataManger(gitterApi!!, prefs))
+        dataManager = spy(DataManger(gitterApi!!, prefs))
         presenter = MainPresenter(TestExecutorService(), dataManager!!, networkService!!)
         presenter?.bindView(view)
     }
@@ -43,84 +46,109 @@ class TestMainPresenter {
     fun loadProfile_withNetwork_success() {
         val userModel = UserModel()
 
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
-        Mockito.`when`(gitterApi?.getCurrentUser(Mockito.anyString())).thenReturn(Observable.just(arrayListOf(userModel)))
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUser(anyString())).thenReturn(Observable.just(arrayListOf(userModel)))
 
         presenter?.loadProfile()
 
-        Mockito.verify(view)?.showProfile(userModel)
-        Mockito.verify(view, Mockito.never())?.showError(Mockito.anyInt())
+        verify(view)?.showProfile(userModel)
+        verify(view, never())?.showError(anyInt())
     }
 
     @Test
     fun loadProfile_withNetwork_failed() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
-        Mockito.`when`(gitterApi?.getCurrentUser(Mockito.anyString())).thenReturn(Observable.error(Throwable()))
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUser(anyString())).thenReturn(Observable.error(Throwable()))
 
         presenter?.loadProfile()
 
-        Mockito.verify(view)?.showProfile(UserModel())
-        Mockito.verify(view, Mockito.never())?.showError(Mockito.anyInt())
+        verify(view)?.showProfile(UserModel())
+        verify(view, never())?.showError(anyInt())
     }
 
     @Test
     fun loadProfile_noNetwork_success() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(false)
+        `when`(networkService?.isConnected()).thenReturn(false)
     }
 
     @Test
     fun loadProfile_noNetwork_failed() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(false)
-        Mockito.`when`(gitterApi?.getCurrentUser(Mockito.anyString())).thenReturn(Observable.error(Throwable()))
+        `when`(networkService?.isConnected()).thenReturn(false)
+        `when`(gitterApi?.getCurrentUser(anyString())).thenReturn(Observable.error(Throwable()))
 
         presenter?.loadProfile()
 
-        Mockito.verify(view, Mockito.never())?.showProfile(createUserProfile())
-        Mockito.verify(view)?.showError(Mockito.anyInt())
+        verify(view, never())?.showProfile(createUserProfile())
+        verify(view)?.showError(anyInt())
     }
 
     @Test
     fun leaveFromRoom_noNetwork_failed() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(false)
+        `when`(networkService?.isConnected()).thenReturn(false)
 
         presenter?.leaveFromRoom("room_id")
 
-        Mockito.verify(view, Mockito.never())?.leavedFromRoom()
-        Mockito.verify(view)?.showError(Mockito.anyInt())
+        verify(view, never())?.leavedFromRoom()
+        verify(view)?.showError(anyInt())
     }
 
     @Test
     fun leaveFromRoom_withNetwork_failed() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
+        `when`(networkService?.isConnected()).thenReturn(true)
 
         val response = StatusResponse()
         response.success = false
 
-        Mockito.`when`(gitterApi?.leaveRoom(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+        `when`(gitterApi?.leaveRoom(anyString(), anyString(), anyString()))
                 .thenReturn(Observable.just(response))
-        Mockito.`when`(dataManager?.leaveFromRoom("room_id")).thenReturn(Observable.just(true))
+        `when`(dataManager?.leaveFromRoom("room_id")).thenReturn(Observable.just(true))
 
         presenter?.leaveFromRoom("room_id")
 
-        Mockito.verify(view, Mockito.never())?.leavedFromRoom()
-        Mockito.verify(view)?.showError(Mockito.anyInt())
+        verify(view, never())?.leavedFromRoom()
+        verify(view)?.showError(anyInt())
     }
 
     @Test
     fun leaveFromRoom_withNetwork_success() {
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
+        `when`(networkService?.isConnected()).thenReturn(true)
 
         val roomId = "room_id"
         val response = StatusResponse()
         response.success = true
 
-        Mockito.`when`(gitterApi?.leaveRoom(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+        `when`(gitterApi?.leaveRoom(anyString(), anyString(), anyString()))
                 .thenReturn(Observable.just(response))
 
         presenter?.leaveFromRoom(roomId)
 
-        Mockito.verify(view)?.leavedFromRoom()
-        Mockito.verify(view, Mockito.never())?.showError(Mockito.anyInt())
+        verify(view)?.leavedFromRoom()
+        verify(view, never())?.showError(anyInt())
+    }
+
+    @Test
+    fun loadRooms_withNetwork_fresh_success_with_5_unreadRooms() {
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUserRooms(anyString())).thenReturn(Observable.just(generateRooms(unreadCountRooms = 5)))
+
+        presenter?.loadRooms(true)
+
+        verify(view)?.showRooms(capture {
+            assert(it.size == 5)
+            for (room in it) {
+                assert(room.unreadItems > 0)
+            }
+        })
+
+        verify(view)?.saveAllRooms(capture {
+            assert(it.size == 5)
+            for (room in it) {
+                assert(room.unreadItems > 0)
+            }
+        })
+
+        verify(view, never())?.errorLoadRooms()
+        verify(view, never())?.showError(anyInt())
     }
 
     @After
@@ -133,5 +161,25 @@ class TestMainPresenter {
         val user = UserModel(id = "test_id", username = "Ne1c")
 
         return user
+    }
+
+    private fun generateRooms(countRooms: Int = 10, unreadCountRooms: Int = 0): ArrayList<RoomModel> {
+        val rooms = ArrayList<RoomModel>(countRooms)
+
+        // Generate rooms with unread messages
+        for (i: Int in 1..unreadCountRooms) {
+            val room = RoomModel()
+            room.unreadItems = (Math.random() + 1).toInt()
+
+            rooms.add(room)
+        }
+
+        // Generate default rooms
+        for (i: Int in 1..(countRooms - unreadCountRooms)) {
+            val room = RoomModel()
+            rooms.add(room)
+        }
+
+        return rooms
     }
 }

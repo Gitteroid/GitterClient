@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito
+import org.mockito.Mockito.*
 import org.mockito.runners.MockitoJUnitRunner
 import rx.Observable
 
@@ -49,13 +49,13 @@ class TestLoginPresenter {
                 .commit()
 
         loginPresenter?.bindView(view)
-        Mockito.verify(view)?.successAuth()
+        verify(view)?.successAuth()
     }
 
     @Test
     fun bindView_noAuth() {
         loginPresenter?.bindView(view)
-        Mockito.verify(view, Mockito.never())?.successAuth()
+        verify(view, never())?.successAuth()
     }
 
     @Test
@@ -63,29 +63,29 @@ class TestLoginPresenter {
         loginPresenter?.bindView(view)
         loginPresenter?.loadAccessToken(CODE)
 
-        Mockito.verify(view)?.errorAuth(R.string.no_network)
+        verify(view)?.errorAuth(R.string.no_network)
     }
 
     @Test
     fun loadAccessToken_withNetwork_success() {
         loginPresenter?.bindView(view)
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
+        `when`(networkService?.isConnected()).thenReturn(true)
 
         val response = AuthResponseModel()
         response.access_token = "access_token"
         response.expires_in = "expires_in"
         response.token_type = "token_type"
 
-        Mockito.`when`(gitterApi?.authorization(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+        `when`(gitterApi?.authorization(anyString(), anyString(),
+                anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Observable.just(response))
 
         loginPresenter?.loadAccessToken(CODE)
 
-        Mockito.verify(view)?.showProgress()
-        Mockito.verify(view)?.hideProgress()
-        Mockito.verify(view)?.successAuth()
-        Mockito.verify(view, Mockito.never())?.errorAuth(Mockito.anyInt())
+        verify(view)?.showProgress()
+        verify(view)?.hideProgress()
+        verify(view)?.successAuth()
+        verify(view, never())?.errorAuth(anyInt())
 
         Assert.assertEquals(prefs.getString(DataManger.ACCESS_TOKEN_PREF_KEY, ""), "access_token")
         Assert.assertEquals(prefs.getString(DataManger.EXPIRES_IN_PREF_KEY, ""), "expires_in")
@@ -96,16 +96,16 @@ class TestLoginPresenter {
     fun loadAccessToken_withNetwork_fail() {
         loginPresenter?.bindView(view)
 
-        Mockito.`when`(networkService?.isConnected()).thenReturn(true)
-        Mockito.`when`(gitterApi?.authorization(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.authorization(anyString(), anyString(),
+                anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Observable.error(Throwable()))
 
         loginPresenter?.loadAccessToken(CODE)
 
-        Mockito.verify(view)?.showProgress()
-        Mockito.verify(view)?.hideProgress()
-        Mockito.verify(view)?.errorAuth(Mockito.anyInt())
+        verify(view)?.showProgress()
+        verify(view)?.hideProgress()
+        verify(view)?.errorAuth(anyInt())
     }
 
     @After
