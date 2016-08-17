@@ -426,7 +426,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         if (mRoomTabs?.tabCount!! > 1) {
             val nowPos = mRoomTabs?.selectedTabPosition
             mRoomsInTabs.removeAt(nowPos!!)
-            mRoomsViewPager?.adapter?.notifyDataSetChanged()
+            (mRoomsViewPager?.adapter as RoomsPagerAdapter).notifyDataSetChanged()
         } else if (mRoomTabs?.tabCount == 0) {
             Toast.makeText(this, R.string.nothing_to_close, Toast.LENGTH_SHORT).show()
         } else if (mRoomTabs?.tabCount == 1) {

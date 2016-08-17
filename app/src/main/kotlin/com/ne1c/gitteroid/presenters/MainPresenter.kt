@@ -75,7 +75,7 @@ class MainPresenter : BasePresenter<MainView> {
                 .subscribeOn(executor.getSubscribeOn())
                 .observeOn(executor.getObserveOn())
                 .map({ roomModels ->
-                    val rooms = ArrayList<RoomViewModel>(RoomMapper.mapToView(roomModels))
+                    val rooms = ArrayList<RoomViewModel>()
 
                     // Add rooms with unread messages
                     for (model in roomModels) {
