@@ -86,18 +86,18 @@ class MainPresenter : BasePresenter<MainView> {
 
                     // Collect minimum 4 rooms with no oneToOne rooms
                     if (rooms.size < 4) {
-                        for (model in rooms) {
+                        for (model in roomModels) {
                             if (model.unreadItems <= 0 && !model.oneToOne && rooms.size < 4) {
-                                rooms.add(model)
+                                rooms.add(RoomMapper.mapToView(model))
                             }
                         }
                     }
 
                     // Collect minimum any rooms
                     if (rooms.size < 4) {
-                        for (model in rooms) {
+                        for (model in roomModels) {
                             if (model.unreadItems <= 0 && model.oneToOne && rooms.size < 4) {
-                                rooms.add(model)
+                                rooms.add(RoomMapper.mapToView(model))
                             }
                         }
                     }

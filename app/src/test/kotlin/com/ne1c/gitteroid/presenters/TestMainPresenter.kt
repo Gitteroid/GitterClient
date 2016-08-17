@@ -151,6 +151,31 @@ class TestMainPresenter {
         verify(view, never())?.showError(anyInt())
     }
 
+    @Test
+    fun loadRooms_withNetwork_fresh_success_with_noUnreadRooms() {
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUserRooms(anyString())).thenReturn(Observable.just(generateRooms()))
+
+        presenter?.loadRooms(true)
+
+        verify(view)?.showRooms(capture {
+            assert(it.size == 4)
+            for (room in it) {
+                assert(room.unreadItems == 0)
+            }
+        })
+
+        verify(view)?.saveAllRooms(capture {
+            assert(it.size == 4)
+            for (room in it) {
+                assert(room.unreadItems == 0)
+            }
+        })
+
+        verify(view, never())?.errorLoadRooms()
+        verify(view, never())?.showError(anyInt())
+    }
+
     @After
     fun end() {
         prefs.edit().clear().commit()
