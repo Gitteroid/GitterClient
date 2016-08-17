@@ -4,12 +4,10 @@ import android.content.SharedPreferences
 import com.ne1c.gitteroid.api.GitterApi
 import com.ne1c.gitteroid.api.responses.JoinRoomResponse
 import com.ne1c.gitteroid.models.data.*
-import com.ne1c.gitteroid.models.view.RoomViewModel
 import rx.Observable
 import java.util.*
 
 open class DataManger(private val mApi: GitterApi,
-                      private val mClientDatabase: ClientDatabase,
                       private val mUserPreferences: SharedPreferences) {
 
     companion object {
@@ -36,9 +34,13 @@ open class DataManger(private val mApi: GitterApi,
     private var mCurrentUser: UserModel? = null
 
     fun getRooms(fresh: Boolean): Observable<ArrayList<RoomModel>> {
-        if (fresh) {
+        if (fresh || mCachedRooms.size == 0) {
             return mApi.getCurrentUserRooms(bearer)
-                    .onErrorResumeNext(mClientDatabase.rooms)
+                    .map {
+                        mCachedRooms.clear()
+                        mCachedRooms.addAll(it)
+                        return@map it
+                    }
         } else {
             return Observable.just(mCachedRooms)
         }
@@ -49,7 +51,6 @@ open class DataManger(private val mApi: GitterApi,
                 .flatMap { if (!it.success) throw Throwable() else return@flatMap Observable.just(true) }
                 .map({
                     mCachedMessages.remove(roomId)
-                    mClientDatabase.removeRoom(roomId)
                     return@map it
                 })
     }
@@ -71,7 +72,7 @@ open class DataManger(private val mApi: GitterApi,
     }
 
     fun getMessages(roomId: String, limit: Int, fresh: Boolean): Observable<ArrayList<MessageModel>> {
-        if (fresh) {
+        //if (fresh) {
             return mApi.getMessagesRoom(bearer, roomId, limit)
                     .map({ messageModels ->
                         mCachedMessages.put(roomId, messageModels)
@@ -79,13 +80,13 @@ open class DataManger(private val mApi: GitterApi,
 
                         return@map messageModels
                     })
-        } else {
-            if (mCachedMessages[roomId] == null) {
-                return mClientDatabase.getMessages(roomId)
-            } else {
-                return Observable.just(mCachedMessages[roomId])
-            }
-        }
+        //} //else {
+//            if (mCachedMessages[roomId] == null) {
+//                return mClientDatabase.getMessages(roomId)
+//            } else {
+//                return Observable.just(mCachedMessages[roomId])
+//            }
+        //}
     }
 
     fun getMessagesBeforeId(roomId: String, limit: Int, beforeId: String): Observable<ArrayList<MessageModel>> {
@@ -93,17 +94,17 @@ open class DataManger(private val mApi: GitterApi,
     }
 
     fun addSingleMessage(roomId: String, model: MessageModel) {
-        mClientDatabase.addSingleMessage(roomId, model)
+        //mClientDatabase.addSingleMessage(roomId, model)
     }
 
     fun updateLastMessagesInDb(roomId: String, messages: ArrayList<MessageModel>) {
         // Save last 10 messages
-        if (messages.size > 10) {
-            mClientDatabase.updateMessages(roomId,
-                    messages.subList(messages.size - 11, messages.size) as ArrayList<MessageModel>)
-        } else {
-            mClientDatabase.updateMessages(roomId, messages)
-        }
+//        if (messages.size > 10) {
+//            mClientDatabase.updateMessages(roomId,
+//                    messages.subList(messages.size - 11, messages.size) as ArrayList<MessageModel>)
+//        } else {
+//            mClientDatabase.updateMessages(roomId, messages)
+//        }
     }
 
     private fun sortByTypes(rooms: ArrayList<RoomModel>): ArrayList<RoomModel> {
@@ -130,27 +131,10 @@ open class DataManger(private val mApi: GitterApi,
 
     fun updateMessage(roomId: String, messageId: String, text: String): Observable<MessageModel> {
         return mApi.updateMessage(bearer, roomId, messageId, text)
-                .map({ model ->
-                    mClientDatabase.updateSpecificMessage(roomId, model)
-                    model
-                })
     }
 
     fun updateRooms(rooms: ArrayList<RoomModel>) {
         //mClientDatabase.updateRooms(getSynchronizedRooms(rooms, mCachedRooms))
-    }
-
-    fun updateRooms(rooms: ArrayList<RoomViewModel>, wasEdit: Boolean) {
-        for (cachedRoom in mCachedRooms) {
-            for (viewRoom in rooms) {
-                if (cachedRoom.id == viewRoom.id) {
-                    cachedRoom.hide = viewRoom.hide
-                    cachedRoom.listPosition = viewRoom.listPosition
-                }
-            }
-        }
-
-        mClientDatabase.updateRooms(mCachedRooms)
     }
 
     fun readMessages(roomId: String, ids: Array<String>): Observable<Boolean> {
@@ -191,10 +175,6 @@ open class DataManger(private val mApi: GitterApi,
 
     fun joinToRoom(roomUri: String): Observable<JoinRoomResponse> {
         return mApi.joinRoom(bearer, roomUri)
-                .map({ joinRoomResponse ->
-                    mClientDatabase.addSingleRoom(joinRoomResponse)
-                    joinRoomResponse
-                })
     }
 
     fun getUser(): UserModel {

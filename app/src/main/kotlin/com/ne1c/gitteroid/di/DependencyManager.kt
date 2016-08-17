@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import com.ne1c.gitteroid.api.GitterApi
 import com.ne1c.gitteroid.api.GitterStreamApi
 import com.ne1c.gitteroid.api.GitterStreamer
-import com.ne1c.gitteroid.dataproviders.ClientDatabase
 import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.ExecutorService
 import com.ne1c.gitteroid.di.base.NetworkService
@@ -21,8 +20,6 @@ enum class DependencyManager {
 
     lateinit var dataManager: DataManger
         private set
-    lateinit var clientDatabase: ClientDatabase
-        private set
     lateinit var userPrefs: SharedPreferences
         private set
     lateinit var networkService: NetworkService
@@ -34,10 +31,9 @@ enum class DependencyManager {
 
     fun init(context: Context) {
         userPrefs = context.getSharedPreferences(DataManger.USERINFO_PREF, Context.MODE_PRIVATE)
-        clientDatabase = ClientDatabase(context)
         networkService = AndroidNetworkService(context)
         executorService = RxExecutorService()
-        dataManager = DataManger(createGitterApi(), clientDatabase, userPrefs)
+        dataManager = DataManger(createGitterApi(), userPrefs)
         gitterStreamer = GitterStreamer(createGitterStreamApi(), dataManager.bearer)
     }
 

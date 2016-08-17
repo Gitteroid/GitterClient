@@ -13,7 +13,7 @@ import java.util.*
 
 class MainPresenter : BasePresenter<MainView> {
     companion object {
-        val TAG = MainPresenter::class.java.simpleName
+        val TAG: String = MainPresenter::class.java.simpleName
     }
 
     private val executor: ExecutorService
@@ -21,8 +21,6 @@ class MainPresenter : BasePresenter<MainView> {
     private val networkService: NetworkService
 
     private var subscriptions = CompositeSubscription()
-
-    private val cachedAllRooms = ArrayList<RoomViewModel>()
 
     constructor(executor: ExecutorService, dataManger: DataManger,
                 networkService: NetworkService) : super() {
@@ -65,30 +63,30 @@ class MainPresenter : BasePresenter<MainView> {
     }
 
     fun loadRooms() {
+        loadRooms(false)
+    }
+
+    fun loadRooms(fresh: Boolean) {
         if (!networkService.isConnected()) {
             mView?.showError(R.string.no_network)
         }
 
-        @SuppressWarnings("unchecked")
-        val sub = dataManager.getRooms(networkService.isConnected())
+        val sub = dataManager.getRooms(fresh)
                 .subscribeOn(executor.getSubscribeOn())
                 .observeOn(executor.getObserveOn())
                 .map({ roomModels ->
-                    cachedAllRooms.clear()
-                    cachedAllRooms.addAll(RoomMapper.mapToView(roomModels))
-
-                    val rooms = ArrayList<RoomViewModel>()
+                    val rooms = ArrayList<RoomViewModel>(RoomMapper.mapToView(roomModels))
 
                     // Add rooms with unread messages
-                    for (model in cachedAllRooms) {
+                    for (model in roomModels) {
                         if (model.unreadItems > 0) {
-                            rooms.add(model)
+                            rooms.add(RoomMapper.mapToView(model))
                         }
                     }
 
                     // Collect minimum 4 rooms with no oneToOne rooms
                     if (rooms.size < 4) {
-                        for (model in cachedAllRooms) {
+                        for (model in rooms) {
                             if (model.unreadItems <= 0 && !model.oneToOne && rooms.size < 4) {
                                 rooms.add(model)
                             }
@@ -97,17 +95,17 @@ class MainPresenter : BasePresenter<MainView> {
 
                     // Collect minimum any rooms
                     if (rooms.size < 4) {
-                        for (model in cachedAllRooms) {
+                        for (model in rooms) {
                             if (model.unreadItems <= 0 && model.oneToOne && rooms.size < 4) {
                                 rooms.add(model)
                             }
                         }
                     }
 
-                    rooms
+                    return@map rooms
                 }).subscribe({
             mView?.showRooms(it)
-            mView?.saveAllRooms(cachedAllRooms)
+            mView?.saveAllRooms(it)
         }, {
             mView?.showError(R.string.error_load_rooms)
             mView?.errorLoadRooms()

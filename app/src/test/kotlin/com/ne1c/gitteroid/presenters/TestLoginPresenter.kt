@@ -4,7 +4,6 @@ import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.TestExecutorService
 import com.ne1c.gitteroid.TestSharedPreferences
 import com.ne1c.gitteroid.api.GitterApi
-import com.ne1c.gitteroid.dataproviders.ClientDatabase
 import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.NetworkService
 import com.ne1c.gitteroid.models.data.AuthResponseModel
@@ -38,8 +37,7 @@ class TestLoginPresenter {
 
     @Before
     fun setup() {
-        dataManager = DataManger(gitterApi!!,
-                Mockito.mock(ClientDatabase::class.java), prefs)
+        dataManager = DataManger(gitterApi!!, prefs)
 
         loginPresenter = LoginPresenter(TestExecutorService(), dataManager!!, networkService!!)
     }
@@ -50,19 +48,19 @@ class TestLoginPresenter {
                 .putString(DataManger.ACCESS_TOKEN_PREF_KEY, "token")
                 .commit()
 
-        loginPresenter!!.bindView(view!!)
+        loginPresenter?.bindView(view)
         Mockito.verify(view)?.successAuth()
     }
 
     @Test
     fun bindView_noAuth() {
-        loginPresenter!!.bindView(view!!)
+        loginPresenter?.bindView(view)
         Mockito.verify(view, Mockito.never())?.successAuth()
     }
 
     @Test
     fun loadAccessToken_withoutNetwork() {
-        loginPresenter!!.bindView(view!!)
+        loginPresenter?.bindView(view)
         loginPresenter?.loadAccessToken(CODE)
 
         Mockito.verify(view)?.errorAuth(R.string.no_network)
@@ -70,7 +68,7 @@ class TestLoginPresenter {
 
     @Test
     fun loadAccessToken_withNetwork_success() {
-        loginPresenter!!.bindView(view!!)
+        loginPresenter?.bindView(view)
         Mockito.`when`(networkService?.isConnected()).thenReturn(true)
 
         val response = AuthResponseModel()
@@ -82,7 +80,7 @@ class TestLoginPresenter {
                 Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(Observable.just(response))
 
-        loginPresenter!!.loadAccessToken(CODE)
+        loginPresenter?.loadAccessToken(CODE)
 
         Mockito.verify(view)?.showProgress()
         Mockito.verify(view)?.hideProgress()
@@ -96,7 +94,7 @@ class TestLoginPresenter {
 
     @Test
     fun loadAccessToken_withNetwork_fail() {
-        loginPresenter!!.bindView(view!!)
+        loginPresenter?.bindView(view)
 
         Mockito.`when`(networkService?.isConnected()).thenReturn(true)
         Mockito.`when`(gitterApi?.authorization(Mockito.anyString(), Mockito.anyString(),
@@ -112,9 +110,8 @@ class TestLoginPresenter {
 
     @After
     fun end() {
-        prefs.edit()
-                .clear()
-                .commit()
+        prefs.edit().clear().commit()
+        
         loginPresenter?.unbindView()
     }
 }

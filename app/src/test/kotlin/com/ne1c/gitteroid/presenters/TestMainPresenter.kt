@@ -4,7 +4,6 @@ import com.ne1c.gitteroid.TestExecutorService
 import com.ne1c.gitteroid.TestSharedPreferences
 import com.ne1c.gitteroid.api.GitterApi
 import com.ne1c.gitteroid.api.responses.StatusResponse
-import com.ne1c.gitteroid.dataproviders.ClientDatabase
 import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.NetworkService
 import com.ne1c.gitteroid.models.data.UserModel
@@ -29,16 +28,13 @@ class TestMainPresenter {
     @Mock
     var networkService: NetworkService? = null
 
-    @Mock
-    var database: ClientDatabase? = null
-
     private var presenter: MainPresenter? = null
     private var dataManager: DataManger? = null
     private var prefs = TestSharedPreferences()
 
     @Before
     fun setup() {
-        dataManager = Mockito.spy(DataManger(gitterApi!!, database!!, prefs))
+        dataManager = Mockito.spy(DataManger(gitterApi!!, prefs))
         presenter = MainPresenter(TestExecutorService(), dataManager!!, networkService!!)
         presenter?.bindView(view)
     }
@@ -120,7 +116,6 @@ class TestMainPresenter {
 
         Mockito.`when`(gitterApi?.leaveRoom(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(Observable.just(response))
-        Mockito.`when`(dataManager?.leaveFromRoom(roomId)).thenReturn(Observable.just(true))
 
         presenter?.leaveFromRoom(roomId)
 
