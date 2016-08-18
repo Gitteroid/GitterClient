@@ -69,7 +69,7 @@ class NotificationService : Service() {
         mWithUserName = prefs.getBoolean("notif_username", false)
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         loadFlagsFromPrefs()
 
         return Service.START_STICKY
