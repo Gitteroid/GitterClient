@@ -138,7 +138,7 @@ open class DataManger(private val mApi: GitterApi,
     }
 
     fun readMessages(roomId: String, ids: Array<String>): Observable<Boolean> {
-        return mApi.readMessages(bearer, getUser().id, roomId, ids)
+        return mApi.readMessages(bearer, mCurrentUser!!.id, roomId, ids)
                 .map({ it.success })
                 .map({ response ->
                     if (response) {

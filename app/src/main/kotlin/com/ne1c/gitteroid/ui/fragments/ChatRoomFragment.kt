@@ -122,7 +122,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
         v.findViewById(R.id.markdown_button).setOnClickListener { v1 ->
             val dialog = DialogMarkdownFragment()
-            dialog.setTargetFragment(this@ChatRoomFragment, DialogMarkdownFragment.REQUEST_CODE)
+            dialog.setTargetFragment(this, DialogMarkdownFragment.REQUEST_CODE)
             dialog.show(fragmentManager, "MARKDOWN_DIALOG")
         }
 
@@ -131,7 +131,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
             val joinRoomButton = v.findViewById(R.id.join_room_button) as Button
             joinRoomButton.visibility = View.VISIBLE
-            joinRoomButton.setOnClickListener { v1 -> mPresenter!!.joinToRoom(mOverviewRoom!!.name) }
+            joinRoomButton.setOnClickListener { v1 -> mPresenter.joinToRoom(mOverviewRoom!!.name) }
         }
     }
 
@@ -150,20 +150,21 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     override fun onResume() {
         super.onResume()
 
-        mPresenter!!.bindView(this)
+        mPresenter.bindView(this)
 
         if (messagesIsNotLoaded()) {
             loadRoom()
         }
 
-        LocalBroadcastManager.getInstance(activity).registerReceiver(mNewMessageReceiver, IntentFilter(MainActivity.BROADCAST_NEW_MESSAGE))
+        LocalBroadcastManager.getInstance(activity)
+                .registerReceiver(mNewMessageReceiver, IntentFilter(MainActivity.BROADCAST_NEW_MESSAGE))
     }
 
     override fun onPause() {
         super.onPause()
 
         LocalBroadcastManager.getInstance(activity).unregisterReceiver(mNewMessageReceiver)
-        mPresenter!!.unbindView()
+        mPresenter.unbindView()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -296,13 +297,15 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
             if (newState == RecyclerView.SCROLL_STATE_DRAGGING && mNewMessagePopupTextView!!.visibility == View.VISIBLE) {
                 hideNewMessagePopup()
             }
+
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                markMessagesAsRead()
+            }
         }
     }
 
     private fun showFab(newScrollState: Int) {
         if (newScrollState == RecyclerView.SCROLL_STATE_IDLE) {
-            markMessagesAsRead()
-
             val firstVisible = mListLayoutManager!!.findFirstVisibleItemPosition()
             if (firstVisible >= 10) {
                 mFabToBottom!!.show()
@@ -321,7 +324,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
                     mIsLoadBeforeIdMessages = true
 
                     showTopProgressBar()
-                    mPresenter!!.loadMessagesBeforeId(mRoom!!.id, 10, mMessagesArr[lastMessage].id)
+                    mPresenter.loadMessagesBeforeId(mRoom!!.id, 10, mMessagesArr[lastMessage].id)
                 }
             } else {
                 hideTopProgressBar()
@@ -332,7 +335,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
     private fun sendMessage() {
         if (!mMessageEditText!!.text.toString().isEmpty()) {
             if (DependencyManager.INSTANCE.networkService?.isConnected()!!) {
-                val model = mPresenter!!.createSendMessage(mMessageEditText!!.text.toString())
+                val model = mPresenter.createSendMessage(mMessageEditText!!.text.toString())
 
                 mMessagesArr.add(0, model)
                 mMessagesAdapter!!.notifyItemInserted(0)
@@ -342,7 +345,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
                     mMessagesList!!.smoothScrollToPosition(0)
                 }
 
-                mPresenter!!.sendMessage(mRoom!!.id, model.text)
+                mPresenter.sendMessage(mRoom!!.id, model.text)
                 mMessageEditText!!.setText("")
             } else {
                 Toast.makeText(activity, R.string.no_network, Toast.LENGTH_SHORT).show()
@@ -362,7 +365,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         val first = mListLayoutManager!!.findFirstVisibleItemPosition()
         val last = mListLayoutManager!!.findLastVisibleItemPosition()
 
-        if (DependencyManager.INSTANCE.networkService?.isConnected()!!) {
+        if (DependencyManager.INSTANCE.networkService.isConnected()) {
             val listUnreadIds = ArrayList<String>()
             if (first > -1 && last > -1) {
                 for (i in first..last) {
@@ -373,18 +376,14 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
             }
 
             if (listUnreadIds.size > 0) {
-                listUnreadIds.add("") // If listUnreadIds have one item
-
-                val roomId = mRoom!!.id
-
-                mPresenter!!.markMessageAsRead(first, last, roomId,
+                mPresenter.markMessageAsRead(first, last, mRoom!!.id,
                         listUnreadIds.toTypedArray())
             }
         }
     }
 
     private fun loadMessageRoomServer() {
-        mPresenter!!.loadMessages(mRoom!!.id, mStartNumberLoadMessages + mCountLoadMessages)
+        mPresenter.loadMessages(mRoom!!.id, mStartNumberLoadMessages + mCountLoadMessages)
     }
 
     private fun loadMessages(model: RoomViewModel) {
@@ -399,7 +398,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         mIsRefreshing = false
         mIsLoadBeforeIdMessages = false
 
-        mPresenter!!.loadMessages(model.id, mStartNumberLoadMessages)
+        mPresenter.loadMessages(model.id, mStartNumberLoadMessages)
     }
 
     private val mNewMessageReceiver = object : BroadcastReceiver() {
@@ -463,7 +462,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         val newMessage = message.messageModel
 
         if (newMessage != null) {
-            mPresenter!!.updateMessages(mRoom!!.id, newMessage.id, newMessage.text)
+            mPresenter.updateMessages(mRoom!!.id, newMessage.id, newMessage.text)
         }
     }
 
