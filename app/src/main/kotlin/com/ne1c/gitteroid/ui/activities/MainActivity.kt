@@ -401,6 +401,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
             R.id.action_refresh ->
                 if (selectedRoom != null) {
                     EventBus.getDefault().post(RefreshMessagesRoomEvent(selectedRoom!!))
+                } else if (selectedRoom == null && mRoomsInDrawer.size == 0) {
+                    mPresenter.loadRooms()
                 }
             R.id.action_leave -> {
                 if (selectedRoom != null) {
