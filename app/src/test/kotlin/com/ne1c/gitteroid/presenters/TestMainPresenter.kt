@@ -176,6 +176,31 @@ class TestMainPresenter {
         verify(view, never())?.showError(anyInt())
     }
 
+    @Test
+    fun loadRooms_withNetwork_fresh_success_with_oneToOneRooms() {
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUserRooms(anyString())).thenReturn(Observable.just(generateOneToOneRooms()))
+
+        presenter?.loadRooms(true)
+
+        verify(view)?.showRooms(capture {
+            assert(it.size == 4)
+            for (room in it) {
+                assert(room.oneToOne == true)
+            }
+        })
+
+        verify(view)?.saveAllRooms(capture {
+            assert(it.size == 4)
+            for (room in it) {
+                assert(room.oneToOne == true)
+            }
+        })
+
+        verify(view, never())?.errorLoadRooms()
+        verify(view, never())?.showError(anyInt())
+    }
+
     @After
     fun end() {
         prefs.edit().clear().commit()
@@ -203,6 +228,18 @@ class TestMainPresenter {
         for (i: Int in 1..(countRooms - unreadCountRooms)) {
             val room = RoomModel()
             rooms.add(room)
+        }
+
+        return rooms
+    }
+
+    private fun generateOneToOneRooms(oneToOne: Boolean = true,
+                                      countRooms: Int = 10,
+                                      countOneToOneRooms: Int = 10): ArrayList<RoomModel> {
+        val rooms = generateRooms(countRooms = countRooms)
+
+        for (i: Int in 0..countOneToOneRooms - 1) {
+            rooms[i].oneToOne = oneToOne
         }
 
         return rooms
