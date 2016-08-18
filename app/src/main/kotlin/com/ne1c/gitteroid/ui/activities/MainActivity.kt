@@ -155,19 +155,15 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
             addRoomsToDrawer(roomsList, true)
 
-            for (i in mRoomsInTabs.indices) {
-                mRoomTabs?.addTab(mRoomTabs?.newTab()!!.setText(mRoomsInTabs[i].name), i)
-            }
-
             val pagerAdapterState = savedInstanceState.getParcelable<Parcelable>(ROOMS_PAGER_STATE_BUNDLE)
             mRoomsViewPager?.adapter?.restoreState(pagerAdapterState, classLoader)
             mRoomsViewPager?.adapter?.notifyDataSetChanged()
 
             mStateWasRestored = true
 
-            selectedRoom = savedInstanceState.getParcelable(SELECTED_ROOM_BUNDLE)
-            if (selectedRoom != null) {
-                val posInDrawer = getPositionRoomInDrawer(selectedRoom!!.name)
+            val lastSelectedRoom = savedInstanceState.getParcelable<RoomViewModel>(SELECTED_ROOM_BUNDLE)
+            if (lastSelectedRoom != null) {
+                val posInDrawer = getPositionRoomInDrawer(lastSelectedRoom.name) + 1
                 mDrawer?.setSelectionAtPosition(posInDrawer, false)
             }
         }
@@ -303,10 +299,9 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 mDrawer?.addItemAtPosition(formatRoomToDrawerItem(room),
                         ROOM_IN_DRAWER_OFFSET_TOP)
             }
+
+            Collections.reverse(mRoomsInDrawer)
         }
-
-        Collections.reverse(mRoomsInDrawer)
-
         mDrawer?.adapter?.notifyDataSetChanged()
     }
 
@@ -707,9 +702,10 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     override fun errorLoadRooms() {
         if (mRoomsList.size == 0) {
-            if (mDrawer!!.drawerItems[1] is ProgressDrawerItem) {
-                (mDrawer!!.drawerItems[1] as ProgressDrawerItem).mode = ProgressDrawerItem.Mode.NO_LOADING_TEXT
-                mDrawer!!.adapter.notifyAdapterItemChanged(1)
+            for (item in mDrawer!!.drawerItems) {
+                if (item is ProgressDrawerItem) {
+                    item.mode = ProgressDrawerItem.Mode.NO_LOADING_TEXT
+                }
             }
         }
 
