@@ -105,7 +105,7 @@ class MainPresenter : BasePresenter<MainView> {
                     return@map rooms
                 }).subscribe({
             mView?.showRooms(it)
-            mView?.saveAllRooms(it)
+            mView?.saveAllRooms(RoomMapper.mapToView(dataManager.getCachedRoomsSync()))
         }, {
             mView?.showError(R.string.error_load_rooms)
             mView?.errorLoadRooms()

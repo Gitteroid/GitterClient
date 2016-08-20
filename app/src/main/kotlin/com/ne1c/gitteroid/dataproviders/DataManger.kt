@@ -217,7 +217,7 @@ open class DataManger(private val mApi: GitterApi,
                 .apply()
     }
 
-    fun copyToClipboard() {
-
+    fun getCachedRoomsSync(): ArrayList<RoomModel> {
+        return mCachedRooms
     }
 }
