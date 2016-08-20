@@ -4,7 +4,7 @@ import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.ExecutorService
 import com.ne1c.gitteroid.models.RoomMapper
 import com.ne1c.gitteroid.models.view.RoomViewModel
-import com.ne1c.gitteroid.ui.views.RoomsListView
+import com.ne1c.gitteroid.ui.views.SearchRoomsView
 import com.ne1c.rainbowmvp.base.BasePresenter
 import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
@@ -12,7 +12,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 class SearchRoomPresenter(private val executor: ExecutorService,
-                          private val dataManager: DataManger) : BasePresenter<RoomsListView>() {
+                          private val dataManager: DataManger) : BasePresenter<SearchRoomsView>() {
     companion object {
         val TAG = SearchRoomPresenter::class.java.simpleName
     }
@@ -24,7 +24,7 @@ class SearchRoomPresenter(private val executor: ExecutorService,
     private var mSubscriptions: CompositeSubscription? = null
     private val mSearchRoomSubject = PublishSubject.create<String>()
 
-    override fun bindView(view: RoomsListView) {
+    override fun bindView(view: SearchRoomsView) {
         super.bindView(view)
         mSubscriptions = CompositeSubscription()
 
