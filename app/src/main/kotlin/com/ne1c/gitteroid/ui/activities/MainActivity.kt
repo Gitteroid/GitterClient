@@ -265,7 +265,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     private fun setItemsDrawer(data: ArrayList<RoomViewModel>) {
         cleanDrawer()
-        addRoomsToDrawer(data, false)
+        addRoomsToDrawer(data)
 
         mDrawer?.setSelectionAtPosition(ROOM_IN_DRAWER_OFFSET_TOP)
     }
@@ -282,7 +282,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         }
     }
 
-    private fun addRoomsToDrawer(roomsList: ArrayList<RoomViewModel>, restore: Boolean) {
+    private fun addRoomsToDrawer(roomsList: ArrayList<RoomViewModel>, restore: Boolean = false) {
         if (mRoomsInDrawer.size == 0) {
             mRoomsInDrawer.addAll(roomsList)
         }
