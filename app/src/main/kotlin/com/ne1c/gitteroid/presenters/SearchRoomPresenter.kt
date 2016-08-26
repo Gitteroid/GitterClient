@@ -14,15 +14,13 @@ import java.util.concurrent.TimeUnit
 class SearchRoomPresenter(private val executor: ExecutorService,
                           private val dataManager: DataManger) : BasePresenter<SearchRoomsView>() {
     companion object {
-        val TAG = SearchRoomPresenter::class.java.simpleName
+        val TAG: String = SearchRoomPresenter::class.java.simpleName
     }
 
-    // All rooms for edit
-    // Set this list to adapter if user will edit
-    private val mAllRooms = ArrayList<RoomViewModel>()
-
     private var mSubscriptions: CompositeSubscription? = null
-    private val mSearchRoomSubject = PublishSubject.create<String>()
+    private val mSearchRoomSubject = PublishSubject.create<QueryModel>()
+
+    private var lastQueryModel: QueryModel? = null
 
     override fun bindView(view: SearchRoomsView) {
         super.bindView(view)
@@ -31,36 +29,17 @@ class SearchRoomPresenter(private val executor: ExecutorService,
         val sub = mSearchRoomSubject
                 .asObservable()
                 .throttleLast(1, TimeUnit.SECONDS)
-                .flatMap({ dataManager.searchRooms(it) })
-                .map({ response ->
-                    // Show without exist in db
-                    val responseRooms = response.result ?: ArrayList()
-                    val filterRooms = ArrayList<RoomViewModel>()
-
-                    var existInDb: Boolean
-
-                    for (responseRoom in responseRooms) {
-                        existInDb = false
-
-                        for (dbRoom in mAllRooms) {
-                            if (responseRoom.id == dbRoom.id) {
-                                existInDb = true
-                                break
-                            }
-                        }
-
-                        if (!existInDb) {
-                            filterRooms.add(RoomMapper.mapToView(responseRoom))
-                        }
-                    }
-
-                    return@map filterRooms
-                })
+                .flatMap { dataManager.searchRooms(it.query, it.offset) }
+                .map { return@map RoomMapper.mapToView(it.result!!) }
                 .subscribeOn(executor.getSubscribeOn())
                 .observeOn(executor.getObserveOn())
                 .subscribe({ response ->
-                    mView?.dismissDialog()
-                    mView?.resultSearch(response)
+                    if (lastQueryModel!!.offset > 0) {
+                        mView.paginationResultSearch(response)
+                    } else {
+                        mView?.dismissDialog()
+                        mView?.resultSearch(response)
+                    }
                 }) { throwable -> mView?.errorSearch() }
 
         mSubscriptions?.add(sub)
@@ -70,16 +49,17 @@ class SearchRoomPresenter(private val executor: ExecutorService,
         mSubscriptions?.unsubscribe()
     }
 
-    val allRooms: List<RoomViewModel>
-        get() = mAllRooms
-
-    fun searchRooms(query: String) {
+    fun searchRooms(query: String, offset: Int = 0) {
         if (!query.isEmpty()) {
-            mView!!.showDialog()
-            mSearchRoomSubject.onNext(query)
+            mView?.showDialog()
+
+            lastQueryModel = QueryModel(query, offset)
+            mSearchRoomSubject.onNext(lastQueryModel)
         } else {
-            mView!!.resultSearch(ArrayList<RoomViewModel>())
-            mView!!.dismissDialog()
+            mView?.resultSearch(ArrayList<RoomViewModel>())
+            mView?.dismissDialog()
         }
     }
+
+    private class QueryModel(val query: String, val offset: Int)
 }

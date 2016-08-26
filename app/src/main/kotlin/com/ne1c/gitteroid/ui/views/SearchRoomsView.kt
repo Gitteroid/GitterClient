@@ -14,4 +14,6 @@ interface SearchRoomsView {
     fun errorSearch()
 
     fun resultSearch(rooms: ArrayList<RoomViewModel>)
+
+    fun paginationResultSearch(rooms: ArrayList<RoomViewModel>)
 }

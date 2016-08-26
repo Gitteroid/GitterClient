@@ -19,7 +19,7 @@ class SearchRoomsAdapter : RecyclerView.Adapter<SearchRoomsAdapter.ViewHolder> {
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ViewHolder {
-        return ViewHolder(LayoutInflater.from(parent?.context).inflate(R.layout.item_room, null, false))
+        return ViewHolder(LayoutInflater.from(parent?.context).inflate(R.layout.item_room, parent, false))
     }
 
     override fun onBindViewHolder(holder: ViewHolder?, position: Int) {

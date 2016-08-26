@@ -159,12 +159,8 @@ open class DataManger(private val mApi: GitterApi,
         return mApi.sendMessage(bearer, roomId, text)
     }
 
-    fun searchRooms(query: String): Observable<SearchRoomsResponse> {
-        return mApi.searchRooms(bearer, query, 30, 0)
-    }
-
-    fun searchRoomsWithOffset(query: String, offset: Int): Observable<SearchRoomsResponse> {
-        return mApi.searchRooms(bearer, query, 10, offset)
+    fun searchRooms(query: String, offset: Int = 0): Observable<SearchRoomsResponse> {
+        return mApi.searchRooms(bearer, query, 30, offset)
     }
 
     fun authorization(client_id: String, client_secret: String, code: String,

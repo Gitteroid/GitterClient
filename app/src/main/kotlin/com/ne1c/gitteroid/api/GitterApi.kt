@@ -8,7 +8,7 @@ import retrofit2.http.*
 import rx.Observable
 import java.util.*
 
-open interface GitterApi {
+interface GitterApi {
     @GET("/v1/rooms")
     fun getCurrentUserRooms(@Header("Authorization") access_token: String): Observable<ArrayList<RoomModel>>
 
@@ -73,5 +73,5 @@ open interface GitterApi {
     fun searchRooms(@Header("Authorization") access_token: String,
                     @Query("q") query: String,
                     @Query("limit") limit: Int,
-                    @Query("offset") offset: Int): Observable<SearchRoomsResponse>  // Offset not working
+                    @Query("skip") offset: Int): Observable<SearchRoomsResponse>  // Offset not working
 }
