@@ -459,7 +459,6 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
         if (name == getString(R.string.home)) {
             loadUrlWithChromeTabs(this, "https://gitter.im/home")
-            //startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://gitter.im/home")))
         } else if (name == getString(R.string.action_settings)) {
             startActivity(Intent(applicationContext, SettingsActivity::class.java))
         } else if (name == getString(R.string.signout)) {
