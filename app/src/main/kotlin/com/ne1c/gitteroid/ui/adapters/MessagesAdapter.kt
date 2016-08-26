@@ -35,6 +35,7 @@ import com.ne1c.gitteroid.ui.SinglelineSpan
 import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment
 import com.ne1c.gitteroid.ui.fragments.EditMessageFragment
 import com.ne1c.gitteroid.ui.fragments.LinksDialogFragment
+import com.ne1c.gitteroid.ui.loadUrlWithChromeTabs
 import com.ne1c.gitteroid.utils.MarkdownUtils
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -626,8 +627,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
             span.setSpan(URLSpan(link), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             span.setSpan(object : ClickableSpan() {
                 override fun onClick(widget: View) {
-                    widget.context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse(link)))
+                    loadUrlWithChromeTabs(mActivity, link)
                 }
             }, 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
