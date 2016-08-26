@@ -651,7 +651,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     private fun showRoomsListDialog() {
         val fragment = PickRoomsDialogFragment()
-        fragment.show(supportFragmentManager, mRoomsList, object : PickRoomsDialogFragment.OnPickedRoom {
+        fragment.show(supportFragmentManager, mRoomsList, object : PickRoomsDialogFragment.OnPickedRoomClickListener {
             override fun result(model: RoomViewModel) {
                 pickRoom(model)
             }

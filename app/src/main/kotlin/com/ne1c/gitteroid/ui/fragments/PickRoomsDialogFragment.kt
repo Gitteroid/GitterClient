@@ -18,55 +18,49 @@ import com.ne1c.gitteroid.models.view.RoomViewModel
 import java.util.*
 
 class PickRoomsDialogFragment : DialogFragment() {
-
-    private var mRooms = ArrayList<RoomViewModel>()
-    private var mOnPickedRoomCallback: OnPickedRoom? = null
+    private var rooms = ArrayList<RoomViewModel>()
+    private var onPickedRoomCallback: OnPickedRoomClickListener? = null
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val v = inflater!!.inflate(R.layout.fragment_pick_rooms_dialog, container, false)
 
         val roomsListView = v.findViewById(R.id.rooms_listView) as ListView
+
         roomsListView.adapter = object : ArrayAdapter<String>(activity, R.layout.item_room) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_room, parent, false)
 
-                (itemView.findViewById(R.id.name_textView) as TextView).text = mRooms[position].name
+                (itemView.findViewById(R.id.name_textView) as TextView).text = rooms[position].name
 
-                Glide.with(activity).load(mRooms[position].getAvatarUrl()).error(R.drawable.ic_room).into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
+                Glide.with(activity).load(rooms[position].getAvatarUrl()).error(R.drawable.ic_room).into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
 
                 return itemView
             }
 
             override fun getCount(): Int {
-                return mRooms.size
+                return rooms.size
             }
         }
 
         roomsListView.setOnItemClickListener { parent, view, position, id ->
-            if (mOnPickedRoomCallback != null) {
-                mOnPickedRoomCallback!!.result(mRooms[position])
-            }
-
+            onPickedRoomCallback?.result(rooms[position])
             dialog.dismiss()
         }
 
-        dialog.window!!.requestFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.requestFeature(Window.FEATURE_NO_TITLE)
 
         return v
     }
 
-    fun show(fm: FragmentManager, list: ArrayList<RoomViewModel>, onPickedRoomCallback: OnPickedRoom) {
+    fun show(fm: FragmentManager, list: ArrayList<RoomViewModel>, callback: OnPickedRoomClickListener) {
         super.show(fm, PickRoomsDialogFragment::class.java.name)
-        mRooms = list
-        mOnPickedRoomCallback = onPickedRoomCallback
+
+        rooms = list
+        this.onPickedRoomCallback = callback
     }
 
-    interface OnPickedRoom {
+    interface OnPickedRoomClickListener {
         fun result(model: RoomViewModel)
-    }
-
-    companion object {
-        val PICKED_ROOM_DIALOG_REQUEST_CODE = 99
     }
 }
