@@ -80,7 +80,6 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     private val mRoomsList = ArrayList<RoomViewModel>()
     private val mRoomsInDrawer = ArrayList<RoomViewModel>() // Rooms that user will see
     private val mRoomsInTabs = ArrayList<RoomViewModel>()
-    private var mStateWasRestored = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -149,17 +148,15 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         if (savedInstanceState != null) {
             cleanDrawer()
 
-            val roomsList = savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_BUNDLE)
+            mRoomsList.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_BUNDLE))
             mRoomsInDrawer.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_DRAWER_BUNDLE))
             mRoomsInTabs.addAll(savedInstanceState.getParcelableArrayList<RoomViewModel>(ROOMS_IN_TABS_BUNDLE))
 
-            addRoomsToDrawer(roomsList, true)
+            addRoomsToDrawer(mRoomsList, true)
 
             val pagerAdapterState = savedInstanceState.getParcelable<Parcelable>(ROOMS_PAGER_STATE_BUNDLE)
             mRoomsViewPager?.adapter?.restoreState(pagerAdapterState, classLoader)
             mRoomsViewPager?.adapter?.notifyDataSetChanged()
-
-            mStateWasRestored = true
 
             val lastSelectedRoom = savedInstanceState.getParcelable<RoomViewModel>(SELECTED_ROOM_BUNDLE)
             if (lastSelectedRoom != null) {
@@ -283,24 +280,20 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     private fun addRoomsToDrawer(roomsList: ArrayList<RoomViewModel>, restore: Boolean = false) {
-        if (mRoomsInDrawer.size == 0) {
-            mRoomsInDrawer.addAll(roomsList)
-        }
-
         if (restore) {
             for (i in mRoomsInDrawer.indices) {
                 mDrawer?.addItemAtPosition(formatRoomToDrawerItem(mRoomsInDrawer[i]),
                         ROOM_IN_DRAWER_OFFSET_TOP)
             }
         } else {
+            mRoomsInDrawer.addAll(roomsList)
+
             for (i in mRoomsInDrawer.indices) {
                 val room = mRoomsInDrawer[i]
 
                 mDrawer?.addItemAtPosition(formatRoomToDrawerItem(room),
                         ROOM_IN_DRAWER_OFFSET_TOP)
             }
-
-            Collections.reverse(mRoomsInDrawer)
         }
         mDrawer?.adapter?.notifyDataSetChanged()
     }
@@ -334,7 +327,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         mPresenter.bindView(this)
         mPresenter.loadProfile()
 
-        if (!mStateWasRestored) {
+        if (mRoomsList.size == 0) {
             mPresenter.loadRooms()
         } else {
             mLoadRoomsProgressView?.visibility = View.GONE
@@ -469,7 +462,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
             startActivity(Intent(applicationContext, SettingsActivity::class.java))
         } else if (name == getString(R.string.signout)) {
             signOut()
-        } else if (name == getString(R.string.all)) {
+        } else if (name == getString(R.string.all) && mRoomsInDrawer.size > 0) {
             showRoomsListDialog()
         } else if (name == getString(R.string.search_room)) {
             startActivity(Intent(applicationContext, SearchRoomActivity::class.java))
@@ -666,10 +659,12 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
     }
 
     private fun getPositionRoomInDrawer(name: String): Int {
-        for (i in mRoomsInDrawer.indices) {
-            if (mRoomsInDrawer[i].name == name) {
-                return i + ROOM_IN_DRAWER_OFFSET_TOP - 1
+        var i = 0
+        for (item in mDrawer!!.drawerItems) {
+            if (item is ImagePrimaryDrawerItem && item.name.text == name) {
+                return i
             }
+            i++
         }
 
         return -1
