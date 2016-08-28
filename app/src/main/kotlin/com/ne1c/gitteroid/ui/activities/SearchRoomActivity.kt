@@ -26,7 +26,7 @@ class SearchRoomActivity : BaseActivity<SearchRoomPresenter>(), SearchRoomsView 
     private var mResultRecyclerView: RecyclerView? = null
     private var mProgressBar: ProgressBar? = null
 
-    private var mRooms: ArrayList<RoomViewModel> = ArrayList()
+    private var mRooms: ArrayList<RoomViewModel?> = ArrayList()
     private var mLoadWithPagination = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,8 +64,11 @@ class SearchRoomActivity : BaseActivity<SearchRoomPresenter>(), SearchRoomsView 
             override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
                 val layoutManager = recyclerView?.layoutManager as LinearLayoutManager
 
-                if (layoutManager.findLastVisibleItemPosition() >= mRooms.size - 2) {
+                if (layoutManager.findLastVisibleItemPosition() >= mRooms.size - 2 && !mLoadWithPagination) {
                     mPresenter.searchRooms(mSearchEditText?.text.toString(), mRooms.size + 30)
+                    (mResultRecyclerView?.adapter as SearchRoomsAdapter).removeProgressFooter()
+
+                    mLoadWithPagination = true
                 }
             }
         })
@@ -123,11 +126,16 @@ class SearchRoomActivity : BaseActivity<SearchRoomPresenter>(), SearchRoomsView 
             mResultRecyclerView?.visibility = View.GONE
             mNoResultLayout?.visibility = View.VISIBLE
         }
+
+        mLoadWithPagination = false
     }
 
     override fun paginationResultSearch(rooms: ArrayList<RoomViewModel>) {
         mRooms.addAll(rooms)
         mResultRecyclerView?.adapter?.notifyItemRangeInserted(mRooms.size - rooms.size - 1, rooms.size)
+
+        (mResultRecyclerView?.adapter as SearchRoomsAdapter).removeProgressFooter()
+        mLoadWithPagination = false
     }
 
     override fun getPresenterTag(): String = SearchRoomPresenter.TAG
