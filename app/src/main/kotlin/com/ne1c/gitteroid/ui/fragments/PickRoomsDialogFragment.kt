@@ -23,9 +23,9 @@ class PickRoomsDialogFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val v = inflater!!.inflate(R.layout.fragment_pick_rooms_dialog, container, false)
+        val v = inflater?.inflate(R.layout.fragment_pick_rooms_dialog, container, false)
 
-        val roomsListView = v.findViewById(R.id.rooms_listView) as ListView
+        val roomsListView = v?.findViewById(R.id.rooms_listView) as ListView
 
         roomsListView.adapter = object : ArrayAdapter<String>(activity, R.layout.item_room) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -33,7 +33,10 @@ class PickRoomsDialogFragment : DialogFragment() {
 
                 (itemView.findViewById(R.id.name_textView) as TextView).text = rooms[position].name
 
-                Glide.with(activity).load(rooms[position].getAvatarUrl()).error(R.drawable.ic_room).into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
+                Glide.with(activity)
+                        .load(rooms[position].getAvatarUrl())
+                        .error(R.drawable.ic_room)
+                        .into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
 
                 return itemView
             }
