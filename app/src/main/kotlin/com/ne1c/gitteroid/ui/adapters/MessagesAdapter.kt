@@ -591,7 +591,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         }
 
         val multilineCodeView: FrameLayout
-            get() = LayoutInflater.from(mActivity).inflate(R.layout.multiline_code_view, null) as FrameLayout
+            get() = LayoutInflater.from(mActivity).inflate(R.layout.view_multiline_code, null) as FrameLayout
 
         fun getBoldSpannableText(text: String): Spannable {
             val span = SpannableString(text)
@@ -615,7 +615,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         }
 
         fun getQuoteText(text: String): LinearLayout {
-            val parent = LayoutInflater.from(mActivity).inflate(R.layout.quote_view, null) as LinearLayout
+            val parent = LayoutInflater.from(mActivity).inflate(R.layout.view_quote, null) as LinearLayout
 
             (parent.findViewById(R.id.text_quote) as TextView).text = text
 
@@ -635,7 +635,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         }
 
         val linkImage: ImageView
-            get() = LayoutInflater.from(mActivity).inflate(R.layout.image_link_view, null) as ImageView
+            get() = LayoutInflater.from(mActivity).inflate(R.layout.view_image_link, null) as ImageView
 
         fun getIssueSpannableText(text: String): Spannable {
             val span = SpannableString(text)
