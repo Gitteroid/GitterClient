@@ -1,24 +1,18 @@
 package com.ne1c.gitteroid.ui.adapters
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
 import android.support.v7.widget.RecyclerView
-import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.method.LinkMovementMethod
-import android.text.style.*
-import android.text.util.Linkify
-import android.util.Patterns
+import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,11 +25,9 @@ import com.ne1c.gitteroid.models.data.StatusMessage
 import com.ne1c.gitteroid.models.view.MessageViewModel
 import com.ne1c.gitteroid.models.view.RoomViewModel
 import com.ne1c.gitteroid.services.NotificationService
-import com.ne1c.gitteroid.ui.SinglelineSpan
 import com.ne1c.gitteroid.ui.fragments.ChatRoomFragment
 import com.ne1c.gitteroid.ui.fragments.EditMessageFragment
 import com.ne1c.gitteroid.ui.fragments.LinksDialogFragment
-import com.ne1c.gitteroid.ui.loadUrlWithChromeTabs
 import com.ne1c.gitteroid.utils.MarkdownUtils
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -48,10 +40,13 @@ class MessagesAdapter(private val mDataManager: DataManger,
                       private val mActivity: Activity,
                       private val mMessages: ArrayList<MessageViewModel>,
                       private val mMessageEditText: EditText) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ChatRoomFragment.ReadMessageCallback {
+    private val DYNAMIC_ITEM_TYPE = 0
+    private val STATIC_ITEM_TYPE = 1
+
     private var mRoom: RoomViewModel? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        if (viewType == 0) {
+        if (viewType == DYNAMIC_ITEM_TYPE) {
             return DynamicViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_chat_dynamic_message, parent, false))
         } else {
             return StaticViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_chat_message, parent, false))
@@ -60,50 +55,66 @@ class MessagesAdapter(private val mDataManager: DataManger,
 
     override fun getItemViewType(position: Int): Int {
         if (position >= mMessages.size) {
-            return 0
+            return DYNAMIC_ITEM_TYPE
         }
 
         val markdownUtils = MarkdownUtils(mMessages[position].text)
         if (markdownUtils.existMarkdown()) {
-            return 0 // Dynamic
+            return DYNAMIC_ITEM_TYPE
         } else {
-            return 1 // Static
+            return STATIC_ITEM_TYPE
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val message = mMessages[position]
-
-        if (getItemViewType(position) == 0) {
-            val dynamicHolder = holder as DynamicViewHolder
-            dynamicHolder.parentLayout.setOnClickListener(getParentLayoutClick(message))
-            dynamicHolder.avatarImage.setOnClickListener(getAvatarImageClick(message))
-            dynamicHolder.messageMenu.setOnClickListener(getMenuClick(message, position))
-
-            processingIndicator(dynamicHolder.newMessageIndicator, message)
-            setMessageDynamicText(dynamicHolder, message.text)
-
-            dynamicHolder.timeText.text = getTimeMessage(message)
-            dynamicHolder.nicknameText.text = getUsername(message)
-            //noinspection ResourceType
-            setIconMessage(dynamicHolder.statusMessage, message)
-
-            Glide.with(mActivity).load(message.fromUser?.avatarUrlSmall).into(dynamicHolder.avatarImage)
+        if (getItemViewType(position) == DYNAMIC_ITEM_TYPE) {
+            bindDynamicHolder(holder as DynamicViewHolder)
         } else {
-            val staticHolder = holder as StaticViewHolder
-            staticHolder.parentLayout.setOnClickListener(getParentLayoutClick(message))
-            staticHolder.avatarImage.setOnClickListener(getAvatarImageClick(message))
-            staticHolder.messageMenu.setOnClickListener(getMenuClick(message, position))
+            bindStaticHolder(holder as StaticViewHolder)
+        }
+    }
 
-            processingIndicator(staticHolder.newMessageIndicator, message)
-            setMessageStaticText(staticHolder, message.text)
+    fun bindDynamicHolder(holder: DynamicViewHolder) {
+        val message = mMessages[holder.adapterPosition]
 
-            staticHolder.timeText.text = getTimeMessage(message)
-            staticHolder.nicknameText.text = getUsername(message)
-            //noinspection ResourceType
-            setIconMessage(staticHolder.statusMessage, message)
+        with(holder) {
+            parentLayout.setOnClickListener(getParentLayoutClick(message))
+            avatarImage.setOnClickListener(getAvatarImageClick(message))
+            messageMenu.setOnClickListener(getMenuClick(message, position))
 
-            Glide.with(mActivity).load(message.fromUser?.avatarUrlSmall).into(staticHolder.avatarImage)
+            processingIndicator(newMessageIndicator, message)
+            setMessageDynamicText(holder, message.text)
+
+            timeText.text = getTimeMessage(message)
+            nicknameText.text = getUsername(message)
+
+            setIconMessage(statusMessageImage, message)
+
+            Glide.with(mActivity)
+                    .load(message.fromUser?.avatarUrlSmall)
+                    .into(avatarImage)
+        }
+    }
+
+    fun bindStaticHolder(holder: StaticViewHolder) {
+        val message = mMessages[holder.adapterPosition]
+
+        with(holder) {
+            parentLayout.setOnClickListener(getParentLayoutClick(message))
+            avatarImage.setOnClickListener(getAvatarImageClick(message))
+            messageMenu.setOnClickListener(getMenuClick(message, position))
+
+            processingIndicator(newMessageIndicator, message)
+            setMessageStaticText(holder, message.text)
+
+            timeText.text = getTimeMessage(message)
+            nicknameText.text = getUsername(message)
+
+            setIconMessage(statusMessageImage, message)
+
+            Glide.with(mActivity)
+                    .load(message.fromUser?.avatarUrlSmall)
+                    .into(avatarImage)
         }
     }
 
@@ -124,194 +135,9 @@ class MessagesAdapter(private val mDataManager: DataManger,
     }
 
     private fun setMessageDynamicText(holder: DynamicViewHolder, text: String) {
-        var text = text
-        val markdown = MarkdownUtils(text)
-        val views = MarkdownViews()
+        val markdownView = MarkdownViews(holder.itemView.context)
 
-        var counterSingleline = -1
-        var counterMultiline = -1
-        var counterBold = -1
-        var counterItalics = -1
-        var counterQuote = -1
-        var counterStrikethrough = -1
-        var counterIssue = -1
-        var counterGitterLinks = -1
-        val counterLinks = -1
-        var counterImageLinks = -1
-        var counterMentions = -1
-
-        holder.messageLayout.removeAllViews()
-
-        if (markdown.existMarkdown()) {
-            for (i in 0..markdown.parsedString.size - 1) {
-                when (markdown.parsedString[i]) {
-                    "{0}" // Singleline
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        val textView = holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView
-                        textView.append(views.getSinglelineCodeSpan(textView.text.length,
-                                markdown.singlelineCode[++counterSingleline]))
-                    } else {
-                        val textView = views.textView
-                        textView.text = views.getSinglelineCodeSpan(textView.text.length,
-                                markdown.singlelineCode[++counterSingleline])
-                        holder.messageLayout.addView(textView)
-                    }
-                    "{1}" // Multiline
-                    -> {
-                        val multiline = views.multilineCodeView
-                        (multiline.findViewById(R.id.multiline_textView) as TextView).text = markdown.multilineCode[++counterMultiline]
-                        holder.messageLayout.addView(multiline)
-                    }
-                    "{2}" // Bold
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView).append(views.getBoldSpannableText(markdown.bold[++counterBold]))
-                    } else {
-                        val textView = views.textView
-                        textView.text = views.getBoldSpannableText(markdown.bold[++counterBold])
-                        holder.messageLayout.addView(textView)
-                    }
-                    "{3}" // Italics
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView).append(views.getItalicSpannableText(markdown.italics[++counterItalics]))
-                    } else {
-                        val textView = views.textView
-                        textView.text = views.getItalicSpannableText(markdown.italics[++counterItalics])
-                        holder.messageLayout.addView(textView)
-                    }
-                    "{4}" // Strikethrough
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView).append(views.getStrikethroughSpannableText(markdown.strikethrough[++counterStrikethrough]))
-                    } else {
-                        val strikeView = views.textView
-                        strikeView.text = views.getStrikethroughSpannableText(markdown.strikethrough[++counterStrikethrough])
-                        holder.messageLayout.addView(strikeView)
-                    }
-                    "{5}" // Quote
-                    -> {
-                        val quote = views.getQuoteText(markdown.quote[++counterQuote])
-                        holder.messageLayout.addView(quote)
-                    }
-                    "{6}" // GitterLinks
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        var link = markdown.gitterLinks[++counterGitterLinks]
-
-                        var url = "http://gitter.im"
-
-                        val urlMatcher = Patterns.WEB_URL.matcher(link)
-                        if (urlMatcher.find()) {
-                            url = urlMatcher.group()
-
-                            if (url.substring(url.length - 1, url.length) == ")") {
-                                url = url.substring(0, url.length - 1)
-                            }
-                        }
-
-                        link = link.substring(1, link.indexOf("]"))
-
-                        val textView = holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView
-                        textView.append(views.getLinksSpannableText(link, url))
-                        textView.movementMethod = LinkMovementMethod.getInstance()
-                    } else {
-                        val textView = views.textView
-                        var link = markdown.gitterLinks[++counterGitterLinks]
-
-                        var url = "http://gitter.im"
-
-                        val urlMatcher = Patterns.WEB_URL.matcher(link)
-                        if (urlMatcher.find()) {
-                            url = urlMatcher.group()
-
-                            if (url.substring(url.length - 1, url.length) == ")") {
-                                url = url.substring(0, url.length - 1)
-                            }
-                        }
-
-                        link = link.substring(1, link.indexOf("]"))
-
-                        textView.text = views.getLinksSpannableText(link, url)
-                        textView.movementMethod = LinkMovementMethod.getInstance()
-
-                        holder.messageLayout.addView(textView)
-                    }
-                    "{7}" // Image
-                    -> {
-                        val link = markdown.imageLinks[++counterImageLinks]
-                        val previewUrl: String
-                        val fullUrl: String
-
-                        if (link is MarkdownUtils.PreviewImageModel) {
-                            previewUrl = link.previewUrl
-                            fullUrl = link.fullUrl
-                        } else {
-                            previewUrl = link.toString()
-                            fullUrl = previewUrl
-                        }
-
-                        val image = views.linkImage
-                        image.setOnClickListener { v -> mActivity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))) }
-
-                        holder.messageLayout.addView(image, 256, 192)
-
-                        //linkImage = linkImage.substring(linkImage.indexOf("http"), linkImage.length() - 2);
-                        Glide.with(mActivity).load(previewUrl).crossFade(500).into(image)
-                    }
-                    "{8}" // Issue
-                    -> {
-                        val issue = views.textView
-                        issue.text = views.getIssueSpannableText(markdown.issues[++counterIssue])
-                        holder.messageLayout.addView(issue)
-                    }
-                    "{9}" // Mention
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView).append(views.getMentionSpannableText(markdown.mentions[++counterMentions]))
-                    } else {
-                        val mentionView = views.textView
-                        mentionView.text = views.getMentionSpannableText(markdown.mentions[++counterMentions])
-                        holder.messageLayout.addView(mentionView)
-                    }
-                //                    case "{10}": // Links
-                //                        if (holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1) instanceof TextView) {
-                //                            String url = markdown.getLinks().get(++counterLinks);
-                //
-                //                            TextView textView = (TextView) holder.messageLayout.getChildAt(holder.messageLayout.getChildCount() - 1);
-                //                            textView.append(views.getLinksSpannableText(url, url));
-                //                            textView.setMovementMethod(LinkMovementMethod.getInstance());
-                //                        } else {
-                //                            TextView textView = views.getTextView();
-                //                            String url = markdown.getLinks().get(++counterLinks);
-                //
-                //                            textView.setText(views.getLinksSpannableText(url, url));
-                //                            textView.setMovementMethod(LinkMovementMethod.getInstance());
-                //
-                //                            holder.messageLayout.addView(textView);
-                //                        }
-                //
-                //                        break;
-                    else // Text
-                    -> if (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) is TextView) {
-                        (holder.messageLayout.getChildAt(holder.messageLayout.childCount - 1) as TextView).append(markdown.parsedString[i])
-                    } else {
-                        val textView = views.textView
-                        textView.text = markdown.parsedString[i]
-                        holder.messageLayout.addView(textView)
-                    }
-                }//                        ViewGroup.LayoutParams params = image.getLayoutParams();
-                //                        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                //                        params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-                //                        image.setLayoutParams(params);
-            }
-        } else {
-            val textView = views.textView
-
-            if (text.substring(text.length - 1) == "\n") {
-                text = text.substring(0, text.length - 1)
-            }
-            textView.text = text
-
-            holder.messageLayout.addView(textView)
-        }
-
-        holder.messageLayout.requestLayout()
+        markdownView.bindMarkdownText(holder, text)
     }
 
     private fun getUsername(message: MessageViewModel): String {
@@ -542,7 +368,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         var avatarImage: ImageView
         var newMessageIndicator: ImageView
         var messageMenu: ImageView
-        var statusMessage: ImageView
+        var statusMessageImage: ImageView
         var nicknameText: TextView
         var timeText: TextView
 
@@ -555,7 +381,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
             nicknameText = itemView.findViewById(R.id.nickname_text) as TextView
             timeText = itemView.findViewById(R.id.time_text) as TextView
             messageMenu = itemView.findViewById(R.id.overflow_message_menu) as ImageView
-            statusMessage = itemView.findViewById(R.id.status_mess_image) as ImageView
+            statusMessageImage = itemView.findViewById(R.id.status_mess_image) as ImageView
         }
     }
 
@@ -564,7 +390,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         var avatarImage: ImageView
         var newMessageIndicator: ImageView
         var messageMenu: ImageView
-        var statusMessage: ImageView
+        var statusMessageImage: ImageView
         var nicknameText: TextView
         var messageText: TextView
         var timeText: TextView
@@ -578,88 +404,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
             messageText = itemView.findViewById(R.id.message_text) as TextView
             timeText = itemView.findViewById(R.id.time_text) as TextView
             messageMenu = itemView.findViewById(R.id.overflow_message_menu) as ImageView
-            statusMessage = itemView.findViewById(R.id.status_mess_image) as ImageView
-        }
-    }
-
-    private inner class MarkdownViews {
-        fun getSinglelineCodeSpan(fromStartPos: Int, text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(SinglelineSpan(fromStartPos, fromStartPos + text.length), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        val multilineCodeView: FrameLayout
-            get() = LayoutInflater.from(mActivity).inflate(R.layout.view_multiline_code, null) as FrameLayout
-
-        fun getBoldSpannableText(text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(StyleSpan(Typeface.BOLD), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        fun getItalicSpannableText(text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(StyleSpan(Typeface.ITALIC), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        fun getStrikethroughSpannableText(text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(StrikethroughSpan(), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        fun getQuoteText(text: String): LinearLayout {
-            val parent = LayoutInflater.from(mActivity).inflate(R.layout.view_quote, null) as LinearLayout
-
-            (parent.findViewById(R.id.text_quote) as TextView).text = text
-
-            return parent
-        }
-
-        fun getLinksSpannableText(text: String, link: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(URLSpan(link), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            span.setSpan(object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    loadUrlWithChromeTabs(mActivity, link)
-                }
-            }, 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        val linkImage: ImageView
-            get() = LayoutInflater.from(mActivity).inflate(R.layout.view_image_link, null) as ImageView
-
-        fun getIssueSpannableText(text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(ForegroundColorSpan(Color.GREEN), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
-        }
-
-        val textView: TextView
-            @SuppressLint("PrivateResource")
-            get() {
-                val view = TextView(mActivity)
-                view.setTextColor(mActivity.resources.getColor(R.color.primary_text_default_material_light))
-                view.autoLinkMask = Linkify.ALL
-                view.linksClickable = true
-                return view
-            }
-
-        fun getMentionSpannableText(text: String): Spannable {
-            val span = SpannableString(text)
-            span.setSpan(StyleSpan(Typeface.ITALIC), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            span.setSpan(UnderlineSpan(), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-
-            return span
+            statusMessageImage = itemView.findViewById(R.id.status_mess_image) as ImageView
         }
     }
 }
