@@ -60,7 +60,7 @@ import org.greenrobot.eventbus.Subscribe
 import java.util.*
 
 class MainActivity : BaseActivity<MainPresenter>(), MainView {
-    private val ROOM_IN_DRAWER_OFFSET_BOTTOM = 4 // All, Search, Settings, Sign Out
+    private val ROOM_IN_DRAWER_OFFSET_BOTTOM = 3 // All, (without Search), Settings, Sign Out
     private val ROOM_IN_DRAWER_OFFSET_TOP = 2 // Header, Home
     private val ROOMS_BUNDLE = "rooms_bundle"
     private val ROOMS_IN_DRAWER_BUNDLE = "rooms_in_drawer_bundle"
@@ -205,7 +205,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 .withIconTintingEnabled(true)
                 .withIcon(R.drawable.ic_format_list_bulleted)
                 .withSelectable(false))
-
+        /*
         mDrawerItems.add(PrimaryDrawerItem()
                 .withName(getString(R.string.search_room))
                 .withTextColor(Color.WHITE)
@@ -213,6 +213,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
                 .withIconTintingEnabled(true)
                 .withIcon(R.drawable.ic_magnify)
                 .withSelectable(false))
+        */
 
         mDrawerItems.add(DividerDrawerItem())
 
@@ -274,8 +275,8 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
         mRoomTabs?.removeAllTabs()
 
         // Remove old items
-        // 4 but items: "Home", "All", "Search", "Divider", "Settings", "Sign Out".
-        while (mDrawer?.drawerItems?.size != 6) {
+        // 4 but items: "Home", "All", (without "Search"), "Divider", "Settings", "Sign Out".
+        while (mDrawer?.drawerItems?.size != 5) {
             mDrawer?.removeItemByPosition(ROOM_IN_DRAWER_OFFSET_TOP) // 2? Wtf?
         }
     }
@@ -395,7 +396,7 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
             R.id.action_refresh ->
                 if (selectedRoom != null) {
                     EventBus.getDefault().post(RefreshMessagesRoomEvent(selectedRoom!!))
-                } else if (selectedRoom == null && mRoomsInDrawer.size == 0) {
+                } else if (mRoomsInDrawer.size == 0) {
                     mPresenter.loadRooms()
                 }
             R.id.action_leave -> {
@@ -673,10 +674,10 @@ class MainActivity : BaseActivity<MainPresenter>(), MainView {
 
     private var selectedRoom: RoomViewModel? = null
         get() {
-            val index = mDrawer?.currentSelectedPosition!! - ROOM_IN_DRAWER_OFFSET_TOP
+            val index = mRoomTabs?.selectedTabPosition ?: -1
 
-            if (index >= 0 && index < mRoomsInDrawer.size) {
-                return mRoomsInDrawer[index]
+            if (index != -1) {
+                return mRoomsInTabs[index]
             }
 
             return null

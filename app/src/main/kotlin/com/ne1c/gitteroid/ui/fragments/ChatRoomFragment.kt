@@ -77,8 +77,6 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         } else {
             mRoom = arguments.getParcelable<RoomViewModel>("room")
         }
-
-        EventBus.getDefault().register(this)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
@@ -133,6 +131,12 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
             joinRoomButton.visibility = View.VISIBLE
             joinRoomButton.setOnClickListener { v1 -> mPresenter.joinToRoom(mOverviewRoom!!.name) }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        EventBus.getDefault().register(this)
     }
 
     private fun hideNewMessagePopup() {
@@ -355,10 +359,10 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
         }
     }
 
-    override fun onDestroy() {
+    override fun onStop() {
         EventBus.getDefault().unregister(this)
 
-        super.onDestroy()
+        super.onStop()
     }
 
     private fun markMessagesAsRead() {
@@ -450,7 +454,7 @@ class ChatRoomFragment : BaseFragment<ChatRoomPresenter>(), ChatView {
 
     @Subscribe
     fun nofityRefreshMessages(room: RefreshMessagesRoomEvent) {
-        if (room.roomModel.id == mRoom!!.id) {
+        if (room.roomModel.id == mRoom?.id) {
             mIsRefreshing = true
             showListProgressBar()
             loadMessageRoomServer()
