@@ -78,7 +78,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         val message = mMessages[holder.adapterPosition]
 
         with(holder) {
-            parentLayout.setOnClickListener(getParentLayoutClick(message))
+            replyButton.setOnClickListener(getParentLayoutClick(message))
             avatarImage.setOnClickListener(getAvatarImageClick(message))
             messageMenu.setOnClickListener(getMenuClick(message, position))
 
@@ -100,7 +100,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         val message = mMessages[holder.adapterPosition]
 
         with(holder) {
-            parentLayout.setOnClickListener(getParentLayoutClick(message))
+            replyButton.setOnClickListener(getParentLayoutClick(message))
             avatarImage.setOnClickListener(getAvatarImageClick(message))
             messageMenu.setOnClickListener(getMenuClick(message, position))
 
@@ -363,7 +363,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
     }
 
     inner class DynamicViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var parentLayout: LinearLayout
+        var replyButton: ImageButton
         var messageLayout: LinearLayout
         var avatarImage: ImageView
         var newMessageIndicator: ImageView
@@ -373,8 +373,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         var timeText: TextView
 
         init {
-
-            parentLayout = itemView.findViewById(R.id.parent_layout) as LinearLayout
+            replyButton = itemView.findViewById(R.id.reply_button) as ImageButton
             messageLayout = itemView.findViewById(R.id.message_layout) as LinearLayout
             avatarImage = itemView.findViewById(R.id.avatar_image) as ImageView
             newMessageIndicator = itemView.findViewById(R.id.new_message_image) as ImageView
@@ -386,7 +385,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
     }
 
     inner class StaticViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var parentLayout: LinearLayout
+        var replyButton: ImageButton
         var avatarImage: ImageView
         var newMessageIndicator: ImageView
         var messageMenu: ImageView
@@ -396,8 +395,7 @@ class MessagesAdapter(private val mDataManager: DataManger,
         var timeText: TextView
 
         init {
-
-            parentLayout = itemView.findViewById(R.id.parent_layout) as LinearLayout
+            replyButton = itemView.findViewById(R.id.reply_button) as ImageButton
             avatarImage = itemView.findViewById(R.id.avatar_image) as ImageView
             newMessageIndicator = itemView.findViewById(R.id.new_message_image) as ImageView
             nicknameText = itemView.findViewById(R.id.nickname_text) as TextView
