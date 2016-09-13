@@ -45,7 +45,7 @@ class ProgressDrawerItem : IDrawerItem<ProgressDrawerItem, ProgressDrawerItem.Vi
     }
 
     override fun generateView(ctx: Context?): View {
-        return LayoutInflater.from(ctx).inflate(R.layout.progress_drawer_item, null, false)
+        return LayoutInflater.from(ctx).inflate(R.layout.item_progress_drawer, null, false)
     }
 
     override fun withSelectable(selectable: Boolean): ProgressDrawerItem {
@@ -53,7 +53,7 @@ class ProgressDrawerItem : IDrawerItem<ProgressDrawerItem, ProgressDrawerItem.Vi
     }
 
     override fun getLayoutRes(): Int {
-        return R.layout.progress_drawer_item
+        return R.layout.item_progress_drawer
     }
 
     override fun getType(): Int {
@@ -67,7 +67,7 @@ class ProgressDrawerItem : IDrawerItem<ProgressDrawerItem, ProgressDrawerItem.Vi
 
     override fun getViewHolder(parent: ViewGroup?): ViewHolder {
         return ViewHolder(LayoutInflater.from(parent?.context)
-                .inflate(R.layout.progress_drawer_item, null, false))
+                .inflate(R.layout.item_progress_drawer, null, false))
     }
 
     override fun bindView(holder: ViewHolder) {

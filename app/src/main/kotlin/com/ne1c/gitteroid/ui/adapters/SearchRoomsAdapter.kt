@@ -5,8 +5,8 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import com.bumptech.glide.Glide
@@ -28,7 +28,13 @@ class SearchRoomsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (viewType == TYPE_ITEM) {
             return RoomViewHolder(LayoutInflater.from(parent?.context).inflate(R.layout.item_room, parent, false))
         } else {
-            return ProgressViewHolder(LinearLayout(parent?.context))
+            val parentLayout = FrameLayout(parent?.context)
+            val params = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            params.gravity = Gravity.CENTER
+            parentLayout.layoutParams = params
+
+            return ProgressViewHolder(parentLayout)
         }
     }
 
@@ -82,21 +88,14 @@ class SearchRoomsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    class ProgressViewHolder: RecyclerView.ViewHolder {
+    class ProgressViewHolder : RecyclerView.ViewHolder {
         val progressBar: ProgressBar
 
         constructor(itemView: View) : super(itemView) {
-            val parent = itemView as LinearLayout
-            val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT)
-
-            params.gravity = Gravity.CENTER
-            parent.layoutParams = params
-
             progressBar = ProgressBar(itemView.context)
             progressBar.isIndeterminate = true
 
-            parent.addView(progressBar)
+            (itemView as ViewGroup).addView(progressBar)
         }
     }
 }

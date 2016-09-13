@@ -8,12 +8,14 @@ import com.ne1c.gitteroid.dataproviders.DataManger
 import com.ne1c.gitteroid.di.base.NetworkService
 import com.ne1c.gitteroid.models.data.RoomModel
 import com.ne1c.gitteroid.models.data.UserModel
+import com.ne1c.gitteroid.models.view.RoomViewModel
 import com.ne1c.gitteroid.ui.views.MainView
 import com.nhaarman.mockito_kotlin.capture
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Matchers
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.runners.MockitoJUnitRunner
@@ -141,10 +143,7 @@ class TestMainPresenter {
         })
 
         verify(view)?.saveAllRooms(capture {
-            assert(it.size == 5)
-            for (room in it) {
-                assert(room.unreadItems > 0)
-            }
+            assert(it.size == 10)
         })
 
         verify(view, never())?.errorLoadRooms()
@@ -166,7 +165,7 @@ class TestMainPresenter {
         })
 
         verify(view)?.saveAllRooms(capture {
-            assert(it.size == 4)
+            assert(it.size == 10)
             for (room in it) {
                 assert(room.unreadItems == 0)
             }
@@ -191,7 +190,7 @@ class TestMainPresenter {
         })
 
         verify(view)?.saveAllRooms(capture {
-            assert(it.size == 4)
+            assert(it.size == 10)
             for (room in it) {
                 assert(room.oneToOne == true)
             }
@@ -199,6 +198,18 @@ class TestMainPresenter {
 
         verify(view, never())?.errorLoadRooms()
         verify(view, never())?.showError(anyInt())
+    }
+
+    @Test
+    fun loadRooms_withNetwork_error() {
+        `when`(networkService?.isConnected()).thenReturn(true)
+        `when`(gitterApi?.getCurrentUserRooms(anyString())).thenReturn(Observable.error(Throwable()))
+
+        presenter?.loadRooms()
+
+        verify(view)?.showError(Matchers.anyInt())
+        verify(view)?.errorLoadRooms()
+        verify(view, never())?.showRooms(arrayListOf<RoomViewModel>())
     }
 
     @After

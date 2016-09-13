@@ -36,6 +36,7 @@ class PickRoomsDialogFragment : DialogFragment() {
                 Glide.with(activity)
                         .load(rooms[position].getAvatarUrl())
                         .error(R.drawable.ic_room)
+                        .placeholder(R.drawable.ic_room)
                         .into(itemView.findViewById(R.id.avatar_imageView) as ImageView)
 
                 return itemView

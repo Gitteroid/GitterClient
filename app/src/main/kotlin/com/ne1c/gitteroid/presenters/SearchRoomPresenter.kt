@@ -51,7 +51,9 @@ class SearchRoomPresenter(private val executor: ExecutorService,
 
     fun searchRooms(query: String, offset: Int = 0) {
         if (!query.isEmpty()) {
-            mView?.showDialog()
+            if (offset == 0) {
+                mView?.showDialog()
+            }
 
             lastQueryModel = QueryModel(query, offset)
             mSearchRoomSubject.onNext(lastQueryModel)

@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
+import android.support.v4.app.RemoteInput
 import android.support.v4.content.LocalBroadcastManager
 import android.text.SpannableString
 import android.text.Spanned
@@ -29,6 +30,8 @@ import rx.schedulers.Schedulers
 import rx.subscriptions.CompositeSubscription
 
 class NotificationService : Service() {
+    private val KEY_TEXT_REPLY = "key_text_reply"
+
     private var mRooms: List<RoomModel>? = null
     private val mSubscriptions = CompositeSubscription()
 
@@ -153,21 +156,34 @@ class NotificationService : Service() {
         text.setSpan(StyleSpan(Typeface.BOLD), 0, username!!.length + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         text.setSpan(StyleSpan(Typeface.ITALIC), username.length + 1, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
-        val builder = NotificationCompat.Builder(this).setContentIntent(pendingIntent).setSmallIcon(R.drawable.ic_notif_message).setTicker(text).setContentText(text).setNumber(room.unreadItems).setContentTitle(room.name)
+        val notifBuilder = NotificationCompat.Builder(this).setContentIntent(pendingIntent).setSmallIcon(R.drawable.ic_notif_message).setTicker(text).setContentText(text).setNumber(room.unreadItems).setContentTitle(room.name)
 
         val notifMgr = NotificationManagerCompat.from(applicationContext)
-        val notification = builder.build()
 
-        notification.defaults = Notification.DEFAULT_LIGHTS
+        var notifDefaults = Notification.DEFAULT_LIGHTS
 
         if (mVibrate) {
-            notification.defaults = notification.defaults or Notification.DEFAULT_VIBRATE
+            notifDefaults = notifDefaults or Notification.DEFAULT_VIBRATE
         }
 
         if (mSound) {
-            notification.defaults = notification.defaults or Notification.DEFAULT_SOUND
+            notifDefaults = notifDefaults or Notification.DEFAULT_SOUND
         }
 
+        notifBuilder.setDefaults(notifDefaults)
+
+        val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
+                .setLabel(getString(R.string.write_a_message))
+                .build()
+
+        val action = NotificationCompat.Action.Builder(R.drawable.ic_send, getString(R.string.write_a_message), pendingIntent)
+                .addRemoteInput(remoteInput)
+                .setAllowGeneratedReplies(true)
+                .build()
+
+        notifBuilder.addAction(action)
+
+        val notification = notifBuilder.build()
         notification.flags = notification.flags or NotificationCompat.FLAG_AUTO_CANCEL
 
         notifMgr.notify(NOTIF_CODE, notification)
