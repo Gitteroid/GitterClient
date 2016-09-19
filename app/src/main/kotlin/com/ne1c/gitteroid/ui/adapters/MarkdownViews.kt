@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
@@ -22,6 +21,7 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.ne1c.gitteroid.R
 import com.ne1c.gitteroid.ui.SinglelineSpan
+import com.ne1c.gitteroid.ui.activities.ImageViewerActivity
 import com.ne1c.gitteroid.utils.MarkdownUtils
 
 class MarkdownViews(private val context: Context) {
@@ -69,7 +69,7 @@ class MarkdownViews(private val context: Context) {
         span.setSpan(URLSpan(link), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         span.setSpan(object : ClickableSpan() {
             override fun onClick(widget: View) {
-               // loadUrlWithChromeTabs(context, link)
+                // loadUrlWithChromeTabs(context, link)
             }
         }, 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
@@ -107,7 +107,7 @@ class MarkdownViews(private val context: Context) {
     fun bindMarkdownText(holder: MessagesAdapter.DynamicViewHolder, text: String) {
         val markdown = MarkdownUtils(text)
         var formatText = text
-        
+
         var counterSingleline = -1
         var counterMultiline = -1
         var counterBold = -1
@@ -119,7 +119,7 @@ class MarkdownViews(private val context: Context) {
         val counterLinks = -1
         var counterImageLinks = -1
         var counterMentions = -1
-        
+
         holder.messageLayout.removeAllViews()
 
         if (markdown.existMarkdown()) {
@@ -228,7 +228,12 @@ class MarkdownViews(private val context: Context) {
                         }
 
                         val image = linkImage
-                        image.setOnClickListener { v -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))) }
+                        image.setOnClickListener {
+                            val intent = Intent(context, ImageViewerActivity::class.java)
+                            intent.putExtra("url", fullUrl)
+
+                            context.startActivity(intent)
+                        }
 
                         holder.messageLayout.addView(image, 256, 192)
 
