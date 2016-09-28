@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
+import android.view.MenuItem
 import android.view.WindowManager
 import android.widget.ImageView
 import com.bumptech.glide.Glide
@@ -30,5 +31,13 @@ class ImageViewerActivity : AppCompatActivity() {
                 .load(intent.getStringExtra("url"))
                 .asBitmap()
                 .into(findViewById(R.id.imageView) as ImageView)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (item?.itemId == android.R.id.home) {
+            onBackPressed()
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 }
