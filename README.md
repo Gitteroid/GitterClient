@@ -6,7 +6,7 @@ Unofficial Gitter Client.
     <a id="user-content-license" class="anchor" href="#license" aria-hidden="true">
     <span class="octicon octicon-link"></span></a>License
 </h2>
-<pre><code>Copyright 2015 Nikolay Kucheryaviy &lt;codeneic@gmail.com&gt;
+<pre><code>Copyright 2015 Nikolay Kucheriaviy &lt;codeneic@gmail.com&gt;
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
