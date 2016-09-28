@@ -1,16 +1,21 @@
 machine:
+  environment:
+    GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx1024m -XX:+HeapDumpOnOutOfMemoryError"'
+    _JAVA_OPTIONS: "-Xms512m -Xmx1024m"
+    ANDROID_HOME: /usr/local/android-sdk-linux
+    ADB_INSTALL_TIMEOUT: 10
   java:
-    version: openjdk7
-    
+    version: oraclejdk8
+
 dependencies:
   pre:
-    - echo y | android update sdk --no-ui --all --filter "com.ne1c.gitteroid"
-    
+      - echo y | android update sdk --no-ui --all --filter "tools"
+      - echo y | android update sdk --no-ui --all --filter "build-tools-23.0.2"
+  cache_directories:
+    - ~/.android
+    - ~/android
 test:
   override:
+    #build apks
     - ./gradlew assembleDebug
-    - ./gradlew test
-  post:
-    - mkdir -p $CIRCLE_TEST_REPORTS/junit/
-    - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
-
+    - cp -r /home/ubuntu/circle-kotlin/app/build/outputs $CIRCLE_ARTIFACTS
