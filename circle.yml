@@ -1,0 +1,12 @@
+machine:
+  java:
+    version: openjdk7
+    
+dependencies:
+  pre:
+    - echo y | android update sdk --no-ui --all --filter "com.ne1c.gitteroid"
+    
+test:
+  override:
+    - ./gradlew assembleDebug
+    -./gradlew test
