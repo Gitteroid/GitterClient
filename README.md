@@ -1,10 +1,6 @@
 # Gitteroid
 
-
-<img src="https://github.com/Ne1c/GitterClient/blob/master/google_play.png" width="256px" height="256px"/>
-<br>
-<a href="https://github.com/Ne1c/GitterClient/raw/master/app-release.apk">Download Unofficial Gitter.im Android Client</a>
-<br>
+Unofficial Gitter Client.
 
 <h2>
     <a id="user-content-license" class="anchor" href="#license" aria-hidden="true">
